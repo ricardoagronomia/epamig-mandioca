@@ -1222,6 +1222,7 @@ async function saveExperiment(){
             plots_per_block:expData.plots_per_block,
             useful_plants_per_plot:expData.useful_plants_per_plot,
             plot_length:expData.plot_length||null,
+            plot_width:expData.plot_width||null,
             row_spacing:expData.row_spacing||null,
             plant_spacing:expData.plant_spacing||null,
             created_by:user.id,
@@ -1269,4 +1270,5 @@ async function saveExperiment(){
         console.error(x);
     }
 }
+
 
