@@ -952,17 +952,21 @@ function renderMapaDBCPage(content){
 
 // Função auxiliar para carregar tratamentos do experimento
 async function loadExperimentTreatments(experimentId){
-    const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', experimentId);
-    const {data: treatments} = await s.from('treatments').select('*').eq('experiment_id', experimentId);
-    
-    // Enriquecer tratamentos com nome da variedade
-    const enrichedTreatments = treatments.map(t => {
-        const variety = varieties.find(v => v.id === t.variety_id);
-        return {
-            ...t,
-            variety_name: variety?.name || 'Desconhecida'
-        };
-    });
+    const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', id);
+const {data: treatments} = await s.from('treatments').select('*').eq('experiment_id', id);
+const {data: schedule} = await s.from('experiment_schedule').select('*').eq('experiment_id', id);
+
+// Enriquecer tratamentos com nome da variedade
+const enrichedTreatments = treatments.map(t => {
+    const variety = varieties.find(v => v.id === t.variety_id);
+    return {
+        id: t.id,
+        code: t.code,
+        variety: variety?.name || '',
+        variety_name: variety?.name || '',
+        position: t.position
+    };
+});
     
     return enrichedTreatments;
 }
@@ -1003,45 +1007,60 @@ function openNewExperimentModal(){
 
 async function editExperiment(id){
     if(userRole === 'visitor') return alert('Sem permissão');
+    
     try{
-        editingExpId=id;
-        const {data,error}=await s.from('experiments').select('*').eq('id',id).single();
-        if(error)throw error;
+        editingExpId = id;
         
-        const {data:varieties}=await s.from('varieties').select('*').eq('experiment_id',id);
-        const {data:schedule}=await s.from('experiment_schedule').select('*').eq('experiment_id',id);
+        const {data, error} = await s.from('experiments').select('*').eq('id', id).single();
+        if(error) throw error;
         
-        expData={
-            code:data.code||'',
-            name:data.name||'',
-            objective:data.objective||'',
-            collaborators:data.collaborator?data.collaborator.split(',').map(r=>r.trim()).filter(r=>r):[],
-            planting_date:data.planting_date||'',
-            farm:data.farm||'',
-            municipality:data.municipality||'',
-            latitude:data.latitude||'',
-            longitude:data.longitude||'',
-            soil_type:data.soil_type||'',
-            climate:data.climate||'',
-            varieties_count:varieties.length||4,
-            treatments_count:3,
-            blocks_count:data.blocks_count||3,
-            plots_per_block:data.plots_per_block||12,
-            useful_plants_per_plot:data.useful_plants_per_plot||4,
-            plot_length:data.plot_length||'',
-            plot_width:data.plot_width||'',
-            row_spacing:data.row_spacing||'',
-            plant_spacing:data.plant_spacing||'',
-            varieties:varieties||[],
-            treatments:[],
-            schedule:schedule||[]
+        const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', id);
+        const {data: schedule} = await s.from('experiment_schedule').select('*').eq('experiment_id', id);
+        
+        // Parsear o plot_map se existir
+        let plotMap = [];
+        if(data.plot_map){
+            try {
+                plotMap = JSON.parse(data.plot_map);
+            } catch(e) {
+                console.error('Erro ao parsear plot_map:', e);
+            }
+        }
+        
+        expData = {
+            code: data.code,
+            name: data.name,
+            objective: data.objective,
+            collaborators: data.researcher ? data.researcher.split(',').map(r => r.trim()).filter(r => r) : [],
+            planting_date: data.planting_date,
+            farm: data.farm,
+            municipality: data.municipality,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            soil_type: data.soil_type,
+            climate: data.climate,
+            varieties_count: varieties.length || 4,
+            treatments_count: 3,
+            blocks_count: data.blocks_count || 3,
+            plots_per_block: data.plots_per_block || 12,
+            useful_plants_per_plot: data.useful_plants_per_plot || 4,
+            plot_length: data.plot_length,
+            plot_width: data.plot_width,
+            row_spacing: data.row_spacing,
+            plant_spacing: data.plant_spacing,
+            varieties: varieties,
+            treatments: enrichedTreatments,
+            schedule: schedule,
+            plotMap: plotMap  // 
         };
-        currentStep=0;
-        $('modalTitle').textContent='Editar Experimento';
+        
+        currentStep = 0;
+        $('modalTitle').textContent = 'Editar Experimento';
         renderWizard();
         $('expModal').classList.add('active');
-    }catch(x){
-        alert('Erro: '+x.message);
+        
+    } catch(x) {
+        alert('Erro: ' + x.message);
     }
 }
 
@@ -1599,6 +1618,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
