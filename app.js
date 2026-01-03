@@ -1630,20 +1630,24 @@ if (expData.schedule && expData.schedule.length > 0) {
 // ============================================
 // FUNÇÕES DO MAPA DBC
 // ============================================
-function updatePlotTreatment(block, row, col, treatmentId) {
-  const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
+window.updatePlotTreatment = function(block, row, col, treatmentId){
+  const plot = expData.plotMap.find(
+    p => p.block == block && p.row == row && p.col == col
+  );
   if (plot) {
     // treatmentId vem do <select> como string; padroniza para número
     plot.treatmentid = treatmentId ? parseInt(treatmentId, 10) : null;
   }
-  renderWizard();
-}
-
+  // Só valida os blocos, não redesenha o wizard inteiro
+  if (typeof validateAllBlocks === 'function') {
+    validateAllBlocks();
+  }
+};
 
 function validateAllBlocks(){
-    for(let b = 1; b <= 3; b++){
-        validateBlock(b);
-    }
+  for(let b = 1; b <= 3; b++){
+    validateBlock(b);
+  }
 }
 
 function validateBlock(blockNum){
@@ -1693,6 +1697,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
