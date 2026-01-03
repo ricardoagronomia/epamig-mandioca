@@ -1049,9 +1049,9 @@ async function editExperiment(id){
             row_spacing: data.row_spacing,
             plant_spacing: data.plant_spacing,
             varieties: varieties,
-            treatments: enrichedTreatments,
+            treatments: [],  // ← Será gerado pelo generateTreatments
             schedule: schedule,
-            plotMap: plotMap  // 
+            plotMap: plotMap
         };
         
         currentStep = 0;
@@ -1618,6 +1618,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
