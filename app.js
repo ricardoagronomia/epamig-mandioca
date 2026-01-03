@@ -1087,16 +1087,17 @@ else if(currentStep===7){
                                     <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:12px;">
                                         <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;">${plot.plot_code}</div>
                                         <select 
-                                            onchange="updatePlotTreatment(${blockNum}, ${plot.row}, ${plot.col}, this.value)"
-                                            style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:#ffffff;cursor:pointer;"
-                                        >
-                                            <option value="">Selecione...</option>
-                                            ${expData.treatments.map(t => `
-                                                <option value="${t.id}" ${plot.treatment_id == t.id ? 'selected' : ''}>
-                                                    T${t.id} - ${t.variety_name}
-                                                </option>
-                                            `).join('')}
-                                        </select>
+    onchange="updatePlotTreatment(${blockNum}, ${plot.row}, ${plot.col}, this.value)"
+    style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:#ffffff;cursor:pointer;"
+>
+    <option value="">Selecione...</option>
+    ${expData.treatments.map(t => `
+        <option value="${t.id}" ${plot.treatment_id == t.id ? 'selected' : ''}>
+            T${t.id} - ${t.variety_name} (${t.position})
+        </option>
+    `).join('')}
+</select>
+
                                         ${treatment ? `<div style="font-size:10px;color:#166534;margin-top:4px;font-weight:600;">${treatment.position}</div>` : ''}
                                     </div>
                                 `;
@@ -1462,6 +1463,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
