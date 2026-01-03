@@ -1007,6 +1007,7 @@ else if(currentStep===6){
             </div>
         </div>
     `;
+}
    
 // ============================================
 // ETAPA 7: MAPA DBC (Distribuição de Parcelas)
@@ -1447,6 +1448,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
