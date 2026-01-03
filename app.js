@@ -1514,6 +1514,7 @@ async function saveExperiment(){
             blocks_count: expData.blocks_count || 3,
             plots_per_block: expData.plots_per_block || 12,
             useful_plants_per_plot: expData.useful_plants_per_plot || 4,
+            treatments_count: expData.treatments ? expData.treatments.length : 12,
             plot_length: expData.plot_length,
             plot_width: expData.plot_width,
             row_spacing: expData.row_spacing,
@@ -1690,6 +1691,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
