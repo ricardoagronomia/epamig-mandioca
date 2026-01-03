@@ -1008,11 +1008,7 @@ else if(currentStep===6){
         </div>
     `;
 }
-   
-// ============================================
-// ETAPA 7: MAPA DBC (Distribuição de Parcelas)
-// ============================================
-else if(currentStep === 7){
+else if(currentStep===7){
     if(!expData.plotMap || expData.plotMap.length === 0){
         expData.plotMap = [];
         for(let b = 1; b <= 3; b++){
@@ -1041,7 +1037,6 @@ else if(currentStep === 7){
                         <h3 class="font-bold text-primary mb-1">Mapa do Delineamento em Blocos Casualizados</h3>
                         <p class="text-sm text-muted">
                             Distribua os <strong>${expData.treatments.length} tratamentos</strong> nas parcelas de cada bloco.
-                            Cada tratamento deve aparecer <strong>1 vez por bloco</strong>.
                         </p>
                     </div>
                 </div>
@@ -1049,13 +1044,13 @@ else if(currentStep === 7){
             
             <div class="flex flex-wrap gap-2 justify-between items-center">
                 <div class="text-sm text-muted">
-                    <strong>Layout:</strong> 3 linhas × 4 colunas | <strong>Plantas:</strong> 25/parcela (9 úteis)
+                    <strong>Layout:</strong> 3 linhas × 4 colunas
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="randomizePlotMap()" class="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:bg-opacity-90">
+                    <button onclick="randomizePlotMap()" class="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold">
                         🎲 Casualizar Tudo
                     </button>
-                    <button onclick="clearPlotMap()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-300">
+                    <button onclick="clearPlotMap()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold">
                         🗑️ Limpar
                     </button>
                 </div>
@@ -1066,7 +1061,7 @@ else if(currentStep === 7){
                     <div class="bg-white border-2 border-gray-200 rounded-xl p-4">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-bold text-primary">Bloco ${blockNum}</h3>
-                            <button onclick="randomizeBlock(${blockNum})" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm font-medium hover:bg-gray-200">
+                            <button onclick="randomizeBlock(${blockNum})" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm">
                                 🎲 Casualizar
                             </button>
                         </div>
@@ -1077,7 +1072,7 @@ else if(currentStep === 7){
                                     <div class="text-xs font-bold text-muted mb-2">${plot.plot_code}</div>
                                     <select 
                                         onchange="updatePlotTreatment(${blockNum}, ${plot.row}, ${plot.col}, this.value)"
-                                        class="w-full text-xs border border-gray-300 rounded p-1.5 bg-white focus:ring-2 focus:ring-primary"
+                                        class="w-full text-xs border border-gray-300 rounded p-1.5 bg-white"
                                     >
                                         <option value="">Selecione...</option>
                                         ${expData.treatments.map(t => `
@@ -1111,9 +1106,7 @@ else if(currentStep === 7){
     
     setTimeout(() => validateAllBlocks(), 100);
 }
-
-
-    else if(currentStep===8){
+else if(currentStep===8){
         content.innerHTML=`
             <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-bottom:16px;border:1px solid #e5e7eb;">
                 <h4 style="margin-bottom:12px;font-size:15px;">Adicionar Atividade</h4>
@@ -1448,6 +1441,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
