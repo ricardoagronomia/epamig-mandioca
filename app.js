@@ -825,18 +825,27 @@ async function renderMapaDBCPage(content){
         return;
     }
     
-    // Parsear o plot_map do experimento
+    // Obter plotMap - pode vir como string ou objeto
     let plotMap = [];
-    try {
-        plotMap = currentExperiment.plot_map ? JSON.parse(currentExperiment.plot_map) : [];
-        // ← ADICIONAR CONVERSÃO AQUI
-        plotMap = plotMap.map(p => ({
-            ...p,
-            treatment_id: p.treatment_id ? parseInt(p.treatment_id) : null
-        }));
-    } catch(e) {
-        console.error('Erro ao parsear plot_map:', e);
+    
+    // Se já é array, usa direto
+    if(Array.isArray(currentExperiment.plot_map)){
+        plotMap = currentExperiment.plot_map;
+    } 
+    // Se é string, faz parse
+    else if(typeof currentExperiment.plot_map === 'string'){
+        try {
+            plotMap = JSON.parse(currentExperiment.plot_map);
+        } catch(e) {
+            console.error('Erro ao parsear plot_map:', e);
+        }
     }
+    
+    // Converter treatment_id para número
+    plotMap = plotMap.map(p => ({
+        ...p,
+        treatment_id: p.treatment_id ? parseInt(p.treatment_id) : null
+    }));
     
     // Se não houver mapa configurado
     if(!plotMap || plotMap.length === 0){
@@ -860,7 +869,7 @@ async function renderMapaDBCPage(content){
     // Buscar tratamentos do banco
     const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', currentExperiment.id);
     const {data: treatments} = await s.from('treatments').select('*').eq('experiment_id', currentExperiment.id);
-    
+        
     // Enriquecer tratamentos com nome da variedade
     const enrichedTreatments = treatments.map(t => {
         const variety = varieties.find(v => v.id === t.variety_id);
@@ -1620,6 +1629,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
