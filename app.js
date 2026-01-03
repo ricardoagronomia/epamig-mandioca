@@ -387,7 +387,7 @@ async function loadExperimentsList(){
 async function selectExperiment(id){
     const {data} = await s.from('experiments').select().eq('id',id).single();
     
-    // ADICIONE ESTA CONVERSÃO:
+    // Parsear plot_map se for string
     if(data.plot_map && typeof data.plot_map === 'string'){
         data.plot_map = JSON.parse(data.plot_map);
     }
@@ -840,13 +840,7 @@ async function renderMapaDBCPage(content){
             console.error('Erro ao parsear plot_map:', e);
         }
     }
-    
-    // Converter treatment_id para número
-    plotMap = plotMap.map(p => ({
-        ...p,
-        treatment_id: p.treatment_id ? parseInt(p.treatment_id) : null
-    }));
-    
+        
     // Se não houver mapa configurado
     if(!plotMap || plotMap.length === 0){
         content.innerHTML = `
@@ -1054,7 +1048,9 @@ async function editExperiment(id){
             treatments_count: 3,
             blocks_count: data.blocks_count || 3,
             plots_per_block: data.plots_per_block || 12,
-            useful_plants_per_plot: data.useful_plants_per_plot || 4,
+            useful_plants_per_plot: data.useful_plants_per_plot || 9,
+            varieties_count: expData.varieties ? expData.varieties.length : 4,
+            treatments_count: expData.treatments ? expData.treatments.length : 12,
             plot_length: data.plot_length,
             plot_width: data.plot_width,
             row_spacing: data.row_spacing,
@@ -1691,6 +1687,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
