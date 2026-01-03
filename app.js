@@ -1582,22 +1582,27 @@ async function saveExperiment(){
             });
         }
         
-        // Salvar cronograma
+        // Salvar cronograma (apenas atividades válidas)
 if(expData.schedule && expData.schedule.length > 0){
-    console.log('📋 CRONOGRAMA RECEBIDO:', JSON.stringify(expData.schedule, null, 2));
+    // Filtrar apenas atividades com nome preenchido
+    const validSchedule = expData.schedule.filter(s => 
+        s.activity_name && s.activity_name.trim() !== ''
+    );
     
-    const schedulePayload = expData.schedule.map(s => ({
-    experiment_id: experimentId,
-    phase: s.phase,
-    activity_name: s.activity_name,
-    start_date: s.start_date,
-    end_date: s.end_date
-}));
-    
-    console.log('📤 PAYLOAD PARA BANCO:', JSON.stringify(schedulePayload, null, 2));
-    
-    const {error: schedError} = await s.from('experiment_schedule').insert(schedulePayload);
-    if(schedError) throw schedError;
+    if(validSchedule.length > 0){
+        const schedulePayload = validSchedule.map(s => ({
+            experiment_id: experimentId,
+            phase: s.phase,
+            activity_name: s.activity_name,
+            start_date: s.start_date,
+            end_date: s.end_date
+        }));
+        
+        console.log('📤 PAYLOAD CORRIGIDO:', JSON.stringify(schedulePayload, null, 2));
+        
+        const {error: schedError} = await supabase.from('experiment_schedule').insert(schedulePayload);
+        if(schedError) throw schedError;
+    }
 }
         
         // Salvar plot_map com UUIDs reais dos tratamentos
@@ -1691,6 +1696,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
