@@ -823,6 +823,11 @@ async function renderMapaDBCPage(content){
     let plotMap = [];
     try {
         plotMap = currentExperiment.plot_map ? JSON.parse(currentExperiment.plot_map) : [];
+        // ← ADICIONAR CONVERSÃO AQUI
+        plotMap = plotMap.map(p => ({
+            ...p,
+            treatment_id: p.treatment_id ? parseInt(p.treatment_id) : null
+        }));
     } catch(e) {
         console.error('Erro ao parsear plot_map:', e);
     }
@@ -864,7 +869,7 @@ async function renderMapaDBCPage(content){
     // Calcular estatísticas
     const stats = {};
     enrichedTreatments.forEach(t => {
-        const count = plotMap.filter(p => p.treatment_id == t.id).length;
+        const count = plotMap.filter(p => p.treatment_id === t.id).length;
         stats[t.id] = count;
     });
     
@@ -900,7 +905,7 @@ async function renderMapaDBCPage(content){
                     <!-- Grid 3x4 -->
                     <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
                         ${plotMap.filter(p => p.block === blockNum).map(plot => {
-                            const treatment = enrichedTreatments.find(t => t.id == plot.treatment_id);
+                            const treatment = enrichedTreatments.find(t => t.id === plot.treatment_id);
                             const bgColor = treatment ? '#f0fdf4' : '#f9fafb';
                             const borderColor = treatment ? '#166534' : '#d1d5db';
                             
@@ -1630,6 +1635,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
