@@ -12,7 +12,8 @@ let currentStep = 0;
 let expData = {};
 let editingExpId = null;
 
-const steps = ['Identificação', 'Localização', 'Ambiente', 'Delineamento', 'Variedades', 'Tratamentos', 'Dimensões', 'Cronograma', 'Revisão'];
+const steps = ['Identificação', 'Localização', 'Ambiente', 'Delineamento', 'Variedades', 'Tratamentos', 'Dimensões', 'Mapa DBC', 'Cronograma', 'Revisão'];
+
 const phaseLabels = {
     'pre_planting': 'Pré-Plantio',
     'planting': 'Plantio',
@@ -1006,8 +1007,110 @@ else if(currentStep===6){
             </div>
         </div>
     `;
+    // ============================================
+// ETAPA 7: MAPA DBC (Distribuição de Parcelas)
+// ============================================
+else if(currentStep === 7){
+    if(!expData.plotMap || expData.plotMap.length === 0){
+        expData.plotMap = [];
+        for(let b = 1; b <= 3; b++){
+            let plotIndex = 1;
+            for(let r = 1; r <= 3; r++){
+                for(let c = 1; c <= 4; c++){
+                    expData.plotMap.push({
+                        block: b,
+                        row: r,
+                        col: c,
+                        treatment_id: null,
+                        plot_code: `B${b}P${plotIndex}`
+                    });
+                    plotIndex++;
+                }
+            }
+        }
+    }
+    
+    c.innerHTML=`
+        <div class="space-y-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                    <div class="text-2xl">📐</div>
+                    <div>
+                        <h3 class="font-bold text-primary mb-1">Mapa do Delineamento em Blocos Casualizados</h3>
+                        <p class="text-sm text-muted">
+                            Distribua os <strong>${expData.treatments.length} tratamentos</strong> nas parcelas de cada bloco.
+                            Cada tratamento deve aparecer <strong>1 vez por bloco</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 justify-between items-center">
+                <div class="text-sm text-muted">
+                    <strong>Layout:</strong> 3 linhas × 4 colunas | <strong>Plantas:</strong> 25/parcela (9 úteis)
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="randomizePlotMap()" class="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:bg-opacity-90">
+                        🎲 Casualizar Tudo
+                    </button>
+                    <button onclick="clearPlotMap()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-300">
+                        🗑️ Limpar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                ${[1, 2, 3].map(blockNum => `
+                    <div class="bg-white border-2 border-gray-200 rounded-xl p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-primary">Bloco ${blockNum}</h3>
+                            <button onclick="randomizeBlock(${blockNum})" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm font-medium hover:bg-gray-200">
+                                🎲 Casualizar
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-4 gap-2">
+                            ${expData.plotMap.filter(p => p.block === blockNum).map(plot => `
+                                <div class="border-2 ${plot.treatment_id ? 'border-primary bg-green-50' : 'border-gray-300 bg-gray-50'} rounded-lg p-3">
+                                    <div class="text-xs font-bold text-muted mb-2">${plot.plot_code}</div>
+                                    <select 
+                                        onchange="updatePlotTreatment(${blockNum}, ${plot.row}, ${plot.col}, this.value)"
+                                        class="w-full text-xs border border-gray-300 rounded p-1.5 bg-white focus:ring-2 focus:ring-primary"
+                                    >
+                                        <option value="">Selecione...</option>
+                                        ${expData.treatments.map(t => `
+                                            <option value="${t.id}" ${plot.treatment_id === t.id ? 'selected' : ''}>
+                                                T${t.id} - ${t.variety_name} (${t.position})
+                                            </option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div id="validation-block-${blockNum}" class="mt-3 text-sm"></div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 class="font-bold text-sm text-primary mb-3">📋 Legenda de Tratamentos</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    ${expData.treatments.map(t => `
+                        <div class="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
+                            <span class="font-bold text-primary">T${t.id}:</span>
+                            <span class="text-muted">${t.variety_name} - ${t.position}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    setTimeout(() => validateAllBlocks(), 100);
 }
-    else if(currentStep===7){
+
+    else if(currentStep===8){
         content.innerHTML=`
             <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-bottom:16px;border:1px solid #e5e7eb;">
                 <h4 style="margin-bottom:12px;font-size:15px;">Adicionar Atividade</h4>
@@ -1025,7 +1128,7 @@ else if(currentStep===6){
         `;
         setTimeout(()=>{$('addActivityBtn').onclick=addActivity;renderSchedule()},0);
     }
-    else if(currentStep===8){
+    else if(currentStep===9){
         const scheduleByPhase={};
         (expData.schedule||[]).forEach(item=>{
             if(!scheduleByPhase[item.phase])scheduleByPhase[item.phase]=[];
@@ -1209,7 +1312,6 @@ async function saveExperiment(){
             name:expData.name,
             objective:expData.objective,
             researcher:expData.researchers?.join(', ')||'',
-
             planting_date:expData.planting_date,
             farm:expData.farm,
             municipality:expData.municipality,
@@ -1225,6 +1327,7 @@ async function saveExperiment(){
             plot_width:expData.plot_width||null,
             row_spacing:expData.row_spacing||null,
             plant_spacing:expData.plant_spacing||null,
+            plot_map: expData.plotMap ? JSON.stringify(expData.plotMap) : null,
             created_by:user.id,
             status:'active'
         };
@@ -1271,4 +1374,68 @@ async function saveExperiment(){
     }
 }
 
+// ============================================
+// FUNÇÕES DO MAPA DBC
+// ============================================
+function updatePlotTreatment(block, row, col, treatmentId){
+    const plot = expData.plotMap.find(p => p.block === block && p.row === row && p.col === col);
+    if(plot){
+        plot.treatment_id = treatmentId || null;
+        renderWizard();
+    }
+}
+
+function validateAllBlocks(){
+    for(let b = 1; b <= 3; b++){
+        validateBlock(b);
+    }
+}
+
+function validateBlock(blockNum){
+    const blockPlots = expData.plotMap.filter(p => p.block === blockNum);
+    const assignedTreatments = blockPlots.map(p => p.treatment_id).filter(t => t);
+    const uniqueTreatments = [...new Set(assignedTreatments)];
+    
+    const validationDiv = document.getElementById(`validation-block-${blockNum}`);
+    if(!validationDiv) return;
+    
+    const missingCount = expData.treatments.length - assignedTreatments.length;
+    const hasDuplicates = assignedTreatments.length !== uniqueTreatments.length;
+    
+    if(assignedTreatments.length === 0){
+        validationDiv.innerHTML = '<span style="color:#6b7280">⚪ Nenhum tratamento atribuído</span>';
+    } else if(hasDuplicates){
+        validationDiv.innerHTML = '<span style="color:#dc2626">❌ Tratamentos duplicados neste bloco!</span>';
+    } else if(missingCount > 0){
+        validationDiv.innerHTML = `<span style="color:#d97706">⚠️ Faltam ${missingCount} tratamento(s)</span>`;
+    } else {
+        validationDiv.innerHTML = '<span style="color:#16a34a">✅ Bloco completo e válido</span>';
+    }
+}
+
+function randomizeBlock(blockNum){
+    const blockPlots = expData.plotMap.filter(p => p.block === blockNum);
+    const treatments = [...expData.treatments].sort(() => Math.random() - 0.5);
+    
+    blockPlots.forEach((plot, index) => {
+        if(index < treatments.length){
+            plot.treatment_id = treatments[index].id;
+        }
+    });
+    
+    renderWizard();
+}
+
+function randomizePlotMap(){
+    for(let b = 1; b <= 3; b++){
+        randomizeBlock(b);
+    }
+}
+
+function clearPlotMap(){
+    if(confirm('Tem certeza que deseja limpar todo o mapa?')){
+        expData.plotMap.forEach(p => p.treatment_id = null);
+        renderWizard();
+    }
+}
 
