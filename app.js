@@ -813,7 +813,7 @@ function renderDadosGeraisPage(content){
     `;
 }
 
-function renderMapaDBCPage(content){
+async function renderMapaDBCPage(content){
     if(!currentExperiment){
         content.innerHTML=`<div class="card"><p style="text-align:center;color:#6b7280;">Selecione um experimento</p></div>`;
         return;
@@ -846,108 +846,120 @@ function renderMapaDBCPage(content){
         return;
     }
     
-    // Buscar dados de tratamentos do experimento
-    loadExperimentTreatments(currentExperiment.id).then(treatments => {
-        // Calcular estatísticas
-        const stats = {};
-        treatments.forEach(t => {
-            const count = plotMap.filter(p => p.treatment_id == t.id).length;
-            stats[t.id] = count;
-        });
-        
-        content.innerHTML = `
-            <div class="content-header">
-                <div class="content-title">Mapa DBC - ${currentExperiment.code}</div>
-                <div class="content-subtitle">Visualização da distribuição dos tratamentos</div>
-            </div>
-            
-            <!-- Card de Info -->
-            <div class="card" style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
-                    <div>
-                        <p style="color:#6b7280;margin-bottom:8px;"><strong>Experimento:</strong> ${currentExperiment.name}</p>
-                        <p style="color:#6b7280;font-size:14px;">
-                            <strong>Blocos:</strong> ${currentExperiment.blocks_count} | 
-                            <strong>Parcelas/Bloco:</strong> ${currentExperiment.plots_per_block} | 
-                            <strong>Tratamentos:</strong> ${treatments.length}
-                        </p>
-                    </div>
-                    <button onclick="editExperiment('${currentExperiment.id}')" class="btn-secondary">
-                        ✏️ Editar Mapa
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Blocos -->
-            <div style="display:flex;flex-direction:column;gap:20px;margin-bottom:24px;">
-                ${[1, 2, 3].map(blockNum => `
-                    <div class="card">
-                        <h3 style="color:#166534;margin-bottom:16px;font-size:18px;">Bloco ${blockNum}</h3>
-                        
-                        <!-- Grid 3x4 -->
-                        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
-                            ${plotMap.filter(p => p.block === blockNum).map(plot => {
-                                const treatment = treatments.find(t => t.id == plot.treatment_id);
-                                const bgColor = treatment ? '#f0fdf4' : '#f9fafb';
-                                const borderColor = treatment ? '#166534' : '#d1d5db';
-                                
-                                return `
-                                    <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:12px;min-height:80px;">
-                                        <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:6px;">${plot.plot_code}</div>
-                                        ${treatment ? `
-                                            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">T${treatment.id}</div>
-                                            <div style="font-size:11px;color:#6b7280;line-height:1.3;">
-                                                ${treatment.variety_name}<br>
-                                                <span style="color:#166534;font-weight:600;">${treatment.position}</span>
-                                            </div>
-                                        ` : `
-                                            <div style="font-size:12px;color:#9ca3af;font-style:italic;">Não atribuído</div>
-                                        `}
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <!-- Legenda e Estatísticas -->
-            <div class="card">
-                <h3 style="color:#166534;margin-bottom:16px;font-size:16px;">📊 Estatísticas e Legenda</h3>
-                
-                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));gap:12px;">
-                    ${treatments.map(t => {
-                        const count = stats[t.id] || 0;
-                        const isComplete = count === currentExperiment.blocks_count;
-                        const statusColor = isComplete ? '#16a34a' : (count > 0 ? '#d97706' : '#dc2626');
-                        
-                        return `
-                            <div style="background:#f9fafb;padding:12px;border-radius:8px;border-left:4px solid ${statusColor};">
-                                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
-                                    <span style="font-weight:700;color:#166534;">T${t.id}</span>
-                                    <span style="background:${statusColor};color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">
-                                        ${count}/${currentExperiment.blocks_count}
-                                    </span>
-                                </div>
-                                <div style="font-size:12px;color:#6b7280;line-height:1.4;">
-                                    <strong>${t.variety_name}</strong><br>
-                                    Posição: ${t.position}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-                
-                <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
-                    <div style="display:flex;gap:20px;font-size:13px;color:#6b7280;">
-                        <span>🟢 <strong>${treatments.filter(t => stats[t.id] === currentExperiment.blocks_count).length}</strong> Completos</span>
-                        <span>🟡 <strong>${treatments.filter(t => stats[t.id] > 0 && stats[t.id] < currentExperiment.blocks_count).length}</strong> Incompletos</span>
-                        <span>🔴 <strong>${treatments.filter(t => !stats[t.id] || stats[t.id] === 0).length}</strong> Não atribuídos</span>
-                    </div>
-                </div>
-            </div>
-        `;
+    // Buscar tratamentos do banco
+    const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', currentExperiment.id);
+    const {data: treatments} = await s.from('treatments').select('*').eq('experiment_id', currentExperiment.id);
+    
+    // Enriquecer tratamentos com nome da variedade
+    const enrichedTreatments = treatments.map(t => {
+        const variety = varieties.find(v => v.id === t.variety_id);
+        return {
+            id: t.id,
+            code: t.code,
+            variety_name: variety?.name || 'Desconhecida',
+            position: t.position
+        };
     });
+    
+    // Calcular estatísticas
+    const stats = {};
+    enrichedTreatments.forEach(t => {
+        const count = plotMap.filter(p => p.treatment_id == t.id).length;
+        stats[t.id] = count;
+    });
+    
+    content.innerHTML = `
+        <div class="content-header">
+            <div class="content-title">Mapa DBC - ${currentExperiment.code}</div>
+            <div class="content-subtitle">Visualização da distribuição dos tratamentos</div>
+        </div>
+        
+        <!-- Card de Info -->
+        <div class="card" style="margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+                <div>
+                    <p style="color:#6b7280;margin-bottom:8px;"><strong>Experimento:</strong> ${currentExperiment.name}</p>
+                    <p style="color:#6b7280;font-size:14px;">
+                        <strong>Blocos:</strong> ${currentExperiment.blocks_count} | 
+                        <strong>Parcelas/Bloco:</strong> ${currentExperiment.plots_per_block} | 
+                        <strong>Tratamentos:</strong> ${enrichedTreatments.length}
+                    </p>
+                </div>
+                <button onclick="editExperiment('${currentExperiment.id}')" class="btn-secondary">
+                    ✏️ Editar Mapa
+                </button>
+            </div>
+        </div>
+        
+        <!-- Blocos -->
+        <div style="display:flex;flex-direction:column;gap:20px;margin-bottom:24px;">
+            ${[1, 2, 3].map(blockNum => `
+                <div class="card">
+                    <h3 style="color:#166534;margin-bottom:16px;font-size:18px;">Bloco ${blockNum}</h3>
+                    
+                    <!-- Grid 3x4 -->
+                    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
+                        ${plotMap.filter(p => p.block === blockNum).map(plot => {
+                            const treatment = enrichedTreatments.find(t => t.id == plot.treatment_id);
+                            const bgColor = treatment ? '#f0fdf4' : '#f9fafb';
+                            const borderColor = treatment ? '#166534' : '#d1d5db';
+                            
+                            return `
+                                <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:12px;min-height:80px;">
+                                    <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:6px;">${plot.plot_code}</div>
+                                    ${treatment ? `
+                                        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">T${treatment.id}</div>
+                                        <div style="font-size:11px;color:#6b7280;line-height:1.3;">
+                                            ${treatment.variety_name}<br>
+                                            <span style="color:#166534;font-weight:600;">${treatment.position}</span>
+                                        </div>
+                                    ` : `
+                                        <div style="font-size:12px;color:#9ca3af;font-style:italic;">Não atribuído</div>
+                                    `}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <!-- Legenda e Estatísticas -->
+        <div class="card">
+            <h3 style="color:#166534;margin-bottom:16px;font-size:16px;">📊 Estatísticas e Legenda</h3>
+            
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));gap:12px;">
+                ${enrichedTreatments.map(t => {
+                    const count = stats[t.id] || 0;
+                    const isComplete = count === currentExperiment.blocks_count;
+                    const statusColor = isComplete ? '#16a34a' : (count > 0 ? '#d97706' : '#dc2626');
+                    
+                    return `
+                        <div style="background:#f9fafb;padding:12px;border-radius:8px;border-left:4px solid ${statusColor};">
+                            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+                                <span style="font-weight:700;color:#166534;">T${t.id}</span>
+                                <span style="background:${statusColor};color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">
+                                    ${count}/${currentExperiment.blocks_count}
+                                </span>
+                            </div>
+                            <div style="font-size:12px;color:#6b7280;line-height:1.4;">
+                                <strong>${t.variety_name}</strong><br>
+                                Posição: ${t.position}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
+                <div style="display:flex;gap:20px;font-size:13px;color:#6b7280;">
+                    <span>🟢 <strong>${enrichedTreatments.filter(t => stats[t.id] === currentExperiment.blocks_count).length}</strong> Completos</span>
+                    <span>🟡 <strong>${enrichedTreatments.filter(t => stats[t.id] > 0 && stats[t.id] < currentExperiment.blocks_count).length}</strong> Incompletos</span>
+                    <span>🔴 <strong>${enrichedTreatments.filter(t => !stats[t.id] || stats[t.id] === 0).length}</strong> Não atribuídos</span>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Função auxiliar para carregar tratamentos do experimento
@@ -1618,6 +1630,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
