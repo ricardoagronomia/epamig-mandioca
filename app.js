@@ -1583,18 +1583,22 @@ async function saveExperiment(){
         }
         
         // Salvar cronograma
-        if(expData.schedule && expData.schedule.length > 0){
-            const schedulePayload = expData.schedule.map(s => ({
-                experiment_id: experimentId,
-                phase: s.phase,
-                activity_name: s.activityname,
-                start_date: s.startdate,
-                end_date: s.enddate
-            }));
-            
-            const {error: schedError} = await s.from('experiment_schedule').insert(schedulePayload);
-            if(schedError) throw schedError;
-        }
+if(expData.schedule && expData.schedule.length > 0){
+    console.log('📋 CRONOGRAMA RECEBIDO:', JSON.stringify(expData.schedule, null, 2));
+    
+    const schedulePayload = expData.schedule.map(s => ({
+        experiment_id: experimentId,
+        phase: s.phase,
+        activity_name: s.activityname,
+        start_date: s.startdate,
+        end_date: s.enddate
+    }));
+    
+    console.log('📤 PAYLOAD PARA BANCO:', JSON.stringify(schedulePayload, null, 2));
+    
+    const {error: schedError} = await s.from('experiment_schedule').insert(schedulePayload);
+    if(schedError) throw schedError;
+}
         
         // Salvar plot_map com UUIDs reais dos tratamentos
         if(expData.plotMap && expData.plotMap.length > 0){
@@ -1687,6 +1691,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
