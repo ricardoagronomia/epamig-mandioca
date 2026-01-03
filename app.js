@@ -12,10 +12,9 @@ let currentStep = 0;
 let expData = {};
 let editingExpId = null;
 
-const steps = ['Identificação', 'Localização', 'Ambiente', 'Delineamento', 'Variedades', 'Tratamentos', 'Dimensões', 'Mapa DBC', 'Cronograma', 'Revisão'];
-
+const steps = ['IdentificaÃ§Ã£o', 'LocalizaÃ§Ã£o', 'Ambiente', 'Delineamento', 'Variedades', 'Tratamentos', 'DimensÃµes', 'Cronograma', 'RevisÃ£o'];
 const phaseLabels = {
-    'pre_planting': 'Pré-Plantio',
+    'pre_planting': 'PrÃ©-Plantio',
     'planting': 'Plantio',
     'monitoring': 'Acompanhamento',
     'cultural_practices': 'Tratos Culturais',
@@ -84,13 +83,13 @@ async function showInviteAcceptScreen(token){
             .single();
         
         if(error || !invite){
-            alert('❌ Convite inválido ou já aceito');
+            alert('âŒ Convite invÃ¡lido ou jÃ¡ aceito');
             window.location.href = window.location.origin;
             return;
         }
         
         if(new Date(invite.expires_at) < new Date()){
-            alert('❌ Convite expirado');
+            alert('âŒ Convite expirado');
             window.location.href = window.location.origin;
             return;
         }
@@ -103,7 +102,7 @@ async function showInviteAcceptScreen(token){
                             <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
                         </svg>
                     </div>
-                    <h1 style="color:#166534;font-size:24px;margin-bottom:8px;">Você foi convidado!</h1>
+                    <h1 style="color:#166534;font-size:24px;margin-bottom:8px;">VocÃª foi convidado!</h1>
                     <p style="color:#6b7280;font-size:14px;">Convite para <strong>${roleLabels[invite.role]}</strong></p>
                 </div>
                 
@@ -115,15 +114,15 @@ async function showInviteAcceptScreen(token){
                 
                 <h3 style="font-size:16px;color:#166534;margin-bottom:16px;">Criar sua conta</h3>
                 <input type="email" id="inviteEmail" value="${invite.email}" readonly style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px;background:#f3f4f6;font-size:14px;">
-                <input type="password" id="invitePassword" placeholder="Senha (mínimo 6 caracteres)" style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
+                <input type="password" id="invitePassword" placeholder="Senha (mÃ­nimo 6 caracteres)" style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
                 <input type="password" id="invitePasswordConfirm" placeholder="Confirme a senha" style="width:100%;padding:10px;margin-bottom:20px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
                 
                 <button id="btnAcceptInvite" style="width:100%;padding:12px;background:#166534;color:white;border:none;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;">
-                    ✓ Aceitar Convite e Criar Conta
+                    âœ“ Aceitar Convite e Criar Conta
                 </button>
                 
                 <p style="text-align:center;margin-top:16px;font-size:13px;color:#6b7280;">
-                    Já tem conta? <a href="${window.location.origin}" style="color:#166534;font-weight:600;">Fazer login</a>
+                    JÃ¡ tem conta? <a href="${window.location.origin}" style="color:#166534;font-weight:600;">Fazer login</a>
                 </p>
             </div>
         `;
@@ -142,11 +141,11 @@ async function acceptInvite(token, invite){
     const passwordConfirm = document.getElementById('invitePasswordConfirm').value;
     
     if(!password || password.length < 6){
-        return alert('Senha deve ter no mínimo 6 caracteres');
+        return alert('Senha deve ter no mÃ­nimo 6 caracteres');
     }
     
     if(password !== passwordConfirm){
-        return alert('As senhas não coincidem');
+        return alert('As senhas nÃ£o coincidem');
     }
     
     try {
@@ -171,7 +170,7 @@ async function acceptInvite(token, invite){
             accepted_at: new Date().toISOString()
         }).eq('email', invite.email).is('accepted_at', null);
         
-        alert('✅ Conta criada com sucesso!\n\nFaça login para acessar o sistema.');
+        alert('âœ… Conta criada com sucesso!\n\nFaÃ§a login para acessar o sistema.');
         window.location.href = window.location.origin;
         
     } catch(x) {
@@ -179,25 +178,25 @@ async function acceptInvite(token, invite){
     }
 }
 
-// Função para corrigir role manualmente via SQL (caso necessário)
+// FunÃ§Ã£o para corrigir role manualmente via SQL (caso necessÃ¡rio)
 async function fixUserRole(email, correctRole){
     try {
         // Buscar user_id pelo email
         const {data: profile} = await s.from('user_profiles').select('id').eq('email', email).single();
-        if(!profile) throw new Error('Usuário não encontrado');
+        if(!profile) throw new Error('UsuÃ¡rio nÃ£o encontrado');
         
         // Atualizar role
         const {error} = await s.from('user_roles').update({role: correctRole}).eq('user_id', profile.id);
         if(error) throw error;
         
-        console.log(`✅ Role de ${email} corrigido para ${correctRole}`);
+        console.log(`âœ… Role de ${email} corrigido para ${correctRole}`);
     } catch(x) {
         console.error('Erro ao corrigir role:', x);
     }
 }
 
 
-// BOTÕES DE LOGIN E CADASTRO
+// BOTÃ•ES DE LOGIN E CADASTRO
 $('t1').onclick=()=>{$('t1').className='active';$('t2').className='';$('f1').classList.remove('hidden');$('f2').classList.add('hidden')};
 $('t2').onclick=()=>{$('t2').className='active';$('t1').className='';$('f2').classList.remove('hidden');$('f1').classList.add('hidden')};
 
@@ -218,13 +217,13 @@ $('b1').onclick=async()=>{
 $('b2').onclick=async()=>{
     const e=$('e2').value,p=$('p2').value;
     if(!e||!p)return m('Preencha tudo!','error');
-    if(p.length<6)return m('Senha mínimo 6!','error');
+    if(p.length<6)return m('Senha mÃ­nimo 6!','error');
     try{
         const {data,error}=await s.auth.signUp({email:e,password:p});
         if(error)throw error;
         await s.from('user_profiles').insert([{id:data.user.id,email:e}]);
         await s.from('user_roles').insert([{user_id:data.user.id,role:'visitor'}]);
-        m('✅ Criado! Faça login.','success');
+        m('âœ… Criado! FaÃ§a login.','success');
         setTimeout(()=>$('t1').click(),2e3)
     }catch(x){
         m('Erro: '+x.message,'error')
@@ -288,7 +287,7 @@ function renderPage(page){
             break;
         case 'new-experiment':
             if(userRole === 'visitor'){
-                content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">❌ Você não tem permissão</p></div>';
+                content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">âŒ VocÃª nÃ£o tem permissÃ£o</p></div>';
             } else {
                 openNewExperimentModal();
             }
@@ -315,11 +314,11 @@ function renderPage(page){
             content.innerHTML = `
                 <div class="content-header">
                     <div class="content-title">Em Desenvolvimento</div>
-                    <div class="content-subtitle">Esta página está sendo construída</div>
+                    <div class="content-subtitle">Esta pÃ¡gina estÃ¡ sendo construÃ­da</div>
                 </div>
                 <div class="card">
                     <p style="text-align:center;color:#6b7280;padding:40px;">
-                        Página "${page}" em desenvolvimento
+                        PÃ¡gina "${page}" em desenvolvimento
                     </p>
                 </div>
             `;
@@ -355,7 +354,7 @@ async function loadExperimentsList(){
     const container = document.getElementById('expListContainer');
     
     if(!data || data.length===0){
-        container.innerHTML='<div class="card"><p style="text-align:center;color:#6b7280;">Nenhum experimento disponível.</p></div>';
+        container.innerHTML='<div class="card"><p style="text-align:center;color:#6b7280;">Nenhum experimento disponÃ­vel.</p></div>';
         return;
     }
     
@@ -367,7 +366,7 @@ async function loadExperimentsList(){
         card.innerHTML=`
             <h3>${e.code} - ${e.name}</h3>
             <p style="color:#6b7280;margin-bottom:10px;font-size:14px;">${e.objective}</p>
-            <p style="font-size:13px;color:#9ca3af;">📅 Plantio: ${formatDate(e.planting_date)} | 📍 ${e.farm}</p>
+            <p style="font-size:13px;color:#9ca3af;">ðŸ“… Plantio: ${formatDate(e.planting_date)} | ðŸ“ ${e.farm}</p>
             <div class="exp-actions">
                 <button class="btn-select" onclick="selectExperiment('${e.id}')">Selecionar</button>
                 ${canEdit ? `
@@ -385,24 +384,18 @@ async function loadExperimentsList(){
 }
 
 async function selectExperiment(id){
-    const {data} = await s.from('experiments').select().eq('id',id).single();
-    
-    // Parsear plot_map se for string
-    if(data.plot_map && typeof data.plot_map === 'string'){
-        data.plot_map = JSON.parse(data.plot_map);
-    }
-    
+    const {data}=await s.from('experiments').select('*').eq('id',id).single();
     setCurrentExperiment(data);
     navigateTo('identificacao');
 }
 
 async function deleteExperiment(id,code){
-    if(userRole === 'visitor') return alert('Você não tem permissão');
+    if(userRole === 'visitor') return alert('VocÃª nÃ£o tem permissÃ£o');
     if(!confirm(`Excluir "${code}"?`))return;
     try{
         const {error}=await s.from('experiments').delete().eq('id',id);
         if(error)throw error;
-        alert('✅ Excluído!');
+        alert('âœ… ExcluÃ­do!');
         renderExperimentsPage($('contentArea'));
     }catch(x){
         alert('Erro: '+x.message);
@@ -413,7 +406,7 @@ async function deleteExperiment(id,code){
 // ============================================
 async function renderUsuariosPage(content){
     if(userRole === 'visitor'){
-        content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">❌ Acesso negado</p></div>';
+        content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">âŒ Acesso negado</p></div>';
         return;
     }
     
@@ -421,25 +414,25 @@ async function renderUsuariosPage(content){
         <div class="content-header">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                    <div class="content-title">Gestão de Usuários</div>
-                    <div class="content-subtitle">Gerencie usuários e convites</div>
+                    <div class="content-title">GestÃ£o de UsuÃ¡rios</div>
+                    <div class="content-subtitle">Gerencie usuÃ¡rios e convites</div>
                 </div>
-                <button class="btn-primary" onclick="openInviteModal()">✉️ Convidar Usuário</button>
+                <button class="btn-primary" onclick="openInviteModal()">âœ‰ï¸ Convidar UsuÃ¡rio</button>
             </div>
         </div>
         
         <div class="card">
-            <h3>👥 Usuários Ativos</h3>
+            <h3>ðŸ‘¥ UsuÃ¡rios Ativos</h3>
             <div id="usersList"></div>
         </div>
         
         <div class="card">
-            <h3>⏳ Convites Pendentes</h3>
+            <h3>â³ Convites Pendentes</h3>
             <div id="pendingInvitesList"></div>
         </div>
         
         <div class="card">
-            <h3>✅ Convites Aceitos</h3>
+            <h3>âœ… Convites Aceitos</h3>
             <div id="acceptedInvitesList"></div>
         </div>
     `;
@@ -453,7 +446,7 @@ async function loadUsersList(){
     const {data: roles} = await s.from('user_roles').select('user_id, role, created_at').order('created_at', {ascending: false});
     
     if(!roles || roles.length === 0){
-        document.getElementById('usersList').innerHTML='<p style="color:#6b7280;padding:20px;">Nenhum usuário</p>';
+        document.getElementById('usersList').innerHTML='<p style="color:#6b7280;padding:20px;">Nenhum usuÃ¡rio</p>';
         return;
     }
     
@@ -477,7 +470,7 @@ async function loadUsersList(){
                 <tr style="border-bottom:2px solid #e5e7eb;">
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">E-mail</th>
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Role</th>
-                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Ações</th>
+                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -492,10 +485,10 @@ async function loadUsersList(){
                         <td style="padding:12px;">
                             ${userRole === 'admin' && u.user_id !== user.id ? `
                                 <button class="btn-secondary" style="padding:6px 12px;font-size:12px;margin-right:8px;" onclick="changeUserRole('${u.user_id}', '${u.role}')">
-                                    ✏️ Alterar Role
+                                    âœï¸ Alterar Role
                                 </button>
                                 <button class="btn-icon" style="background:#dc2626;color:white;padding:6px 12px;border-radius:6px;" title="Excluir" onclick="deleteUser('${u.user_id}', '${u.email}')">
-                                    🗑️
+                                    ðŸ—‘ï¸
                                 </button>
                             ` : '-'}
                         </td>
@@ -526,7 +519,7 @@ async function loadPendingInvites(){
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">E-mail</th>
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Role</th>
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Expira em</th>
-                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Ações</th>
+                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">AÃ§Ãµes</th>
                 </tr>
             </thead>
             <tbody>
@@ -601,8 +594,8 @@ function openInviteModal(){
     modal.innerHTML = `
         <div class="modal-content" style="max-width:500px;">
             <div class="modal-header">
-                <h2>Convidar Usuário</h2>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+                <h2>Convidar UsuÃ¡rio</h2>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">Ã—</button>
             </div>
             <div style="margin-bottom:16px;">
                 <label>E-mail *</label>
@@ -616,7 +609,7 @@ function openInviteModal(){
                     <option value="visitor">Visitante</option>
                 </select>
             </div>
-            <button class="btn-primary" onclick="sendInvite()">✉️ Enviar Convite</button>
+            <button class="btn-primary" onclick="sendInvite()">âœ‰ï¸ Enviar Convite</button>
         </div>
     `;
     document.body.appendChild(modal);
@@ -629,7 +622,7 @@ async function sendInvite(){
     if(!email) return alert('Digite um e-mail');
     
     if(userRole === 'collaborator' && role === 'admin'){
-        return alert('Você não pode convidar administradores');
+        return alert('VocÃª nÃ£o pode convidar administradores');
     }
     
     try {
@@ -650,11 +643,11 @@ async function sendInvite(){
         modal.innerHTML = `
             <div class="modal-content" style="max-width:600px;">
                 <div class="modal-header">
-                    <h2>✅ Convite Enviado!</h2>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+                    <h2>âœ… Convite Enviado!</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">Ã—</button>
                 </div>
                 <div style="margin-bottom:20px;">
-                    <p style="margin-bottom:12px;color:#374151;"><strong>Destinatário:</strong> ${email}</p>
+                    <p style="margin-bottom:12px;color:#374151;"><strong>DestinatÃ¡rio:</strong> ${email}</p>
                     <p style="margin-bottom:20px;color:#374151;"><strong>Role:</strong> ${roleLabels[role]}</p>
                     
                     <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Link do Convite:</label>
@@ -664,19 +657,19 @@ async function sendInvite(){
                             style="width:100%;padding:10px;border:1px solid #166534;border-radius:6px;font-size:13px;background:#fff;margin-bottom:8px;font-family:monospace;">
                         <a href="${inviteLink}" target="_blank" 
                             style="color:#166534;font-size:13px;word-break:break-all;text-decoration:underline;font-weight:600;">
-                            🔗 Clique aqui para testar o link
+                            ðŸ”— Clique aqui para testar o link
                         </a>
                     </div>
                     
                     <button onclick="copyInviteLinkFromModal('${inviteLink}')" 
                         style="width:100%;padding:10px;background:#166534;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;margin-bottom:12px;">
-                        📋 Copiar Link
+                        ðŸ“‹ Copiar Link
                     </button>
                     
                     <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;border-radius:4px;">
                         <p style="font-size:13px;color:#92400e;">
-                            💡 <strong>Envie este link para ${email}</strong><br>
-                            Válido por 7 dias
+                            ðŸ’¡ <strong>Envie este link para ${email}</strong><br>
+                            VÃ¡lido por 7 dias
                         </p>
                     </div>
                 </div>
@@ -697,9 +690,9 @@ async function sendInvite(){
 window.copyInviteLinkFromModal = async function(link){
     try {
         await navigator.clipboard.writeText(link);
-        alert('✅ Link copiado!\n\nCole no WhatsApp, E-mail ou onde preferir.');
+        alert('âœ… Link copiado!\n\nCole no WhatsApp, E-mail ou onde preferir.');
     } catch(x) {
-        alert('❌ Erro ao copiar');
+        alert('âŒ Erro ao copiar');
     }
 }
 
@@ -707,7 +700,7 @@ async function copyInviteLink(token){
     const baseUrl = getBaseUrl();
     const link = `${baseUrl}?invite=${token}`;
     await navigator.clipboard.writeText(link);
-    alert('✅ Link copiado!');
+    alert('âœ… Link copiado!');
 }
 
 async function cancelInvite(id){
@@ -715,7 +708,7 @@ async function cancelInvite(id){
     try {
         const {error} = await s.from('invitations').delete().eq('id', id);
         if(error) throw error;
-        alert('✅ Convite cancelado');
+        alert('âœ… Convite cancelado');
         renderUsuariosPage($('contentArea'));
     } catch(x) {
         alert('Erro: ' + x.message);
@@ -729,7 +722,7 @@ async function changeUserRole(userId, currentRole){
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
                 <h2>Alterar Role</h2>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">Ã—</button>
             </div>
             <div style="margin-bottom:16px;">
                 <label>Role Atual: <strong>${roleLabels[currentRole]}</strong></label>
@@ -753,7 +746,7 @@ async function confirmChangeRole(userId){
     try {
         const {error} = await s.from('user_roles').update({role: newRole}).eq('user_id', userId);
         if(error) throw error;
-        alert('✅ Role alterado com sucesso!');
+        alert('âœ… Role alterado com sucesso!');
         document.querySelectorAll('.modal').forEach(m => m.remove());
         renderUsuariosPage($('contentArea'));
     } catch(x) {
@@ -762,7 +755,7 @@ async function confirmChangeRole(userId){
 }
 
 async function deleteUser(userId, email){
-    if(!confirm(`⚠️ ATENÇÃO!\n\nDeseja realmente EXCLUIR o usuário:\n${email}\n\nEsta ação NÃO pode ser desfeita!`)){
+    if(!confirm(`âš ï¸ ATENÃ‡ÃƒO!\n\nDeseja realmente EXCLUIR o usuÃ¡rio:\n${email}\n\nEsta aÃ§Ã£o NÃƒO pode ser desfeita!`)){
         return;
     }
     
@@ -775,10 +768,10 @@ async function deleteUser(userId, email){
         const {error: profileError} = await s.from('user_profiles').delete().eq('id', userId);
         if(profileError) throw profileError;
         
-        // Nota: Para deletar da tabela auth.users, seria necessário usar Admin API
+        // Nota: Para deletar da tabela auth.users, seria necessÃ¡rio usar Admin API
         // Por enquanto, apenas removemos do sistema (role + profile)
         
-        alert('✅ Usuário removido do sistema!');
+        alert('âœ… UsuÃ¡rio removido do sistema!');
         renderUsuariosPage($('contentArea'));
     } catch(x) {
         alert('Erro ao excluir: ' + x.message);
@@ -795,12 +788,12 @@ function renderIdentificacaoPage(content){
     }
     content.innerHTML=`
         <div class="content-header">
-            <div class="content-title">Identificação</div>
-            <div class="content-subtitle">Visão geral do experimento</div>
+            <div class="content-title">IdentificaÃ§Ã£o</div>
+            <div class="content-subtitle">VisÃ£o geral do experimento</div>
         </div>
         <div class="card">
-            <h3>Informações Básicas</h3>
-            <p><strong>Código:</strong> ${currentExperiment.code}</p>
+            <h3>InformaÃ§Ãµes BÃ¡sicas</h3>
+            <p><strong>CÃ³digo:</strong> ${currentExperiment.code}</p>
             <p><strong>Nome:</strong> ${currentExperiment.name}</p>
             <p><strong>Data de Plantio:</strong> ${formatDate(currentExperiment.planting_date)}</p>
             <p><strong>Local:</strong> ${currentExperiment.farm}, ${currentExperiment.municipality}</p>
@@ -819,159 +812,13 @@ function renderDadosGeraisPage(content){
     `;
 }
 
-async function renderMapaDBCPage(content){
-    if(!currentExperiment){
-        content.innerHTML=`<div class="card"><p style="text-align:center;color:#6b7280;">Selecione um experimento</p></div>`;
-        return;
-    }
-    
-    // Obter plotMap - pode vir como string ou objeto
-    let plotMap = [];
-    
-    // Se já é array, usa direto
-    if(Array.isArray(currentExperiment.plot_map)){
-        plotMap = currentExperiment.plot_map;
-    } 
-    // Se é string, faz parse
-    else if(typeof currentExperiment.plot_map === 'string'){
-        try {
-            plotMap = JSON.parse(currentExperiment.plot_map);
-        } catch(e) {
-            console.error('Erro ao parsear plot_map:', e);
-        }
-    }
-        
-    // Se não houver mapa configurado
-    if(!plotMap || plotMap.length === 0){
-        content.innerHTML = `
-            <div class="content-header">
-                <div class="content-title">Mapa DBC</div>
-                <div class="content-subtitle">Visualize a distribuição dos tratamentos</div>
-            </div>
-            <div class="card" style="text-align:center;padding:40px;">
-                <div style="font-size:48px;margin-bottom:16px;">📐</div>
-                <h3 style="color:#166534;margin-bottom:8px;">Mapa ainda não configurado</h3>
-                <p style="color:#6b7280;margin-bottom:20px;">Este experimento não possui um mapa DBC cadastrado.</p>
-                <button onclick="editExperiment('${currentExperiment.id}')" class="btn-primary">
-                    Editar Experimento e Configurar Mapa
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    // Buscar tratamentos do banco
-    const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', currentExperiment.id);
-    const {data: treatments} = await s.from('treatments').select('*').eq('experiment_id', currentExperiment.id);
-        
-    // Enriquecer tratamentos com nome da variedade
-    const enrichedTreatments = treatments.map(t => {
-        const variety = varieties.find(v => v.id === t.variety_id);
-        return {
-            id: t.id,
-            code: t.code,
-            variety_name: variety?.name || 'Desconhecida',
-            position: t.position
-        };
-    });
-    
-    // Calcular estatísticas
-    const stats = {};
-    enrichedTreatments.forEach(t => {
-        const count = plotMap.filter(p => p.treatment_id == t.id).length;
-        stats[t.id] = count;
-    });
-    
-    content.innerHTML = `
+function renderMapaDBCPage(content){
+    content.innerHTML=`
         <div class="content-header">
-            <div class="content-title">Mapa DBC - ${currentExperiment.code}</div>
-            <div class="content-subtitle">Visualização da distribuição dos tratamentos</div>
+            <div class="content-title">Mapa DBC</div>
         </div>
-        
-        <!-- Card de Info -->
-        <div class="card" style="margin-bottom:20px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
-                <div>
-                    <p style="color:#6b7280;margin-bottom:8px;"><strong>Experimento:</strong> ${currentExperiment.name}</p>
-                    <p style="color:#6b7280;font-size:14px;">
-                        <strong>Blocos:</strong> ${currentExperiment.blocks_count} | 
-                        <strong>Parcelas/Bloco:</strong> ${currentExperiment.plots_per_block} | 
-                        <strong>Tratamentos:</strong> ${enrichedTreatments.length}
-                    </p>
-                </div>
-                <button onclick="editExperiment('${currentExperiment.id}')" class="btn-secondary">
-                    ✏️ Editar Mapa
-                </button>
-            </div>
-        </div>
-        
-        <!-- Blocos -->
-        <div style="display:flex;flex-direction:column;gap:20px;margin-bottom:24px;">
-            ${[1, 2, 3].map(blockNum => `
-                <div class="card">
-                    <h3 style="color:#166534;margin-bottom:16px;font-size:18px;">Bloco ${blockNum}</h3>
-                    
-                    <!-- Grid 3x4 -->
-                    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
-                        ${plotMap.filter(p => p.block === blockNum).map(plot => {
-                            const treatment = enrichedTreatments.find(t => t.id == plot.treatment_id);
-                            const bgColor = treatment ? '#f0fdf4' : '#f9fafb';
-                            const borderColor = treatment ? '#166534' : '#d1d5db';
-                            
-                            return `
-                                <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:12px;min-height:80px;">
-                                    <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:6px;">${plot.plot_code}</div>
-                                    ${treatment ? `
-                                        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">T${treatment.id}</div>
-                                        <div style="font-size:11px;color:#6b7280;line-height:1.3;">
-                                            ${treatment.variety_name}<br>
-                                            <span style="color:#166534;font-weight:600;">${treatment.position}</span>
-                                        </div>
-                                    ` : `
-                                        <div style="font-size:12px;color:#9ca3af;font-style:italic;">Não atribuído</div>
-                                    `}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-        
-        <!-- Legenda e Estatísticas -->
         <div class="card">
-            <h3 style="color:#166534;margin-bottom:16px;font-size:16px;">📊 Estatísticas e Legenda</h3>
-            
-            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));gap:12px;">
-                ${enrichedTreatments.map(t => {
-                    const count = stats[t.id] || 0;
-                    const isComplete = count == currentExperiment.blocks_count;
-                    const statusColor = isComplete ? '#16a34a' : (count > 0 ? '#d97706' : '#dc2626');
-                    
-                    return `
-                        <div style="background:#f9fafb;padding:12px;border-radius:8px;border-left:4px solid ${statusColor};">
-                            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
-                                <span style="font-weight:700;color:#166534;">T${t.id}</span>
-                                <span style="background:${statusColor};color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">
-                                    ${count}/${currentExperiment.blocks_count}
-                                </span>
-                            </div>
-                            <div style="font-size:12px;color:#6b7280;line-height:1.4;">
-                                <strong>${t.variety_name}</strong><br>
-                                Posição: ${t.position}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-            
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
-                <div style="display:flex;gap:20px;font-size:13px;color:#6b7280;">
-                    <span>🟢 <strong>${enrichedTreatments.filter(t => stats[t.id] === currentExperiment.blocks_count).length}</strong> Completos</span>
-                    <span>🟡 <strong>${enrichedTreatments.filter(t => stats[t.id] > 0 && stats[t.id] < currentExperiment.blocks_count).length}</strong> Incompletos</span>
-                    <span>🔴 <strong>${enrichedTreatments.filter(t => !stats[t.id] || stats[t.id] === 0).length}</strong> Não atribuídos</span>
-                </div>
-            </div>
+            <p style="color:#6b7280;">Em desenvolvimento...</p>
         </div>
     `;
 }
@@ -1001,7 +848,7 @@ function renderColheitaPage(content){
 // EXPERIMENT WIZARD
 // ============================================
 function openNewExperimentModal(){
-    if(userRole === 'visitor') return alert('Sem permissão');
+    if(userRole === 'visitor') return alert('Sem permissÃ£o');
     editingExpId=null;
     expData={collaborators:[],varieties:[],treatments:[],schedule:[]};
     currentStep=0;
@@ -1011,63 +858,46 @@ function openNewExperimentModal(){
 }
 
 async function editExperiment(id){
-    if(userRole === 'visitor') return alert('Sem permissão');
-    
+    if(userRole === 'visitor') return alert('Sem permissÃ£o');
     try{
-        editingExpId = id;
+        editingExpId=id;
+        const {data,error}=await s.from('experiments').select('*').eq('id',id).single();
+        if(error)throw error;
         
-        const {data, error} = await s.from('experiments').select('*').eq('id', id).single();
-        if(error) throw error;
+        const {data:varieties}=await s.from('varieties').select('*').eq('experiment_id',id);
+        const {data:schedule}=await s.from('experiment_schedule').select('*').eq('experiment_id',id);
         
-        const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', id);
-        const {data: schedule} = await s.from('experiment_schedule').select('*').eq('experiment_id', id);
-        
-        // Parsear o plot_map se existir
-        let plotMap = [];
-        if(data.plot_map){
-            try {
-                plotMap = JSON.parse(data.plot_map);
-            } catch(e) {
-                console.error('Erro ao parsear plot_map:', e);
-            }
-        }
-        
-        expData = {
-            code: data.code,
-            name: data.name,
-            objective: data.objective,
-            collaborators: data.researcher ? data.researcher.split(',').map(r => r.trim()).filter(r => r) : [],
-            planting_date: data.planting_date,
-            farm: data.farm,
-            municipality: data.municipality,
-            latitude: data.latitude,
-            longitude: data.longitude,
-            soil_type: data.soil_type,
-            climate: data.climate,
-            varieties_count: varieties.length || 4,
-            treatments_count: 3,
-            blocks_count: data.blocks_count || 3,
-            plots_per_block: data.plots_per_block || 12,
-            useful_plants_per_plot: data.useful_plants_per_plot || 9,
-            varieties_count: expData.varieties ? expData.varieties.length : 4,
-            treatments_count: expData.treatments ? expData.treatments.length : 12,
-            plot_length: data.plot_length,
-            plot_width: data.plot_width,
-            row_spacing: data.row_spacing,
-            plant_spacing: data.plant_spacing,
-            varieties: varieties,
-            treatments: [],  // ← Será gerado pelo generateTreatments
-            schedule: schedule,
-            plotMap: plotMap
+        expData={
+            code:data.code||'',
+            name:data.name||'',
+            objective:data.objective||'',
+            collaborators:data.collaborator?data.collaborator.split(',').map(r=>r.trim()).filter(r=>r):[],
+            planting_date:data.planting_date||'',
+            farm:data.farm||'',
+            municipality:data.municipality||'',
+            latitude:data.latitude||'',
+            longitude:data.longitude||'',
+            soil_type:data.soil_type||'',
+            climate:data.climate||'',
+            varieties_count:varieties.length||4,
+            treatments_count:3,
+            blocks_count:data.blocks_count||3,
+            plots_per_block:data.plots_per_block||12,
+            useful_plants_per_plot:data.useful_plants_per_plot||4,
+            plot_length:data.plot_length||'',
+            plot_width:data.plot_width||'',
+            row_spacing:data.row_spacing||'',
+            plant_spacing:data.plant_spacing||'',
+            varieties:varieties||[],
+            treatments:[],
+            schedule:schedule||[]
         };
-        
-        currentStep = 0;
-        $('modalTitle').textContent = 'Editar Experimento';
+        currentStep=0;
+        $('modalTitle').textContent='Editar Experimento';
         renderWizard();
         $('expModal').classList.add('active');
-        
-    } catch(x) {
-        alert('Erro: ' + x.message);
+    }catch(x){
+        alert('Erro: '+x.message);
     }
 }
 
@@ -1086,7 +916,7 @@ function renderWizard(){
         content.innerHTML=`
             <div class="form-grid">
                 <div class="form-grid cols-2">
-                    <div><label>Código *</label><input type="text" id="exp_code" value="${expData.code||''}"></div>
+                    <div><label>CÃ³digo *</label><input type="text" id="exp_code" value="${expData.code||''}"></div>
                     <div><label>Data de Plantio *</label><input type="date" id="exp_date" value="${expData.planting_date||''}"></div>
                 </div>
                 <div><label>Nome *</label><input type="text" id="exp_name" value="${expData.name||''}"></div>
@@ -1108,7 +938,7 @@ function renderWizard(){
             <div class="form-grid">
                 <div class="form-grid cols-2">
                     <div><label>Fazenda *</label><input type="text" id="exp_farm" value="${expData.farm||''}"></div>
-                    <div><label>Município/Estado *</label><input type="text" id="exp_city" value="${expData.municipality||''}"></div>
+                    <div><label>MunicÃ­pio/Estado *</label><input type="text" id="exp_city" value="${expData.municipality||''}"></div>
                 </div>
                 <div>
                     <label>Coordenadas (opcional)</label>
@@ -1136,7 +966,7 @@ function renderWizard(){
                 <div><label>Blocos *</label><input type="number" min="1" id="exp_blocks" value="${expData.blocks_count||3}"></div>
                 <div><label>Parcelas/Bloco *</label><input type="number" min="1" id="exp_plots" value="${expData.plots_per_block||12}"></div>
             </div>
-            <div style="margin-top:16px;"><label>Plantas Úteis/Parcela *</label><input type="number" min="1" id="exp_plants" value="${expData.useful_plants_per_plot||4}"></div>
+            <div style="margin-top:16px;"><label>Plantas Ãšteis/Parcela *</label><input type="number" min="1" id="exp_plants" value="${expData.useful_plants_per_plot||4}"></div>
         `;
     }
     else if(currentStep===4){
@@ -1171,125 +1001,23 @@ else if(currentStep===6){
                 <div><label>Largura Parcela (m)</label><input type="number" step="0.1" id="exp_width" value="${expData.plot_width||''}"></div>
             </div>
             <div class="form-grid cols-2">
-                <div><label>Espaçamento Entre Linhas (m)</label><input type="number" step="0.1" id="exp_row" value="${expData.row_spacing||''}"></div>
-                <div><label>Espaçamento Entre Plantas (m)</label><input type="number" step="0.1" id="exp_plant" value="${expData.plant_spacing||''}"></div>
+                <div><label>EspaÃ§amento Entre Linhas (m)</label><input type="number" step="0.1" id="exp_row" value="${expData.row_spacing||''}"></div>
+                <div><label>EspaÃ§amento Entre Plantas (m)</label><input type="number" step="0.1" id="exp_plant" value="${expData.plant_spacing||''}"></div>
             </div>
         </div>
     `;
 }
-else if(currentStep===7){
-    if(!expData.plotMap || expData.plotMap.length === 0){
-        expData.plotMap = [];
-        for(let b = 1; b <= 3; b++){
-            let plotIndex = 1;
-            for(let r = 1; r <= 3; r++){
-                for(let c = 1; c <= 4; c++){
-                    expData.plotMap.push({
-                        block: b,
-                        row: r,
-                        col: c,
-                        treatment_id: null,
-                        plot_code: `B${b}P${plotIndex}`
-                    });
-                    plotIndex++;
-                }
-            }
-        }
-    }
-    
-    content.innerHTML = `
-        <div style="padding:20px;">
-            <!-- Header -->
-            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin-bottom:24px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-                    <span style="font-size:28px;">📐</span>
-                    <h3 style="color:#166534;margin:0;font-size:20px;">Mapa do Delineamento em Blocos Casualizados</h3>
-                </div>
-                <p style="color:#6b7280;margin:8px 0 0 40px;font-size:14px;">
-                    Distribua os <strong>${expData.treatments.length} tratamentos</strong> nas 12 parcelas de cada bloco.
-                    Cada tratamento deve aparecer <strong>1 vez por bloco</strong>.
-                </p>
-            </div>
-            
-            <!-- Info e Botões -->
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
-                <div style="color:#6b7280;font-size:14px;">
-                    <strong>Layout:</strong> 3 linhas × 4 colunas | <strong>Plantas:</strong> 25/parcela (9 úteis)
-                </div>
-                  </div>
-            
-            <!-- Blocos -->
-            <div style="display:flex;flex-direction:column;gap:20px;">
-                ${[1, 2, 3].map(blockNum => `
-                    <div style="background:#ffffff;border:2px solid #e5e7eb;border-radius:12px;padding:20px;">
-                        <!-- Header do Bloco -->
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                            <h4 style="color:#166534;margin:0;font-size:16px;font-weight:700;">Bloco ${blockNum}</h4>
-                              </div>
-                        
-                        <!-- Grid 3x4 -->
-                        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
-                            ${expData.plotMap.filter(p => p.block === blockNum).map(plot => {
-                                const treatment = plot.treatment_id ? expData.treatments.find(t => t.id == plot.treatment_id) : null;
-                                const bgColor = treatment ? '#f0fdf4' : '#f9fafb';
-                                const borderColor = treatment ? '#166534' : '#d1d5db';
-                                
-                                return `
-                                    <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:12px;">
-                                        <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;">${plot.plot_code}</div>
-                                        <select 
-    onchange="updatePlotTreatment(${blockNum}, ${plot.row}, ${plot.col}, this.value)"
-    style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:#ffffff;cursor:pointer;"
->
-    <option value="">Selecione...</option>
-    ${expData.treatments.map(t => `
-        <option value="${t.id}" ${plot.treatment_id == t.id ? 'selected' : ''}>
-            T${t.id} - ${t.variety_name} (${t.position})
-        </option>
-    `).join('')}
-</select>
-
-                                        ${treatment ? `<div style="font-size:10px;color:#166534;margin-top:4px;font-weight:600;">${treatment.position}</div>` : ''}
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                        
-                        <!-- Validação -->
-                        <div id="validation-block-${blockNum}" style="margin-top:12px;font-size:13px;font-weight:600;"></div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <!-- Legenda -->
-            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-top:24px;">
-                <h4 style="color:#166534;margin:0 0 12px 0;font-size:14px;font-weight:700;">📋 Legenda de Tratamentos</h4>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;">
-                    ${expData.treatments.map(t => `
-                        <div style="background:#ffffff;padding:8px 12px;border-radius:6px;border:1px solid #e5e7eb;font-size:12px;">
-                            <span style="font-weight:700;color:#166534;">T${t.id}:</span>
-                            <span style="color:#6b7280;">${t.variety_name} (${t.position})</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-    
-    setTimeout(() => validateAllBlocks(), 100);
-}
-
-else if(currentStep===8){
+    else if(currentStep===7){
         content.innerHTML=`
             <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-bottom:16px;border:1px solid #e5e7eb;">
                 <h4 style="margin-bottom:12px;font-size:15px;">Adicionar Atividade</h4>
                 <div class="form-grid">
                     <div class="form-grid cols-3">
-                        <div><label>Nome *</label><input type="text" id="activity_name" placeholder="Ex: Adubação"></div>
-                        <div><label>Fase *</label><select id="activity_phase"><option value="pre_planting">Pré-Plantio</option><option value="planting">Plantio</option><option value="monitoring" selected>Acompanhamento</option><option value="cultural_practices">Tratos Culturais</option><option value="harvest">Colheita</option></select></div>
-                        <div><label>Data Início *</label><input type="date" id="activity_start"></div>
+                        <div><label>Nome *</label><input type="text" id="activity_name" placeholder="Ex: AdubaÃ§Ã£o"></div>
+                        <div><label>Fase *</label><select id="activity_phase"><option value="pre_planting">PrÃ©-Plantio</option><option value="planting">Plantio</option><option value="monitoring" selected>Acompanhamento</option><option value="cultural_practices">Tratos Culturais</option><option value="harvest">Colheita</option></select></div>
+                        <div><label>Data InÃ­cio *</label><input type="date" id="activity_start"></div>
                     </div>
-                    <div><label>Data Término</label><input type="date" id="activity_end"></div>
+                    <div><label>Data TÃ©rmino</label><input type="date" id="activity_end"></div>
                 </div>
                 <button class="btn-primary btn-add-activity" id="addActivityBtn">+ Adicionar</button>
             </div>
@@ -1297,7 +1025,7 @@ else if(currentStep===8){
         `;
         setTimeout(()=>{$('addActivityBtn').onclick=addActivity;renderSchedule()},0);
     }
-    else if(currentStep===9){
+    else if(currentStep===8){
         const scheduleByPhase={};
         (expData.schedule||[]).forEach(item=>{
             if(!scheduleByPhase[item.phase])scheduleByPhase[item.phase]=[];
@@ -1312,19 +1040,19 @@ else if(currentStep===8){
         });
         content.innerHTML=`
             <div class="review-section">
-                <h3 style="color:#166534;margin-bottom:16px;">Revisão Final</h3>
-                <div class="review-item"><strong>Código:</strong> ${expData.code}</div>
+                <h3 style="color:#166534;margin-bottom:16px;">RevisÃ£o Final</h3>
+                <div class="review-item"><strong>CÃ³digo:</strong> ${expData.code}</div>
                 <div class="review-item"><strong>Nome:</strong> ${expData.name}</div>
                 <div class="review-item"><strong>Data Plantio:</strong> ${formatDate(expData.planting_date)}</div>
                 <div class="review-item"><strong>Local:</strong> ${expData.farm}, ${expData.municipality}</div>
                 <div class="review-item"><strong>Variedades:</strong> ${expData.varieties?.length||0}</div>
                 <div class="review-item"><strong>Atividades:</strong> ${expData.schedule?.length||0}</div>
                 ${scheduleHtml?`<div style="margin-top:20px;"><h4 style="font-size:15px;color:#166534;margin-bottom:12px;">Cronograma</h4>${scheduleHtml}</div>`:''}
-                <p style="margin-top:16px;color:#166534;font-weight:600;">✓ Pronto para salvar!</p>
+                <p style="margin-top:16px;color:#166534;font-weight:600;">âœ“ Pronto para salvar!</p>
             </div>
         `;
     }
-
+    
     $('btnPrev').classList.toggle('hidden',currentStep===0);
     $('btnNext').classList.toggle('hidden',currentStep===steps.length-1);
     $('btnSave').classList.toggle('hidden',currentStep!==steps.length-1);
@@ -1338,7 +1066,7 @@ function rendercollaborators(){
     expData.collaborators.forEach((r,i)=>{
         const item=document.createElement('div');
         item.className='item';
-        item.innerHTML=`<span>${r}</span><button class="btn-remove">✕</button>`;
+        item.innerHTML=`<span>${r}</span><button class="btn-remove">âœ•</button>`;
         item.querySelector('.btn-remove').onclick=()=>{expData.collaborators.splice(i,1);rendercollaborators()};
         list.appendChild(item);
     });
@@ -1355,43 +1083,28 @@ function addcollaborator(){
 }
 
 function renderVarieties(){
-  const list = varList;
-  if (!expData.varieties || expData.varieties.length === 0) {
-    list.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
-    return;
-  }
-
-  list.innerHTML = '';
-  expData.varieties.forEach((v,i)=>{
-    const item = document.createElement('div');
-    item.className = 'item';
-    item.innerHTML = `
-      <div><strong>${v.name}</strong> - ${v.use_type || ''} | ${v.pulp_color || ''}</div>
-      <button class="btn-remove">X</button>
-    `;
-    item.querySelector('.btn-remove').onclick = () => {
-      expData.varieties.splice(i,1);
-      renderVarieties();
-    };
-    list.appendChild(item);
-  });
+    const list=$('varList');
+    if(!expData.varieties||expData.varieties.length===0){
+        list.innerHTML='<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
+        return;
+    }
+    list.innerHTML='';
+    expData.varieties.forEach((v,i)=>{
+        const item=document.createElement('div');
+        item.className='item';
+        item.innerHTML=`<div><strong>${v.name}</strong> - ${v.use_type} | ${v.pulp_color}</div><button class="btn-remove">âœ•</button>`;
+        item.querySelector('.btn-remove').onclick=()=>{expData.varieties.splice(i,1);renderVarieties()};
+        list.appendChild(item);
+    });
 }
 
 function addVariety(){
-  const name = varname.value.trim();
-  if (!name) return alert('Nome obrigatório!');
-
-  if (!expData.varieties) expData.varieties = [];
-
-  // usa os mesmos nomes da tabela: use_type e pulp_color
-  expData.varieties.push({
-    name,
-    use_type: varuse.value,
-    pulp_color: varcolor.value
-  });
-
-  varname.value = '';
-  renderVarieties();
+    const name=$('var_name').value.trim();
+    if(!name)return alert('Nome obrigatÃ³rio!');
+    if(!expData.varieties)expData.varieties=[];
+    expData.varieties.push({name:name,use_type:$('var_use').value,pulp_color:$('var_color').value});
+    $('var_name').value='';
+    renderVarieties();
 }
 
 function renderSchedule(){
@@ -1430,7 +1143,7 @@ function addActivity(){
     const phase=$('activity_phase').value;
     const start=$('activity_start').value;
     const end=$('activity_end').value;
-    if(!name||!start)return alert('Nome e Data Início obrigatórios!');
+    if(!name||!start)return alert('Nome e Data InÃ­cio obrigatÃ³rios!');
     if(!expData.schedule)expData.schedule=[];
     expData.schedule.push({activity_name:name,phase:phase,start_date:start,end_date:end||null});
     $('activity_name').value='';
@@ -1440,24 +1153,17 @@ function addActivity(){
 }
 
 function generateTreatments(){
-    const positions = ['vertical', 'inclinada', 'horizontal'];
-    let treatments = [];
-    let counter = 1;
-    if(!expData.varieties || expData.varieties.length === 0) return;
-    
-    expData.varieties.forEach(v => {
-        positions.forEach(p => {
-            treatments.push({
-                code: `T${counter}`,
-                id: counter,
-                variety: v.name,
-                variety_name: v.name,
-                position: p
-            });
+    const positions=['vertical','inclinada','horizontal'];
+    let treatments=[];
+    let counter=1;
+    if(!expData.varieties||expData.varieties.length===0)return;
+    expData.varieties.forEach(v=>{
+        positions.forEach(p=>{
+            treatments.push({code:`T${counter}`,variety:v.name,position:p});
             counter++;
         });
     });
-    expData.treatments = treatments;
+    expData.treatments=treatments;
 }
 
 function saveStepData(){
@@ -1493,184 +1199,74 @@ function saveStepData(){
 }
 
 async function saveExperiment(){
-    if(!expData.code || !expData.name || !expData.objective || !expData.planting_date){
-        alert('Preencha campos obrigatórios!');
+    if(!expData.code||!expData.name||!expData.objective||!expData.planting_date){
+        alert('Preencha campos obrigatÃ³rios!');
         return;
     }
-    
     try{
-        const expPayload = {
-            code: expData.code,
-            name: expData.name,
-            objective: expData.objective,
-            researcher: expData.collaborators ? expData.collaborators.join(', ') : null,
-            planting_date: expData.planting_date,
-            farm: expData.farm,
-            municipality: expData.municipality,
-            latitude: expData.latitude,
-            longitude: expData.longitude,
-            soil_type: expData.soil_type,
-            climate: expData.climate,
-            blocks_count: expData.blocks_count || 3,
-            plots_per_block: expData.plots_per_block || 12,
-            useful_plants_per_plot: expData.useful_plants_per_plot || 4,
-            treatments_count: expData.treatments ? expData.treatments.length : 12,
-            plot_length: expData.plot_length,
-            plot_width: expData.plot_width,
-            row_spacing: expData.row_spacing,
-            plant_spacing: expData.plant_spacing,
-            created_by: user.id
+        const expPayload={
+            code:expData.code,
+            name:expData.name,
+            objective:expData.objective,
+            researcher:expData.researchers?.join(', ')||'',
+
+            planting_date:expData.planting_date,
+            farm:expData.farm,
+            municipality:expData.municipality,
+            latitude:expData.latitude||null,
+            longitude:expData.longitude||null,
+            soil_type:expData.soil_type,
+            climate:expData.climate,
+            blocks_count:expData.blocks_count,
+            treatments_count:expData.varieties_count*expData.treatments_count,
+            plots_per_block:expData.plots_per_block,
+            useful_plants_per_plot:expData.useful_plants_per_plot,
+            plot_length:expData.plot_length||null,
+	    plot_width:expData.plot_width||null,
+            row_spacing:expData.row_spacing||null,
+            plant_spacing:expData.plant_spacing||null,
+            created_by:user.id,
+            status:'active'
         };
-        
-        let experimentId;
-        
-        // Se está editando
+        let exp;
         if(editingExpId){
-            const {error} = await s.from('experiments').update(expPayload).eq('id', editingExpId);
-            if(error) throw error;
-            experimentId = editingExpId;
-            
-            // Deletar variedades, tratamentos e schedule antigos
-            await s.from('varieties').delete().eq('experiment_id', experimentId);
-            await s.from('treatments').delete().eq('experiment_id', experimentId);
-            await s.from('experiment_schedule').delete().eq('experiment_id', experimentId);
-        } 
-        // Se é novo experimento
-        else {
-            const {data, error} = await s.from('experiments').insert(expPayload).select().single();
-            if(error) throw error;
-            experimentId = data.id;
+            const {data,error}=await s.from('experiments').update(expPayload).eq('id',editingExpId).select().single();
+            if(error)throw error;
+            exp=data;
+            await s.from('varieties').delete().eq('experiment_id',editingExpId);
+            await s.from('treatments').delete().eq('experiment_id',editingExpId);
+            await s.from('experiment_schedule').delete().eq('experiment_id',editingExpId);
+            alert('âœ… Atualizado!');
+        }else{
+            const {data,error}=await s.from('experiments').insert([expPayload]).select().single();
+            if(error)throw error;
+            exp=data;
+            alert('âœ… Criado!');
         }
-        
-        // Salvar variedades e pegar os IDs
-        const varietyMap = {}; // Mapear nome -> UUID
-        // Salvar variedades
-        if (expData.varieties && expData.varieties.length > 0) {
-          const varietiesPayload = expData.varieties.map(v => ({
-            experiment_id: experimentId,
-            name: v.name,
-            use_type: v.use_type,
-            pulp_color: v.pulp_color
-          }));
-          const { error: varError } = await s.from('varieties').insert(varietiesPayload);
-          if (varError) throw varError;
-        }
-
-            
-            // Criar mapa: nome da variedade -> UUID
-            savedVarieties.forEach(v => {
-                varietyMap[v.name] = v.id;
+        if(expData.varieties&&expData.varieties.length>0){
+            const {data:vars}=await s.from('varieties').insert(expData.varieties.map(v=>({experiment_id:exp.id,name:v.name,use_type:v.use_type,pulp_color:v.pulp_color}))).select();
+            const treats=expData.treatments.map(t=>{
+                const v=vars.find(vr=>vr.name===t.variety);
+                return{experiment_id:exp.id,code:t.code,variety_id:v.id,position:t.position};
             });
+            await s.from('treatments').insert(treats);
         }
-        
-        // Salvar tratamentos e pegar os UUIDs
-        const treatmentMap = {}; // Mapear número temporário -> UUID real
-        if(expData.treatments && expData.treatments.length > 0){
-            const treatmentsPayload = expData.treatments.map(t => ({
-                experiment_id: experimentId,
-                code: t.code,
-                variety_id: varietyMap[t.variety] || null,
-                position: t.position
-            }));
-            
-            const {data: savedTreatments, error: treatError} = await s.from('treatments')
-                .insert(treatmentsPayload)
-                .select();
-            
-            if(treatError) throw treatError;
-            
-            // Criar mapa: ID temporário (1,2,3...) -> UUID real
-            expData.treatments.forEach((t, index) => {
-                treatmentMap[t.id] = savedTreatments[index].id;
-            });
+        if(expData.schedule&&expData.schedule.length>0){
+            await s.from('experiment_schedule').insert(expData.schedule.map(item=>({experiment_id:exp.id,activity_name:item.activity_name,phase:item.phase,start_date:item.start_date,end_date:item.end_date})));
         }
-        
-        // Salvar cronograma (apenas atividades válidas)
-if(expData.schedule && expData.schedule.length > 0){
-    // Filtrar apenas atividades com nome preenchido
-    const validSchedule = expData.schedule.filter(s => 
-        s.activity_name && s.activity_name.trim() !== ''
-    );
-    
-    if(validSchedule.length > 0){
-        const schedulePayload = validSchedule.map(s => ({
-            experiment_id: experimentId,
-            phase: s.phase,
-            activity_name: s.activity_name,
-            start_date: s.start_date,
-            end_date: s.end_date
-        }));
-        
-        console.log('📤 PAYLOAD CORRIGIDO:', JSON.stringify(schedulePayload, null, 2));
-        
-        const {error: schedError} = await supabase.from('experiment_schedule').insert(schedulePayload);
-        if(schedError) throw schedError;
-    }
-}
-        
-        // Salvar plot_map com UUIDs reais dos tratamentos
-        if(expData.plotMap && expData.plotMap.length > 0){
-            const plotMapWithUUIDs = expData.plotMap.map(p => ({
-                block: p.block,
-                row: p.row,
-                col: p.col,
-                treatment_id: p.treatment_id ? treatmentMap[p.treatment_id] : null, // Converter para UUID
-                plot_code: p.plot_code
-            }));
-            
-            const {error: mapError} = await s.from('experiments')
-                .update({ plot_map: JSON.stringify(plotMapWithUUIDs) })
-                .eq('id', experimentId);
-            
-            if(mapError) throw mapError;
+        if(!editingExpId){
+            const plots=[];
+            for(let b=1;b<=expData.blocks_count;b++){
+                for(let p=1;p<=expData.plots_per_block;p++){
+                    plots.push({experiment_id:exp.id,plot_code:`B${b}T${p}`,block_number:b});
+                }
+            }
+            await s.from('plots').insert(plots);
         }
-        
-        alert(editingExpId ? 'Experimento atualizado!' : 'Experimento criado!');
-        expModal.classList.remove('active');
-        renderExperimentsPage(contentArea);
-        
-    } catch(x) {
-        alert('Erro ao salvar: ' + x.message);
-        console.error('Erro completo:', x);
+        $('expModal').classList.remove('active');
+        renderExperimentsPage($('contentArea'));
+    }catch(x){
+        alert('Erro: '+x.message);
+        console.error(x);
     }
 }
-
-// ============================================
-// FUNÇÕES DO MAPA DBC
-// ============================================
-function updatePlotTreatment(block, row, col, treatmentId){
-    const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
-    if(plot){
-        plot.treatment_id = treatmentId || null;
-        renderWizard();
-    }
-}
-
-function validateAllBlocks(){
-    for(let b = 1; b <= 3; b++){
-        validateBlock(b);
-    }
-}
-
-function validateBlock(blockNum){
-    const blockPlots = expData.plotMap.filter(p => p.block === blockNum);
-    const assignedTreatments = blockPlots.map(p => p.treatment_id).filter(t => t);
-    const uniqueTreatments = [...new Set(assignedTreatments)];
-    
-    const validationDiv = document.getElementById(`validation-block-${blockNum}`);
-    if(!validationDiv) return;
-    
-    const missingCount = expData.treatments.length - assignedTreatments.length;
-    const hasDuplicates = assignedTreatments.length !== uniqueTreatments.length;
-    
-    if(assignedTreatments.length === 0){
-        validationDiv.innerHTML = '<span style="color:#6b7280">⚪ Nenhum tratamento atribuído</span>';
-    } else if(hasDuplicates){
-        validationDiv.innerHTML = '<span style="color:#dc2626">❌ Tratamentos duplicados neste bloco!</span>';
-    } else if(missingCount > 0){
-        validationDiv.innerHTML = `<span style="color:#d97706">⚠️ Faltam ${missingCount} tratamento(s)</span>`;
-    } else {
-        validationDiv.innerHTML = '<span style="color:#16a34a">✅ Bloco completo e válido</span>';
-    }
-}
-
