@@ -1493,75 +1493,136 @@ function saveStepData(){
 }
 
 async function saveExperiment(){
-    if(!expData.code||!expData.name||!expData.objective||!expData.planting_date){
+    if(!expData.code || !expData.name || !expData.objective || !expData.planting_date){
         alert('Preencha campos obrigatórios!');
         return;
     }
+    
     try{
-        const expPayload={
-            code:expData.code,
-            name:expData.name,
-            objective:expData.objective,
-            researcher:expData.researchers?.join(', ')||'',
-            planting_date:expData.planting_date,
-            farm:expData.farm,
-            municipality:expData.municipality,
-            latitude:expData.latitude||null,
-            longitude:expData.longitude||null,
-            soil_type:expData.soil_type,
-            climate:expData.climate,
-            blocks_count:expData.blocks_count,
-            treatments_count:expData.varieties_count*expData.treatments_count,
-            plots_per_block:expData.plots_per_block,
-            useful_plants_per_plot:expData.useful_plants_per_plot,
-            plot_length:expData.plot_length||null,
-            plot_width:expData.plot_width||null,
-            row_spacing:expData.row_spacing||null,
-            plant_spacing:expData.plant_spacing||null,
-            plot_map: expData.plotMap ? JSON.stringify(expData.plotMap) : null,
-            created_by:user.id,
-            status:'active'
+        const expPayload = {
+            code: expData.code,
+            name: expData.name,
+            objective: expData.objective,
+            researcher: expData.collaborators ? expData.collaborators.join(', ') : null,
+            planting_date: expData.planting_date,
+            farm: expData.farm,
+            municipality: expData.municipality,
+            latitude: expData.latitude,
+            longitude: expData.longitude,
+            soil_type: expData.soil_type,
+            climate: expData.climate,
+            blocks_count: expData.blocks_count || 3,
+            plots_per_block: expData.plots_per_block || 12,
+            useful_plants_per_plot: expData.useful_plants_per_plot || 4,
+            plot_length: expData.plot_length,
+            plot_width: expData.plot_width,
+            row_spacing: expData.row_spacing,
+            plant_spacing: expData.plant_spacing,
+            created_by: user.id
         };
-        let exp;
+        
+        let experimentId;
+        
+        // Se está editando
         if(editingExpId){
-            const {data,error}=await s.from('experiments').update(expPayload).eq('id',editingExpId).select().single();
-            if(error)throw error;
-            exp=data;
-            await s.from('varieties').delete().eq('experiment_id',editingExpId);
-            await s.from('treatments').delete().eq('experiment_id',editingExpId);
-            await s.from('experiment_schedule').delete().eq('experiment_id',editingExpId);
-            alert('✅ Atualizado!');
-        }else{
-            const {data,error}=await s.from('experiments').insert([expPayload]).select().single();
-            if(error)throw error;
-            exp=data;
-            alert('✅ Criado!');
+            const {error} = await s.from('experiments').update(expPayload).eq('id', editingExpId);
+            if(error) throw error;
+            experimentId = editingExpId;
+            
+            // Deletar variedades, tratamentos e schedule antigos
+            await s.from('varieties').delete().eq('experiment_id', experimentId);
+            await s.from('treatments').delete().eq('experiment_id', experimentId);
+            await s.from('experiment_schedule').delete().eq('experiment_id', experimentId);
+        } 
+        // Se é novo experimento
+        else {
+            const {data, error} = await s.from('experiments').insert(expPayload).select().single();
+            if(error) throw error;
+            experimentId = data.id;
         }
-        if(expData.varieties&&expData.varieties.length>0){
-            const {data:vars}=await s.from('varieties').insert(expData.varieties.map(v=>({experiment_id:exp.id,name:v.name,use_type:v.use_type,pulp_color:v.pulp_color}))).select();
-            const treats=expData.treatments.map(t=>{
-                const v=vars.find(vr=>vr.name===t.variety);
-                return{experiment_id:exp.id,code:t.code,variety_id:v.id,position:t.position};
+        
+        // Salvar variedades e pegar os IDs
+        const varietyMap = {}; // Mapear nome -> UUID
+        if(expData.varieties && expData.varieties.length > 0){
+            const varietiesPayload = expData.varieties.map(v => ({
+                experiment_id: experimentId,
+                name: v.name,
+                use_type: v.usetype,
+                pulp_color: v.pulpcolor
+            }));
+            
+            const {data: savedVarieties, error: varError} = await s.from('varieties')
+                .insert(varietiesPayload)
+                .select();
+            
+            if(varError) throw varError;
+            
+            // Criar mapa: nome da variedade -> UUID
+            savedVarieties.forEach(v => {
+                varietyMap[v.name] = v.id;
             });
-            await s.from('treatments').insert(treats);
         }
-        if(expData.schedule&&expData.schedule.length>0){
-            await s.from('experiment_schedule').insert(expData.schedule.map(item=>({experiment_id:exp.id,activity_name:item.activity_name,phase:item.phase,start_date:item.start_date,end_date:item.end_date})));
+        
+        // Salvar tratamentos e pegar os UUIDs
+        const treatmentMap = {}; // Mapear número temporário -> UUID real
+        if(expData.treatments && expData.treatments.length > 0){
+            const treatmentsPayload = expData.treatments.map(t => ({
+                experiment_id: experimentId,
+                code: t.code,
+                variety_id: varietyMap[t.variety] || null,
+                position: t.position
+            }));
+            
+            const {data: savedTreatments, error: treatError} = await s.from('treatments')
+                .insert(treatmentsPayload)
+                .select();
+            
+            if(treatError) throw treatError;
+            
+            // Criar mapa: ID temporário (1,2,3...) -> UUID real
+            expData.treatments.forEach((t, index) => {
+                treatmentMap[t.id] = savedTreatments[index].id;
+            });
         }
-        if(!editingExpId){
-            const plots=[];
-            for(let b=1;b<=expData.blocks_count;b++){
-                for(let p=1;p<=expData.plots_per_block;p++){
-                    plots.push({experiment_id:exp.id,plot_code:`B${b}T${p}`,block_number:b});
-                }
-            }
-            await s.from('plots').insert(plots);
+        
+        // Salvar cronograma
+        if(expData.schedule && expData.schedule.length > 0){
+            const schedulePayload = expData.schedule.map(s => ({
+                experiment_id: experimentId,
+                phase: s.phase,
+                activity_name: s.activityname,
+                start_date: s.startdate,
+                end_date: s.enddate
+            }));
+            
+            const {error: schedError} = await s.from('experiment_schedule').insert(schedulePayload);
+            if(schedError) throw schedError;
         }
-        $('expModal').classList.remove('active');
-        renderExperimentsPage($('contentArea'));
-    }catch(x){
-        alert('Erro: '+x.message);
-        console.error(x);
+        
+        // Salvar plot_map com UUIDs reais dos tratamentos
+        if(expData.plotMap && expData.plotMap.length > 0){
+            const plotMapWithUUIDs = expData.plotMap.map(p => ({
+                block: p.block,
+                row: p.row,
+                col: p.col,
+                treatment_id: p.treatment_id ? treatmentMap[p.treatment_id] : null, // Converter para UUID
+                plot_code: p.plot_code
+            }));
+            
+            const {error: mapError} = await s.from('experiments')
+                .update({ plot_map: JSON.stringify(plotMapWithUUIDs) })
+                .eq('id', experimentId);
+            
+            if(mapError) throw mapError;
+        }
+        
+        alert(editingExpId ? 'Experimento atualizado!' : 'Experimento criado!');
+        expModal.classList.remove('active');
+        renderExperimentsPage(contentArea);
+        
+    } catch(x) {
+        alert('Erro ao salvar: ' + x.message);
+        console.error('Erro completo:', x);
     }
 }
 
@@ -1629,6 +1690,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
