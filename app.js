@@ -1216,7 +1216,15 @@ else if(currentStep===7){
                 <div style="color:#6b7280;font-size:14px;">
                     <strong>Layout:</strong> 3 linhas × 4 colunas | <strong>Plantas:</strong> 25/parcela (9 úteis)
                 </div>
-                            </div>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="randomizePlotMap()" style="padding:8px 16px;background:#F0B90B;color:#1e293b;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">
+                        🎲 Casualizar Tudo
+                    </button>
+                    <button onclick="clearPlotMap()" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">
+                        🗑️ Limpar
+                    </button>
+                </div>
+            </div>
             
             <!-- Blocos -->
             <div style="display:flex;flex-direction:column;gap:20px;">
@@ -1225,7 +1233,10 @@ else if(currentStep===7){
                         <!-- Header do Bloco -->
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                             <h4 style="color:#166534;margin:0;font-size:16px;font-weight:700;">Bloco ${blockNum}</h4>
-                               </div>
+                            <button onclick="randomizeBlock(${blockNum})" style="padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+                                🎲 Casualizar
+                            </button>
+                        </div>
                         
                         <!-- Grid 3x4 -->
                         <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
@@ -1355,49 +1366,28 @@ function addcollaborator(){
 }
 
 function renderVarieties(){
-    const list = varList;
-    if(!expData.varieties || expData.varieties.length === 0){
-        list.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
+    const list=$('varList');
+    if(!expData.varieties||expData.varieties.length===0){
+        list.innerHTML='<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
         return;
     }
-    
-    function renderVarieties(){
-  const list = varList;
-  if(!expData.varieties || expData.varieties.length === 0){
-    list.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
-    return;
-  }
-
-  list.innerHTML = '';
-  expData.varieties.forEach((v,i)=>{
-    const item = document.createElement('div');
-    item.className = 'item';
-    item.innerHTML = `
-      <div><strong>${v.name}</strong> - ${v.use_type || ''} | ${v.pulp_color || ''}</div>
-      <button class="btn-remove">X</button>
-    `;
-    item.querySelector('.btn-remove').onclick = ()=>{
-      expData.varieties.splice(i,1);
-      renderVarieties();
-    };
-    list.appendChild(item);
-  });
+    list.innerHTML='';
+    expData.varieties.forEach((v,i)=>{
+        const item=document.createElement('div');
+        item.className='item';
+        item.innerHTML=`<div><strong>${v.name}</strong> - ${v.use_type} | ${v.pulp_color}</div><button class="btn-remove">✕</button>`;
+        item.querySelector('.btn-remove').onclick=()=>{expData.varieties.splice(i,1);renderVarieties()};
+        list.appendChild(item);
+    });
 }
 
 function addVariety(){
-  const name = varname.value.trim();
-  if(!name) return alert('Nome obrigatório!');
-
-  if(!expData.varieties) expData.varieties = [];
-
-  expData.varieties.push({
-    name,
-    use_type: varuse.value,
-    pulp_color: varcolor.value
-  });
-
-  varname.value = '';
-  renderVarieties();
+    const name=$('var_name').value.trim();
+    if(!name)return alert('Nome obrigatório!');
+    if(!expData.varieties)expData.varieties=[];
+    expData.varieties.push({name:name,use_type:$('var_use').value,pulp_color:$('var_color').value});
+    $('var_name').value='';
+    renderVarieties();
 }
 
 function renderSchedule(){
@@ -1548,17 +1538,21 @@ async function saveExperiment(){
             experimentId = data.id;
         }
         
-        // Salvar variedades
-if(expData.varieties && expData.varieties.length > 0){
-    const varietiesPayload = expData.varieties.map(v => ({
-        experiment_id: experimentId,
-        name: v.name,
-        use_type: v.use_type,
-        pulp_color: v.pulp_color
-    }));
-    const { error: varError } = await s.from('varieties').insert(varietiesPayload);
-    if(varError) throw varError;
-}
+        // Salvar variedades e pegar os IDs
+        const varietyMap = {}; // Mapear nome -> UUID
+        if(expData.varieties && expData.varieties.length > 0){
+            const varietiesPayload = expData.varieties.map(v => ({
+                experiment_id: experimentId,
+                name: v.name,
+                use_type: v.usetype,
+                pulp_color: v.pulpcolor
+            }));
+            
+            const {data: savedVarieties, error: varError} = await s.from('varieties')
+                .insert(varietiesPayload)
+                .select();
+            
+            if(varError) throw varError;
             
             // Criar mapa: nome da variedade -> UUID
             savedVarieties.forEach(v => {
@@ -1589,23 +1583,28 @@ if(expData.varieties && expData.varieties.length > 0){
         }
         
         // Salvar cronograma (apenas atividades válidas)
-if (expData.schedule && expData.schedule.length > 0) {
-  const validSchedule = expData.schedule.filter(a => a.activityname && a.activityname.trim() !== '');
-
-  if (validSchedule.length > 0) {
-    const schedulePayload = validSchedule.map(a => ({
-      experiment_id: experimentId,
-      phase: a.phase,
-      activity_name: a.activityname,
-      start_date: a.startdate,
-      end_date: a.enddate || null
-    }));
-
-    const { error: schedError } = await s.from('experiment_schedule').insert(schedulePayload);
-    if (schedError) throw schedError;
-  }
+if(expData.schedule && expData.schedule.length > 0){
+    // Filtrar apenas atividades com nome preenchido
+    const validSchedule = expData.schedule.filter(s => 
+        s.activity_name && s.activity_name.trim() !== ''
+    );
+    
+    if(validSchedule.length > 0){
+        const schedulePayload = validSchedule.map(s => ({
+            experiment_id: experimentId,
+            phase: s.phase,
+            activity_name: s.activity_name,
+            start_date: s.start_date,
+            end_date: s.end_date
+        }));
+        
+        console.log('📤 PAYLOAD CORRIGIDO:', JSON.stringify(schedulePayload, null, 2));
+        
+        const {error: schedError} = await supabase.from('experiment_schedule').insert(schedulePayload);
+        if(schedError) throw schedError;
+    }
 }
-      
+        
         // Salvar plot_map com UUIDs reais dos tratamentos
         if(expData.plotMap && expData.plotMap.length > 0){
             const plotMapWithUUIDs = expData.plotMap.map(p => ({
@@ -1636,50 +1635,67 @@ if (expData.schedule && expData.schedule.length > 0) {
 // ============================================
 // FUNÇÕES DO MAPA DBC
 // ============================================
-window.updatePlotTreatment = function(block, row, col, treatmentId){
-  const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
-  if (plot) {
-    plot.treatmentid = treatmentId ? parseInt(treatmentId, 10) : null;
-  }
-  if (typeof validateAllBlocks === 'function') validateAllBlocks();
-};
+function updatePlotTreatment(block, row, col, treatmentId){
+    const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
+    if(plot){
+        plot.treatment_id = treatmentId || null;
+        renderWizard();
+    }
+}
 
 function validateAllBlocks(){
-  for(let b = 1; b <= 3; b++){
-    validateBlock(b);
-  }
+    for(let b = 1; b <= 3; b++){
+        validateBlock(b);
+    }
 }
 
 function validateBlock(blockNum){
-  const blockPlots = expData.plotMap.filter(p => p.block == blockNum);
-
-  // ✅ aqui é treatmentid (sem underscore)
-  const assignedTreatments = blockPlots.map(p => p.treatmentid).filter(t => t);
-  const uniqueTreatments = [...new Set(assignedTreatments)];
-
-  const validationDiv = document.getElementById(`validation-block-${blockNum}`);
-  if(!validationDiv) return;
-
-  const missingCount = expData.treatments.length - assignedTreatments.length;
-  const hasDuplicates = assignedTreatments.length !== uniqueTreatments.length;
-
-  if(assignedTreatments.length === 0){
-    validationDiv.innerHTML = '<span style="color:#6b7280">⚪ Nenhum tratamento atribuído</span>';
-  } else if(hasDuplicates){
-    validationDiv.innerHTML = '<span style="color:#dc2626">❌ Tratamentos duplicados neste bloco!</span>';
-  } else if(missingCount > 0){
-    validationDiv.innerHTML = `<span style="color:#d97706">⚠️ Faltam ${missingCount} tratamento(s)</span>`;
-  } else {
-    validationDiv.innerHTML = '<span style="color:#16a34a">✅ Bloco completo e válido</span>';
-  }
+    const blockPlots = expData.plotMap.filter(p => p.block === blockNum);
+    const assignedTreatments = blockPlots.map(p => p.treatment_id).filter(t => t);
+    const uniqueTreatments = [...new Set(assignedTreatments)];
+    
+    const validationDiv = document.getElementById(`validation-block-${blockNum}`);
+    if(!validationDiv) return;
+    
+    const missingCount = expData.treatments.length - assignedTreatments.length;
+    const hasDuplicates = assignedTreatments.length !== uniqueTreatments.length;
+    
+    if(assignedTreatments.length === 0){
+        validationDiv.innerHTML = '<span style="color:#6b7280">⚪ Nenhum tratamento atribuído</span>';
+    } else if(hasDuplicates){
+        validationDiv.innerHTML = '<span style="color:#dc2626">❌ Tratamentos duplicados neste bloco!</span>';
+    } else if(missingCount > 0){
+        validationDiv.innerHTML = `<span style="color:#d97706">⚠️ Faltam ${missingCount} tratamento(s)</span>`;
+    } else {
+        validationDiv.innerHTML = '<span style="color:#16a34a">✅ Bloco completo e válido</span>';
+    }
 }
 
+function randomizeBlock(blockNum){
+    const blockPlots = expData.plotMap.filter(p => p.block === blockNum);
+    const treatments = [...expData.treatments].sort(() => Math.random() - 0.5);
+    
+    blockPlots.forEach((plot, index) => {
+        if(index < treatments.length){
+            plot.treatment_id = treatments[index].id;
+        }
+    });
+    
+    renderWizard();
+}
 
+function randomizePlotMap(){
+    for(let b = 1; b <= 3; b++){
+        randomizeBlock(b);
+    }
+}
 
-
-
-
-
+function clearPlotMap(){
+    if(confirm('Tem certeza que deseja limpar todo o mapa?')){
+        expData.plotMap.forEach(p => p.treatment_id = null);
+        renderWizard();
+    }
+}
 
 
 
