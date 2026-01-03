@@ -1036,74 +1036,87 @@ else if(currentStep===7){
     }
     
     content.innerHTML = `
-        <div class="space-y-6">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div class="flex items-start gap-3">
-                    <div class="text-2xl">📐</div>
-                    <div>
-                        <h3 class="font-bold text-primary mb-1">Mapa do Delineamento em Blocos Casualizados</h3>
-                        <p class="text-sm text-muted">
-                            Distribua os <strong>${expData.treatments.length} tratamentos</strong> nas parcelas de cada bloco.
-                        </p>
-                    </div>
+        <div style="padding:20px;">
+            <!-- Header -->
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <span style="font-size:28px;">📐</span>
+                    <h3 style="color:#166534;margin:0;font-size:20px;">Mapa do Delineamento em Blocos Casualizados</h3>
                 </div>
+                <p style="color:#6b7280;margin:8px 0 0 40px;font-size:14px;">
+                    Distribua os <strong>${expData.treatments.length} tratamentos</strong> nas 12 parcelas de cada bloco.
+                    Cada tratamento deve aparecer <strong>1 vez por bloco</strong>.
+                </p>
             </div>
             
-            <div class="flex flex-wrap gap-2 justify-between items-center">
-                <div class="text-sm text-muted">
-                    <strong>Layout:</strong> 3 linhas × 4 colunas
+            <!-- Info e Botões -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+                <div style="color:#6b7280;font-size:14px;">
+                    <strong>Layout:</strong> 3 linhas × 4 colunas | <strong>Plantas:</strong> 25/parcela (9 úteis)
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="randomizePlotMap()" class="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold">
+                <div style="display:flex;gap:8px;">
+                    <button onclick="randomizePlotMap()" style="padding:8px 16px;background:#F0B90B;color:#1e293b;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">
                         🎲 Casualizar Tudo
                     </button>
-                    <button onclick="clearPlotMap()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold">
+                    <button onclick="clearPlotMap()" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">
                         🗑️ Limpar
                     </button>
                 </div>
             </div>
             
-            <div class="space-y-6">
+            <!-- Blocos -->
+            <div style="display:flex;flex-direction:column;gap:20px;">
                 ${[1, 2, 3].map(blockNum => `
-                    <div class="bg-white border-2 border-gray-200 rounded-xl p-4">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold text-primary">Bloco ${blockNum}</h3>
-                            <button onclick="randomizeBlock(${blockNum})" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm">
+                    <div style="background:#ffffff;border:2px solid #e5e7eb;border-radius:12px;padding:20px;">
+                        <!-- Header do Bloco -->
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h4 style="color:#166534;margin:0;font-size:16px;font-weight:700;">Bloco ${blockNum}</h4>
+                            <button onclick="randomizeBlock(${blockNum})" style="padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
                                 🎲 Casualizar
                             </button>
                         </div>
                         
-                        <div class="grid grid-cols-4 gap-2">
-                            ${expData.plotMap.filter(p => p.block === blockNum).map(plot => `
-                                <div class="border-2 ${plot.treatment_id ? 'border-primary bg-green-50' : 'border-gray-300 bg-gray-50'} rounded-lg p-3">
-                                    <div class="text-xs font-bold text-muted mb-2">${plot.plot_code}</div>
-                                    <select 
-                                        onchange="updatePlotTreatment(${blockNum}, ${plot.row}, ${plot.col}, this.value)"
-                                        class="w-full text-xs border border-gray-300 rounded p-1.5 bg-white"
-                                    >
-                                        <option value="">Selecione...</option>
-                                        ${expData.treatments.map(t => `
-                                            <option value="${t.id}" ${plot.treatment_id === t.id ? 'selected' : ''}>
-                                                T${t.id} - ${t.variety_name} (${t.position})
-                                            </option>
-                                        `).join('')}
-                                    </select>
-                                </div>
-                            `).join('')}
+                        <!-- Grid 3x4 -->
+                        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
+                            ${expData.plotMap.filter(p => p.block === blockNum).map(plot => {
+                                const treatment = plot.treatment_id ? expData.treatments.find(t => t.id == plot.treatment_id) : null;
+                                const bgColor = treatment ? '#f0fdf4' : '#f9fafb';
+                                const borderColor = treatment ? '#166534' : '#d1d5db';
+                                
+                                return `
+                                    <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:12px;">
+                                        <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:8px;">${plot.plot_code}</div>
+                                        <select 
+                                            onchange="updatePlotTreatment(${blockNum}, ${plot.row}, ${plot.col}, this.value)"
+                                            style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:#ffffff;cursor:pointer;"
+                                        >
+                                            <option value="">Selecione...</option>
+                                            ${expData.treatments.map(t => `
+                                                <option value="${t.id}" ${plot.treatment_id == t.id ? 'selected' : ''}>
+                                                    T${t.id} - ${t.variety_name}
+                                                </option>
+                                            `).join('')}
+                                        </select>
+                                        ${treatment ? `<div style="font-size:10px;color:#166534;margin-top:4px;font-weight:600;">${treatment.position}</div>` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                         
-                        <div id="validation-block-${blockNum}" class="mt-3 text-sm"></div>
+                        <!-- Validação -->
+                        <div id="validation-block-${blockNum}" style="margin-top:12px;font-size:13px;font-weight:600;"></div>
                     </div>
                 `).join('')}
             </div>
             
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 class="font-bold text-sm text-primary mb-3">📋 Legenda de Tratamentos</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+            <!-- Legenda -->
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-top:24px;">
+                <h4 style="color:#166534;margin:0 0 12px 0;font-size:14px;font-weight:700;">📋 Legenda de Tratamentos</h4>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;">
                     ${expData.treatments.map(t => `
-                        <div class="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
-                            <span class="font-bold text-primary">T${t.id}:</span>
-                            <span class="text-muted">${t.variety_name} - ${t.position}</span>
+                        <div style="background:#ffffff;padding:8px 12px;border-radius:6px;border:1px solid #e5e7eb;font-size:12px;">
+                            <span style="font-weight:700;color:#166534;">T${t.id}:</span>
+                            <span style="color:#6b7280;">${t.variety_name} (${t.position})</span>
                         </div>
                     `).join('')}
                 </div>
@@ -1113,6 +1126,7 @@ else if(currentStep===7){
     
     setTimeout(() => validateAllBlocks(), 100);
 }
+
 else if(currentStep===8){
         content.innerHTML=`
             <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-bottom:16px;border:1px solid #e5e7eb;">
@@ -1388,7 +1402,7 @@ async function saveExperiment(){
 // FUNÇÕES DO MAPA DBC
 // ============================================
 function updatePlotTreatment(block, row, col, treatmentId){
-    const plot = expData.plotMap.find(p => p.block === block && p.row === row && p.col === col);
+    const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
     if(plot){
         plot.treatment_id = treatmentId || null;
         renderWizard();
@@ -1448,6 +1462,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
