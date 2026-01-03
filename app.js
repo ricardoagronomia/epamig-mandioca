@@ -1583,28 +1583,23 @@ async function saveExperiment(){
         }
         
         // Salvar cronograma (apenas atividades válidas)
-if(expData.schedule && expData.schedule.length > 0){
-    // Filtrar apenas atividades com nome preenchido
-    const validSchedule = expData.schedule.filter(s => 
-        s.activity_name && s.activity_name.trim() !== ''
-    );
-    
-    if(validSchedule.length > 0){
-        const schedulePayload = validSchedule.map(s => ({
-            experiment_id: experimentId,
-            phase: s.phase,
-            activity_name: s.activity_name,
-            start_date: s.start_date,
-            end_date: s.end_date
-        }));
-        
-        console.log('📤 PAYLOAD CORRIGIDO:', JSON.stringify(schedulePayload, null, 2));
-        
-        const {error: schedError} = await supabase.from('experiment_schedule').insert(schedulePayload);
-        if(schedError) throw schedError;
-    }
+if (expData.schedule && expData.schedule.length > 0) {
+  const validSchedule = expData.schedule.filter(a => a.activityname && a.activityname.trim() !== '');
+
+  if (validSchedule.length > 0) {
+    const schedulePayload = validSchedule.map(a => ({
+      experiment_id: experimentId,
+      phase: a.phase,
+      activity_name: a.activityname,
+      start_date: a.startdate,
+      end_date: a.enddate || null
+    }));
+
+    const { error: schedError } = await s.from('experiment_schedule').insert(schedulePayload);
+    if (schedError) throw schedError;
+  }
 }
-        
+      
         // Salvar plot_map com UUIDs reais dos tratamentos
         if(expData.plotMap && expData.plotMap.length > 0){
             const plotMapWithUUIDs = expData.plotMap.map(p => ({
@@ -1635,13 +1630,15 @@ if(expData.schedule && expData.schedule.length > 0){
 // ============================================
 // FUNÇÕES DO MAPA DBC
 // ============================================
-function updatePlotTreatment(block, row, col, treatmentId){
-    const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
-    if(plot){
-        plot.treatment_id = treatmentId || null;
-        renderWizard();
-    }
+function updatePlotTreatment(block, row, col, treatmentId) {
+  const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
+  if (plot) {
+    // treatmentId vem do <select> como string; padroniza para número
+    plot.treatmentid = treatmentId ? parseInt(treatmentId, 10) : null;
+  }
+  renderWizard();
 }
+
 
 function validateAllBlocks(){
     for(let b = 1; b <= 3; b++){
@@ -1696,6 +1693,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
