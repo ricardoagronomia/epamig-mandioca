@@ -1361,37 +1361,43 @@ function renderVarieties(){
         return;
     }
     
-    list.innerHTML = '';
-    expData.varieties.forEach((v,i)=>{
-        const item = document.createElement('div');
-        item.className = 'item';
-        item.innerHTML = `
-            <div><strong>${v.name}</strong> - ${v.use_type || ''} | ${v.pulp_color || ''}</div>
-            <button class="btn-remove">X</button>
-        `;
-        item.querySelector('.btn-remove').onclick = ()=>{
-            expData.varieties.splice(i,1);
-            renderVarieties();
-        };
-        list.appendChild(item);
-    });
+    function renderVarieties(){
+  const list = varList;
+  if(!expData.varieties || expData.varieties.length === 0){
+    list.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
+    return;
+  }
+
+  list.innerHTML = '';
+  expData.varieties.forEach((v,i)=>{
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.innerHTML = `
+      <div><strong>${v.name}</strong> - ${v.use_type || ''} | ${v.pulp_color || ''}</div>
+      <button class="btn-remove">X</button>
+    `;
+    item.querySelector('.btn-remove').onclick = ()=>{
+      expData.varieties.splice(i,1);
+      renderVarieties();
+    };
+    list.appendChild(item);
+  });
 }
 
 function addVariety(){
-    const name = varname.value.trim();
-    if(!name) return alert('Nome obrigatório!');
-    
-    if(!expData.varieties) expData.varieties = [];
-    
-    // Usa os mesmos nomes da tabela do banco: use_type e pulp_color
-    expData.varieties.push({
-        name,
-        use_type: varuse.value,
-        pulp_color: varcolor.value
-    });
-    
-    varname.value = '';
-    renderVarieties();
+  const name = varname.value.trim();
+  if(!name) return alert('Nome obrigatório!');
+
+  if(!expData.varieties) expData.varieties = [];
+
+  expData.varieties.push({
+    name,
+    use_type: varuse.value,
+    pulp_color: varcolor.value
+  });
+
+  varname.value = '';
+  renderVarieties();
 }
 
 function renderSchedule(){
@@ -1667,6 +1673,7 @@ function validateBlock(blockNum){
     validationDiv.innerHTML = '<span style="color:#16a34a">✅ Bloco completo e válido</span>';
   }
 }
+
 
 
 
