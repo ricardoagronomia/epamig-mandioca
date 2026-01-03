@@ -1587,12 +1587,12 @@ if(expData.schedule && expData.schedule.length > 0){
     console.log('📋 CRONOGRAMA RECEBIDO:', JSON.stringify(expData.schedule, null, 2));
     
     const schedulePayload = expData.schedule.map(s => ({
-        experiment_id: experimentId,
-        phase: s.phase,
-        activity_name: s.activityname,
-        start_date: s.startdate,
-        end_date: s.enddate
-    }));
+    experiment_id: experimentId,
+    phase: s.phase,
+    activity_name: s.activity_name,
+    start_date: s.start_date,
+    end_date: s.end_date
+}));
     
     console.log('📤 PAYLOAD PARA BANCO:', JSON.stringify(schedulePayload, null, 2));
     
@@ -1691,6 +1691,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
