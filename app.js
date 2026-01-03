@@ -73,66 +73,61 @@ async function loadUserRole(){
 }
 
 async function showInviteAcceptScreen(token){
-    try {
-        const {data: invite, error} = await s.from('invitations')
-            .select('*')
-            .eq('token', token)
-            .is('accepted_at', null)
-            .order('created_at', {ascending: false})
-            .limit(1)
-            .single();
-        
-        if(error || !invite){
-            alert('âŒ Convite invÃ¡lido ou jÃ¡ aceito');
-            window.location.href = window.location.origin;
-            return;
-        }
-        
-        if(new Date(invite.expires_at) < new Date()){
-            alert('âŒ Convite expirado');
-            window.location.href = window.location.origin;
-            return;
-        }
-        
-        document.body.innerHTML = `
-            <div style="max-width:500px;margin:100px auto;background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-                <div style="text-align:center;margin-bottom:32px;">
-                    <div style="width:80px;height:80px;margin:0 auto 16px;background:linear-gradient(135deg,#166534 0%,#15803d 100%);border-radius:20px;display:flex;align-items:center;justify-content:center;">
-                        <svg viewBox="0 0 24 24" width="48" height="48" fill="white" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                        </svg>
-                    </div>
-                    <h1 style="color:#166534;font-size:24px;margin-bottom:8px;">VocÃª foi convidado!</h1>
-                    <p style="color:#6b7280;font-size:14px;">Convite para <strong>${roleLabels[invite.role]}</strong></p>
-                </div>
-                
-                <div style="background:#f9fafb;padding:20px;border-radius:8px;margin-bottom:24px;">
-                    <p style="font-size:14px;color:#374151;margin-bottom:16px;"><strong>E-mail:</strong> ${invite.email}</p>
-                    <p style="font-size:14px;color:#374151;margin-bottom:16px;"><strong>Role:</strong> ${roleLabels[invite.role]}</p>
-                    <p style="font-size:14px;color:#374151;"><strong>Expira em:</strong> ${formatDate(invite.expires_at.split('T')[0])}</p>
-                </div>
-                
-                <h3 style="font-size:16px;color:#166534;margin-bottom:16px;">Criar sua conta</h3>
-                <input type="email" id="inviteEmail" value="${invite.email}" readonly style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px;background:#f3f4f6;font-size:14px;">
-                <input type="password" id="invitePassword" placeholder="Senha (mÃ­nimo 6 caracteres)" style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
-                <input type="password" id="invitePasswordConfirm" placeholder="Confirme a senha" style="width:100%;padding:10px;margin-bottom:20px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
-                
-                <button id="btnAcceptInvite" style="width:100%;padding:12px;background:#166534;color:white;border:none;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;">
-                    âœ“ Aceitar Convite e Criar Conta
-                </button>
-                
-                <p style="text-align:center;margin-top:16px;font-size:13px;color:#6b7280;">
-                    JÃ¡ tem conta? <a href="${window.location.origin}" style="color:#166534;font-weight:600;">Fazer login</a>
-                </p>
-            </div>
-        `;
-        
-        document.getElementById('btnAcceptInvite').onclick = () => acceptInvite(token, invite);
-        
-    } catch(x) {
-        alert('Erro ao carregar convite: ' + x.message);
-        window.location.href = window.location.origin;
+  try {
+    const { data: invite, error } = await s
+      .from('invitations')
+      .select('*')
+      .eq('token', token)
+      .is('accepted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !invite) {
+      alert('Convite inválido ou já aceito');
+      window.location.href = window.location.origin;
+      return;
     }
+
+    if (new Date(invite.expires_at) < new Date()) {
+      alert('Convite expirado');
+      window.location.href = window.location.origin;
+      return;
+    }
+
+    // Tela simples de aceite de convite
+    document.body.innerHTML = `
+      <div style="max-width:500px;margin:80px auto;background:#fff;padding:32px;border-radius:12px;
+                  box-shadow:0 4px 12px rgba(0,0,0,0.1);font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+        <h1 style="color:#166534;font-size:22px;margin-bottom:8px;">Convite para MandiocaTrack</h1>
+        <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">
+          Você foi convidado como <strong>${roleLabels[invite.role] || invite.role}</strong>.
+        </p>
+        <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-bottom:20px;">
+          <p style="margin:0 0 8px 0;font-size:14px;color:#374151;">
+            <strong>E-mail:</strong> ${invite.email}
+          </p>
+          <p style="margin:0 0 8px 0;font-size:14px;color:#374151;">
+            <strong>Role:</strong> ${roleLabels[invite.role] || invite.role}
+          </p>
+          <p style="margin:0;font-size:14px;color:#374151;">
+            <strong>Expira em:</strong> ${formatDate(invite.expires_at.split('T')[0])}
+          </p>
+        </div>
+        <p style="font-size:14px;color:#374151;margin-bottom:16px;">
+          Para aceitar o convite, crie sua conta ou faça login com este e-mail.
+        </p>
+        <a href="${window.location.origin}" 
+           style="display:inline-block;padding:10px 18px;background:#166534;color:#fff;
+                  border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+          Ir para tela de login
+        </a>
+      </div>
+    `;
+  } catch (err) {
+    alert('Erro ao carregar convite');
+    window.location.href = window.location.origin;
+  }
 }
 
 async function acceptInvite(token, invite){
@@ -1270,3 +1265,4 @@ async function saveExperiment(){
         console.error(x);
     }
 }
+
