@@ -1157,7 +1157,7 @@ else if(currentStep === 7){
             </div>
         `;
     }
-    
+}
     $('btnPrev').classList.toggle('hidden',currentStep===0);
     $('btnNext').classList.toggle('hidden',currentStep===steps.length-1);
     $('btnSave').classList.toggle('hidden',currentStep!==steps.length-1);
@@ -1447,5 +1447,6 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
