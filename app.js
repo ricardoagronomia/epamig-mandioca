@@ -967,27 +967,6 @@ async function renderMapaDBCPage(content){
     `;
 }
 
-// Função auxiliar para carregar tratamentos do experimento
-async function loadExperimentTreatments(experimentId){
-    const {data: varieties} = await s.from('varieties').select('*').eq('experiment_id', id);
-const {data: treatments} = await s.from('treatments').select('*').eq('experiment_id', id);
-const {data: schedule} = await s.from('experiment_schedule').select('*').eq('experiment_id', id);
-
-// Enriquecer tratamentos com nome da variedade
-const enrichedTreatments = treatments.map(t => {
-    const variety = varieties.find(v => v.id === t.variety_id);
-    return {
-        id: t.id,
-        code: t.code,
-        variety: variety?.name || '',
-        variety_name: variety?.name || '',
-        position: t.position
-    };
-});
-    
-    return enrichedTreatments;
-}
-
 function renderMonitoramentoPage(content){
     content.innerHTML=`
         <div class="content-header">
@@ -1635,6 +1614,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
