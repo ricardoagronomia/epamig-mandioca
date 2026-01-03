@@ -385,7 +385,13 @@ async function loadExperimentsList(){
 }
 
 async function selectExperiment(id){
-    const {data}=await s.from('experiments').select('*').eq('id',id).single();
+    const {data} = await s.from('experiments').select().eq('id',id).single();
+    
+    // ADICIONE ESTA CONVERSÃO:
+    if(data.plot_map && typeof data.plot_map === 'string'){
+        data.plot_map = JSON.parse(data.plot_map);
+    }
+    
     setCurrentExperiment(data);
     navigateTo('identificacao');
 }
@@ -1614,6 +1620,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
