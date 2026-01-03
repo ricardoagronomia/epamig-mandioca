@@ -884,7 +884,7 @@ async function renderMapaDBCPage(content){
     // Calcular estatísticas
     const stats = {};
     enrichedTreatments.forEach(t => {
-        const count = plotMap.filter(p => p.treatment_id === t.id).length;
+        const count = plotMap.filter(p => p.treatment_id == t.id).length;
         stats[t.id] = count;
     });
     
@@ -920,7 +920,7 @@ async function renderMapaDBCPage(content){
                     <!-- Grid 3x4 -->
                     <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
                         ${plotMap.filter(p => p.block === blockNum).map(plot => {
-                            const treatment = enrichedTreatments.find(t => t.id === plot.treatment_id);
+                            const treatment = enrichedTreatments.find(t => t.id == plot.treatment_id);
                             const bgColor = treatment ? '#f0fdf4' : '#f9fafb';
                             const borderColor = treatment ? '#166534' : '#d1d5db';
                             
@@ -951,7 +951,7 @@ async function renderMapaDBCPage(content){
             <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));gap:12px;">
                 ${enrichedTreatments.map(t => {
                     const count = stats[t.id] || 0;
-                    const isComplete = count === currentExperiment.blocks_count;
+                    const isComplete = count == currentExperiment.blocks_count;
                     const statusColor = isComplete ? '#16a34a' : (count > 0 ? '#d97706' : '#dc2626');
                     
                     return `
@@ -1629,6 +1629,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
