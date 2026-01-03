@@ -814,12 +814,19 @@ function renderDadosGeraisPage(content){
 }
 
 function renderMapaDBCPage(content){
-    content.innerHTML=`
+    if(!currentExperiment){
+        content.innerHTML=`<div class="card"><p style="text-align:center;color:#6b7280;">Selecione um experimento</p></div>`;
+        return;
+    }
+    
+    content.innerHTML = `
         <div class="content-header">
             <div class="content-title">Mapa DBC</div>
+            <div class="content-subtitle">Visualize a distribuição dos tratamentos</div>
         </div>
         <div class="card">
-            <p style="color:#6b7280;">Em desenvolvimento...</p>
+            <p style="color:#6b7280;">Funcionalidade em desenvolvimento...</p>
+            <p style="color:#6b7280;margin-top:12px;">O mapa será configurado durante a criação/edição do experimento.</p>
         </div>
     `;
 }
@@ -1441,6 +1448,7 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
 
 
