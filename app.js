@@ -1216,15 +1216,7 @@ else if(currentStep===7){
                 <div style="color:#6b7280;font-size:14px;">
                     <strong>Layout:</strong> 3 linhas × 4 colunas | <strong>Plantas:</strong> 25/parcela (9 úteis)
                 </div>
-                <div style="display:flex;gap:8px;">
-                    <button onclick="randomizePlotMap()" style="padding:8px 16px;background:#F0B90B;color:#1e293b;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">
-                        🎲 Casualizar Tudo
-                    </button>
-                    <button onclick="clearPlotMap()" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">
-                        🗑️ Limpar
-                    </button>
-                </div>
-            </div>
+                            </div>
             
             <!-- Blocos -->
             <div style="display:flex;flex-direction:column;gap:20px;">
@@ -1233,10 +1225,7 @@ else if(currentStep===7){
                         <!-- Header do Bloco -->
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                             <h4 style="color:#166534;margin:0;font-size:16px;font-weight:700;">Bloco ${blockNum}</h4>
-                            <button onclick="randomizeBlock(${blockNum})" style="padding:6px 12px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
-                                🎲 Casualizar
-                            </button>
-                        </div>
+                               </div>
                         
                         <!-- Grid 3x4 -->
                         <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;">
@@ -1366,27 +1355,42 @@ function addcollaborator(){
 }
 
 function renderVarieties(){
-    const list=$('varList');
-    if(!expData.varieties||expData.varieties.length===0){
-        list.innerHTML='<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
+    const list = varList;
+    if(!expData.varieties || expData.varieties.length === 0){
+        list.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">Nenhuma variedade.</p>';
         return;
     }
-    list.innerHTML='';
+    
+    list.innerHTML = '';
     expData.varieties.forEach((v,i)=>{
-        const item=document.createElement('div');
-        item.className='item';
-        item.innerHTML=`<div><strong>${v.name}</strong> - ${v.use_type} | ${v.pulp_color}</div><button class="btn-remove">✕</button>`;
-        item.querySelector('.btn-remove').onclick=()=>{expData.varieties.splice(i,1);renderVarieties()};
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = `
+            <div><strong>${v.name}</strong> - ${v.use_type || ''} | ${v.pulp_color || ''}</div>
+            <button class="btn-remove">X</button>
+        `;
+        item.querySelector('.btn-remove').onclick = ()=>{
+            expData.varieties.splice(i,1);
+            renderVarieties();
+        };
         list.appendChild(item);
     });
 }
 
 function addVariety(){
-    const name=$('var_name').value.trim();
-    if(!name)return alert('Nome obrigatório!');
-    if(!expData.varieties)expData.varieties=[];
-    expData.varieties.push({name:name,use_type:$('var_use').value,pulp_color:$('var_color').value});
-    $('var_name').value='';
+    const name = varname.value.trim();
+    if(!name) return alert('Nome obrigatório!');
+    
+    if(!expData.varieties) expData.varieties = [];
+    
+    // Usa os mesmos nomes da tabela do banco: use_type e pulp_color
+    expData.varieties.push({
+        name,
+        use_type: varuse.value,
+        pulp_color: varcolor.value
+    });
+    
+    varname.value = '';
     renderVarieties();
 }
 
@@ -1538,21 +1542,17 @@ async function saveExperiment(){
             experimentId = data.id;
         }
         
-        // Salvar variedades e pegar os IDs
-        const varietyMap = {}; // Mapear nome -> UUID
-        if(expData.varieties && expData.varieties.length > 0){
-            const varietiesPayload = expData.varieties.map(v => ({
-                experiment_id: experimentId,
-                name: v.name,
-                use_type: v.usetype,
-                pulp_color: v.pulpcolor
-            }));
-            
-            const {data: savedVarieties, error: varError} = await s.from('varieties')
-                .insert(varietiesPayload)
-                .select();
-            
-            if(varError) throw varError;
+        // Salvar variedades
+if(expData.varieties && expData.varieties.length > 0){
+    const varietiesPayload = expData.varieties.map(v => ({
+        experiment_id: experimentId,
+        name: v.name,
+        use_type: v.use_type,
+        pulp_color: v.pulp_color
+    }));
+    const { error: varError } = await s.from('varieties').insert(varietiesPayload);
+    if(varError) throw varError;
+}
             
             // Criar mapa: nome da variedade -> UUID
             savedVarieties.forEach(v => {
@@ -1668,33 +1668,7 @@ function validateBlock(blockNum){
   }
 }
 
-function randomizeBlock(blockNum){
-  const blockPlots = expData.plotMap.filter(p => p.block == blockNum);
-  const treatments = [...expData.treatments].sort(() => Math.random() - 0.5);
 
-  blockPlots.forEach((plot, index) => {
-    if(index < treatments.length){
-      // ✅ aqui também é treatmentid (sem underscore)
-      plot.treatmentid = treatments[index].id;
-    }
-  });
-
-  renderWizard();
-}
-
-function randomizePlotMap(){
-  for(let b = 1; b <= 3; b++){
-    randomizeBlock(b);
-  }
-}
-
-function clearPlotMap(){
-  if(confirm('Tem certeza que deseja limpar todo o mapa?')){
-    // ✅ aqui também é treatmentid (sem underscore)
-    expData.plotMap.forEach(p => p.treatmentid = null);
-    renderWizard();
-  }
-}
 
 
 
