@@ -1631,17 +1631,11 @@ if (expData.schedule && expData.schedule.length > 0) {
 // FUNÇÕES DO MAPA DBC
 // ============================================
 window.updatePlotTreatment = function(block, row, col, treatmentId){
-  const plot = expData.plotMap.find(
-    p => p.block == block && p.row == row && p.col == col
-  );
+  const plot = expData.plotMap.find(p => p.block == block && p.row == row && p.col == col);
   if (plot) {
-    // treatmentId vem do <select> como string; padroniza para número
     plot.treatmentid = treatmentId ? parseInt(treatmentId, 10) : null;
   }
-  // Só valida os blocos, não redesenha o wizard inteiro
-  if (typeof validateAllBlocks === 'function') {
-    validateAllBlocks();
-  }
+  if (typeof validateAllBlocks === 'function') validateAllBlocks();
 };
 
 function validateAllBlocks(){
@@ -1651,52 +1645,58 @@ function validateAllBlocks(){
 }
 
 function validateBlock(blockNum){
-    const blockPlots = expData.plotMap.filter(p => p.block === blockNum);
-    const assignedTreatments = blockPlots.map(p => p.treatment_id).filter(t => t);
-    const uniqueTreatments = [...new Set(assignedTreatments)];
-    
-    const validationDiv = document.getElementById(`validation-block-${blockNum}`);
-    if(!validationDiv) return;
-    
-    const missingCount = expData.treatments.length - assignedTreatments.length;
-    const hasDuplicates = assignedTreatments.length !== uniqueTreatments.length;
-    
-    if(assignedTreatments.length === 0){
-        validationDiv.innerHTML = '<span style="color:#6b7280">⚪ Nenhum tratamento atribuído</span>';
-    } else if(hasDuplicates){
-        validationDiv.innerHTML = '<span style="color:#dc2626">❌ Tratamentos duplicados neste bloco!</span>';
-    } else if(missingCount > 0){
-        validationDiv.innerHTML = `<span style="color:#d97706">⚠️ Faltam ${missingCount} tratamento(s)</span>`;
-    } else {
-        validationDiv.innerHTML = '<span style="color:#16a34a">✅ Bloco completo e válido</span>';
-    }
+  const blockPlots = expData.plotMap.filter(p => p.block == blockNum);
+
+  // ✅ aqui é treatmentid (sem underscore)
+  const assignedTreatments = blockPlots.map(p => p.treatmentid).filter(t => t);
+  const uniqueTreatments = [...new Set(assignedTreatments)];
+
+  const validationDiv = document.getElementById(`validation-block-${blockNum}`);
+  if(!validationDiv) return;
+
+  const missingCount = expData.treatments.length - assignedTreatments.length;
+  const hasDuplicates = assignedTreatments.length !== uniqueTreatments.length;
+
+  if(assignedTreatments.length === 0){
+    validationDiv.innerHTML = '<span style="color:#6b7280">⚪ Nenhum tratamento atribuído</span>';
+  } else if(hasDuplicates){
+    validationDiv.innerHTML = '<span style="color:#dc2626">❌ Tratamentos duplicados neste bloco!</span>';
+  } else if(missingCount > 0){
+    validationDiv.innerHTML = `<span style="color:#d97706">⚠️ Faltam ${missingCount} tratamento(s)</span>`;
+  } else {
+    validationDiv.innerHTML = '<span style="color:#16a34a">✅ Bloco completo e válido</span>';
+  }
 }
 
 function randomizeBlock(blockNum){
-    const blockPlots = expData.plotMap.filter(p => p.block === blockNum);
-    const treatments = [...expData.treatments].sort(() => Math.random() - 0.5);
-    
-    blockPlots.forEach((plot, index) => {
-        if(index < treatments.length){
-            plot.treatment_id = treatments[index].id;
-        }
-    });
-    
-    renderWizard();
+  const blockPlots = expData.plotMap.filter(p => p.block == blockNum);
+  const treatments = [...expData.treatments].sort(() => Math.random() - 0.5);
+
+  blockPlots.forEach((plot, index) => {
+    if(index < treatments.length){
+      // ✅ aqui também é treatmentid (sem underscore)
+      plot.treatmentid = treatments[index].id;
+    }
+  });
+
+  renderWizard();
 }
 
 function randomizePlotMap(){
-    for(let b = 1; b <= 3; b++){
-        randomizeBlock(b);
-    }
+  for(let b = 1; b <= 3; b++){
+    randomizeBlock(b);
+  }
 }
 
 function clearPlotMap(){
-    if(confirm('Tem certeza que deseja limpar todo o mapa?')){
-        expData.plotMap.forEach(p => p.treatment_id = null);
-        renderWizard();
-    }
+  if(confirm('Tem certeza que deseja limpar todo o mapa?')){
+    // ✅ aqui também é treatmentid (sem underscore)
+    expData.plotMap.forEach(p => p.treatmentid = null);
+    renderWizard();
+  }
 }
+
+
 
 
 
