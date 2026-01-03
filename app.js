@@ -1007,7 +1007,8 @@ else if(currentStep===6){
             </div>
         </div>
     `;
-    // ============================================
+   
+// ============================================
 // ETAPA 7: MAPA DBC (Distribuição de Parcelas)
 // ============================================
 else if(currentStep === 7){
@@ -1030,7 +1031,7 @@ else if(currentStep === 7){
         }
     }
     
-    c.innerHTML=`
+    content.innerHTML = `
         <div class="space-y-6">
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div class="flex items-start gap-3">
@@ -1109,6 +1110,7 @@ else if(currentStep === 7){
     
     setTimeout(() => validateAllBlocks(), 100);
 }
+
 
     else if(currentStep===8){
         content.innerHTML=`
@@ -1256,17 +1258,24 @@ function addActivity(){
 }
 
 function generateTreatments(){
-    const positions=['vertical','inclinada','horizontal'];
-    let treatments=[];
-    let counter=1;
-    if(!expData.varieties||expData.varieties.length===0)return;
-    expData.varieties.forEach(v=>{
-        positions.forEach(p=>{
-            treatments.push({code:`T${counter}`,variety:v.name,position:p});
+    const positions = ['vertical', 'inclinada', 'horizontal'];
+    let treatments = [];
+    let counter = 1;
+    if(!expData.varieties || expData.varieties.length === 0) return;
+    
+    expData.varieties.forEach(v => {
+        positions.forEach(p => {
+            treatments.push({
+                code: `T${counter}`,
+                id: counter,
+                variety: v.name,
+                variety_name: v.name,
+                position: p
+            });
             counter++;
         });
     });
-    expData.treatments=treatments;
+    expData.treatments = treatments;
 }
 
 function saveStepData(){
@@ -1438,4 +1447,5 @@ function clearPlotMap(){
         renderWizard();
     }
 }
+
 
