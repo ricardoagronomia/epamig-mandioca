@@ -391,25 +391,27 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
         <div style="margin-top:10px;">
           <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Disposição das plantas na parcela</div>
           <div style="display:flex; flex-wrap:wrap; gap:8px;">
-            <div style="flex:1 1 110px;">
-              <label>Plantas totais/linha</label>
-              <input type="number" value="${plantsPerRow}" disabled />
-            </div>
-            <div style="flex:1 1 110px;">
-              <label>Plantas totais/coluna</label>
-              <input type="number" value="${plantsPerCol}" disabled />
-            </div>
-            <div style="flex:1 1 110px;">
-              <label>Plantas úteis/linha</label>
-              <input id="expUsefulRow" type="number" min="1"
-                value="${usefulPlantsPerRow}" />
-            </div>
-            <div style="flex:1 1 110px;">
-              <label>Plantas úteis/coluna</label>
-              <input id="expUsefulCol" type="number" min="1"
-                value="${usefulPlantsPerCol}" />
-            </div>
-          </div>
+  <div style="flex:1 1 120px;">
+    <label for="expPlotLength">Comprimento (m)</label>
+    <input id="expPlotLength" type="number" step="0.01" min="0"
+      value="${plotLength}" />
+  </div>
+  <div style="flex:1 1 120px;">
+    <label for="expPlotWidth">Largura (m)</label>
+    <input id="expPlotWidth" type="number" step="0.01" min="0"
+      value="${plotWidth}" />
+  </div>
+  <div style="flex:1 1 120px;">
+    <label for="expRowSpacing">Espaç. linhas (m)</label>
+    <input id="expRowSpacing" type="number" step="0.01" min="0"
+      value="${rowSpacing}" />
+  </div>
+  <div style="flex:1 1 120px;">
+    <label for="expPlantSpacing">Espaç. plantas (m)</label>
+    <input id="expPlantSpacing" type="number" step="0.01" min="0"
+      value="1.00" />
+  </div>
+</div>
         </div>
 
         <div style="margin-top:10px;">
@@ -516,14 +518,13 @@ async function submitExperimentForm(id) {
 
   // se usuário não preencher áreas, calcula
   let plot_area = parseFloat(document.getElementById("expPlotArea").value || "0");
-  if (!plot_area && plot_length && plot_width) {
-    plot_area = plot_length * plot_width;
-  }
-
-  let total_area = parseFloat(document.getElementById("expTotalArea").value || "0");
-  if (!total_area && plot_area && blocks_count && plots_per_block) {
-    total_area = plot_area * blocks_count * plots_per_block;
-  }
+if (!plot_area && plot_length && plot_width) {
+  plot_area = plot_length * plot_width;
+}
+let total_area = parseFloat(document.getElementById("expTotalArea").value || "0");
+if (!total_area && plot_area && blocks_count && plots_per_block) {
+  total_area = plot_area * blocks_count * plots_per_block;
+}
 
   const status = document.getElementById("expStatus")
     ? document.getElementById("expStatus").value
@@ -595,6 +596,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
