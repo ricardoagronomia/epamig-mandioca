@@ -176,11 +176,13 @@
     .app-layout { display: flex; flex-direction: column; height: 100vh; }
 
     .header {
-      background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
-      color: #f9fafb;
-      padding: 10px 20px;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
-      z-index: 10;
+  background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
+  color: #f9fafb;
+  padding: 6px 12px;  /* antes era 10px 20px */
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+  z-index: 10;
+}
+
     }
     .header-content {
       display: flex;
@@ -409,7 +411,7 @@
     @media (max-width: 768px) {
   .sidebar {
     position: fixed;
-    inset: 56px 0 auto 0;
+    inset: 52px 0 auto 0;  /* estava 56px */
     width: 100%;
     height: auto;
     display: flex;
@@ -426,7 +428,7 @@
   }
   .content-area {
     padding: 16px;
-    margin-top: 72px; /* usa só este valor */
+    margin-top: 68px;  /* estava 56px ou 72px, ajusta para encaixar melhor */
   }
 }
 
@@ -529,5 +531,6 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
 
