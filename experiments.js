@@ -478,43 +478,10 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
   `;
 
   if (typeof openModal === "function") {
-  openModal(title, bodyHtml);
-
-  // depois que o modal é aberto, liga os eventos de recálculo
-  const lenInput = document.getElementById("expPlotLength");
-  const widInput = document.getElementById("expPlotWidth");
-  const blocksInput = document.getElementById("expBlocks");
-  const plotsInput = document.getElementById("expPlotsPerBlock");
-  const areaInput = document.getElementById("expPlotArea");
-  const totalAreaInput = document.getElementById("expTotalArea");
-
-  function recalcAreas() {
-    const length = parseFloat(lenInput.value || "0");
-    const width = parseFloat(widInput.value || "0");
-    const blocks = parseInt(blocksInput.value || "0", 10);
-    const plots = parseInt(plotsInput.value || "0", 10);
-
-    let plotArea = 0;
-    if (length > 0 && width > 0) {
-      plotArea = length * width;
-    }
-    areaInput.value = plotArea ? plotArea.toFixed(2) : "";
-
-    let totalArea = 0;
-    if (plotArea > 0 && blocks > 0 && plots > 0) {
-      totalArea = plotArea * blocks * plots;
-    }
-    totalAreaInput.value = totalArea ? totalArea.toFixed(2) : "";
+    openModal(title, bodyHtml);
+  } else {
+    alert("Função openModal não encontrada no app principal.");
   }
-
-  if (lenInput && widInput && blocksInput && plotsInput && areaInput && totalAreaInput) {
-    lenInput.addEventListener("input", recalcAreas);
-    widInput.addEventListener("input", recalcAreas);
-    blocksInput.addEventListener("input", recalcAreas);
-    plotsInput.addEventListener("input", recalcAreas);
-  }
-} else {
-  alert("Função openModal não encontrada no app principal.");
 }
 
 async function submitExperimentForm(id) {
@@ -629,8 +596,6 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
-
-
 
 
 
