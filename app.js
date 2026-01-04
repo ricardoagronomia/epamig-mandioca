@@ -12,9 +12,10 @@ let currentStep = 0;
 let expData = {};
 let editingExpId = null;
 
-const steps = ['IdentificaÃ§Ã£o', 'LocalizaÃ§Ã£o', 'Ambiente', 'Delineamento', 'Variedades', 'Tratamentos', 'DimensÃµes', 'Cronograma', 'RevisÃ£o'];
+// CORRIGIDO: caracteres especiais
+const steps = ['Identificação', 'Localização', 'Ambiente', 'Delineamento', 'Variedades', 'Tratamentos', 'Dimensões', 'Cronograma', 'Revisão'];
 const phaseLabels = {
-    'pre_planting': 'PrÃ©-Plantio',
+    'pre_planting': 'Pré-Plantio',
     'planting': 'Plantio',
     'monitoring': 'Acompanhamento',
     'cultural_practices': 'Tratos Culturais',
@@ -36,7 +37,13 @@ function formatDate(dateString) {
     return `${day}/${month}/${year}`;
 }
 
-function m(t,c){const d=$('msg');d.textContent=t;d.className='message '+c;d.style.display='block';setTimeout(()=>d.style.display='none',5e3);}
+function m(t,c){
+    const d=$('msg');
+    d.textContent=t;
+    d.className='message '+c;
+    d.style.display='block';
+    setTimeout(()=>d.style.display='none',5e3);
+}
 
 function getBaseUrl(){
     if(window.location.protocol === 'file:'){
@@ -73,61 +80,66 @@ async function loadUserRole(){
 }
 
 async function showInviteAcceptScreen(token){
-  try {
-    const { data: invite, error } = await s
-      .from('invitations')
-      .select('*')
-      .eq('token', token)
-      .is('accepted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !invite) {
-      alert('Convite inválido ou já aceito');
-      window.location.href = window.location.origin;
-      return;
+    try {
+        const {data: invite, error} = await s.from('invitations')
+            .select('*')
+            .eq('token', token)
+            .is('accepted_at', null)
+            .order('created_at', {ascending: false})
+            .limit(1)
+            .single();
+        
+        if(error || !invite){
+            alert('❌ Convite inválido ou já aceito');
+            window.location.href = window.location.origin;
+            return;
+        }
+        
+        if(new Date(invite.expires_at) < new Date()){
+            alert('❌ Convite expirado');
+            window.location.href = window.location.origin;
+            return;
+        }
+        
+        document.body.innerHTML = `
+            <div style="max-width:500px;margin:100px auto;background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                <div style="text-align:center;margin-bottom:32px;">
+                    <div style="width:80px;height:80px;margin:0 auto 16px;background:linear-gradient(135deg,#166534 0%,#15803d 100%);border-radius:20px;display:flex;align-items:center;justify-content:center;">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="white" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                        </svg>
+                    </div>
+                    <h1 style="color:#166534;font-size:24px;margin-bottom:8px;">Você foi convidado!</h1>
+                    <p style="color:#6b7280;font-size:14px;">Convite para <strong>${roleLabels[invite.role]}</strong></p>
+                </div>
+                
+                <div style="background:#f9fafb;padding:20px;border-radius:8px;margin-bottom:24px;">
+                    <p style="font-size:14px;color:#374151;margin-bottom:16px;"><strong>E-mail:</strong> ${invite.email}</p>
+                    <p style="font-size:14px;color:#374151;margin-bottom:16px;"><strong>Role:</strong> ${roleLabels[invite.role]}</p>
+                    <p style="font-size:14px;color:#374151;"><strong>Expira em:</strong> ${formatDate(invite.expires_at.split('T')[0])}</p>
+                </div>
+                
+                <h3 style="font-size:16px;color:#166534;margin-bottom:16px;">Criar sua conta</h3>
+                <input type="email" id="inviteEmail" value="${invite.email}" readonly style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px;background:#f3f4f6;font-size:14px;">
+                <input type="password" id="invitePassword" placeholder="Senha (mínimo 6 caracteres)" style="width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
+                <input type="password" id="invitePasswordConfirm" placeholder="Confirme a senha" style="width:100%;padding:10px;margin-bottom:20px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
+                
+                <button id="btnAcceptInvite" style="width:100%;padding:12px;background:#166534;color:white;border:none;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;">
+                    ✅ Aceitar Convite e Criar Conta
+                </button>
+                
+                <p style="text-align:center;margin-top:16px;font-size:13px;color:#6b7280;">
+                    Já tem conta? <a href="${window.location.origin}" style="color:#166534;font-weight:600;">Fazer login</a>
+                </p>
+            </div>
+        `;
+        
+        document.getElementById('btnAcceptInvite').onclick = () => acceptInvite(token, invite);
+        
+    } catch(x) {
+        alert('Erro ao carregar convite: ' + x.message);
+        window.location.href = window.location.origin;
     }
-
-    if (new Date(invite.expires_at) < new Date()) {
-      alert('Convite expirado');
-      window.location.href = window.location.origin;
-      return;
-    }
-
-    // Tela simples de aceite de convite
-    document.body.innerHTML = `
-      <div style="max-width:500px;margin:80px auto;background:#fff;padding:32px;border-radius:12px;
-                  box-shadow:0 4px 12px rgba(0,0,0,0.1);font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-        <h1 style="color:#166534;font-size:22px;margin-bottom:8px;">Convite para MandiocaTrack</h1>
-        <p style="color:#6b7280;font-size:14px;margin-bottom:16px;">
-          Você foi convidado como <strong>${roleLabels[invite.role] || invite.role}</strong>.
-        </p>
-        <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-bottom:20px;">
-          <p style="margin:0 0 8px 0;font-size:14px;color:#374151;">
-            <strong>E-mail:</strong> ${invite.email}
-          </p>
-          <p style="margin:0 0 8px 0;font-size:14px;color:#374151;">
-            <strong>Role:</strong> ${roleLabels[invite.role] || invite.role}
-          </p>
-          <p style="margin:0;font-size:14px;color:#374151;">
-            <strong>Expira em:</strong> ${formatDate(invite.expires_at.split('T')[0])}
-          </p>
-        </div>
-        <p style="font-size:14px;color:#374151;margin-bottom:16px;">
-          Para aceitar o convite, crie sua conta ou faça login com este e-mail.
-        </p>
-        <a href="${window.location.origin}" 
-           style="display:inline-block;padding:10px 18px;background:#166534;color:#fff;
-                  border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
-          Ir para tela de login
-        </a>
-      </div>
-    `;
-  } catch (err) {
-    alert('Erro ao carregar convite');
-    window.location.href = window.location.origin;
-  }
 }
 
 async function acceptInvite(token, invite){
@@ -136,11 +148,11 @@ async function acceptInvite(token, invite){
     const passwordConfirm = document.getElementById('invitePasswordConfirm').value;
     
     if(!password || password.length < 6){
-        return alert('Senha deve ter no mÃ­nimo 6 caracteres');
+        return alert('Senha deve ter no mínimo 6 caracteres');
     }
     
     if(password !== passwordConfirm){
-        return alert('As senhas nÃ£o coincidem');
+        return alert('As senhas não coincidem');
     }
     
     try {
@@ -165,7 +177,7 @@ async function acceptInvite(token, invite){
             accepted_at: new Date().toISOString()
         }).eq('email', invite.email).is('accepted_at', null);
         
-        alert('âœ… Conta criada com sucesso!\n\nFaÃ§a login para acessar o sistema.');
+        alert('✅ Conta criada com sucesso!\n\nFaça login para acessar o sistema.');
         window.location.href = window.location.origin;
         
     } catch(x) {
@@ -173,25 +185,24 @@ async function acceptInvite(token, invite){
     }
 }
 
-// FunÃ§Ã£o para corrigir role manualmente via SQL (caso necessÃ¡rio)
+// Função para corrigir role manualmente via SQL (caso necessário)
 async function fixUserRole(email, correctRole){
     try {
         // Buscar user_id pelo email
         const {data: profile} = await s.from('user_profiles').select('id').eq('email', email).single();
-        if(!profile) throw new Error('UsuÃ¡rio nÃ£o encontrado');
+        if(!profile) throw new Error('Usuário não encontrado');
         
         // Atualizar role
         const {error} = await s.from('user_roles').update({role: correctRole}).eq('user_id', profile.id);
         if(error) throw error;
         
-        console.log(`âœ… Role de ${email} corrigido para ${correctRole}`);
+        console.log(`✅ Role de ${email} corrigido para ${correctRole}`);
     } catch(x) {
         console.error('Erro ao corrigir role:', x);
     }
 }
 
-
-// BOTÃ•ES DE LOGIN E CADASTRO
+// BOTÕES DE LOGIN E CADASTRO
 $('t1').onclick=()=>{$('t1').className='active';$('t2').className='';$('f1').classList.remove('hidden');$('f2').classList.add('hidden')};
 $('t2').onclick=()=>{$('t2').className='active';$('t1').className='';$('f2').classList.remove('hidden');$('f1').classList.add('hidden')};
 
@@ -212,13 +223,13 @@ $('b1').onclick=async()=>{
 $('b2').onclick=async()=>{
     const e=$('e2').value,p=$('p2').value;
     if(!e||!p)return m('Preencha tudo!','error');
-    if(p.length<6)return m('Senha mÃ­nimo 6!','error');
+    if(p.length<6)return m('Senha mínimo 6!','error');
     try{
         const {data,error}=await s.auth.signUp({email:e,password:p});
         if(error)throw error;
         await s.from('user_profiles').insert([{id:data.user.id,email:e}]);
         await s.from('user_roles').insert([{user_id:data.user.id,role:'visitor'}]);
-        m('âœ… Criado! FaÃ§a login.','success');
+        m('✅ Criado! Faça login.','success');
         setTimeout(()=>$('t1').click(),2e3)
     }catch(x){
         m('Erro: '+x.message,'error')
@@ -282,7 +293,7 @@ function renderPage(page){
             break;
         case 'new-experiment':
             if(userRole === 'visitor'){
-                content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">âŒ VocÃª nÃ£o tem permissÃ£o</p></div>';
+                content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">❌ Você não tem permissão</p></div>';
             } else {
                 openNewExperimentModal();
             }
@@ -309,11 +320,11 @@ function renderPage(page){
             content.innerHTML = `
                 <div class="content-header">
                     <div class="content-title">Em Desenvolvimento</div>
-                    <div class="content-subtitle">Esta pÃ¡gina estÃ¡ sendo construÃ­da</div>
+                    <div class="content-subtitle">Esta página está sendo construída</div>
                 </div>
                 <div class="card">
                     <p style="text-align:center;color:#6b7280;padding:40px;">
-                        PÃ¡gina "${page}" em desenvolvimento
+                        Página "${page}" em desenvolvimento
                     </p>
                 </div>
             `;
@@ -349,7 +360,7 @@ async function loadExperimentsList(){
     const container = document.getElementById('expListContainer');
     
     if(!data || data.length===0){
-        container.innerHTML='<div class="card"><p style="text-align:center;color:#6b7280;">Nenhum experimento disponÃ­vel.</p></div>';
+        container.innerHTML='<div class="card"><p style="text-align:center;color:#6b7280;">Nenhum experimento disponível.</p></div>';
         return;
     }
     
@@ -361,7 +372,7 @@ async function loadExperimentsList(){
         card.innerHTML=`
             <h3>${e.code} - ${e.name}</h3>
             <p style="color:#6b7280;margin-bottom:10px;font-size:14px;">${e.objective}</p>
-            <p style="font-size:13px;color:#9ca3af;">ðŸ“… Plantio: ${formatDate(e.planting_date)} | ðŸ“ ${e.farm}</p>
+            <p style="font-size:13px;color:#9ca3af;">📅 Plantio: ${formatDate(e.planting_date)} | 📍 ${e.farm}</p>
             <div class="exp-actions">
                 <button class="btn-select" onclick="selectExperiment('${e.id}')">Selecionar</button>
                 ${canEdit ? `
@@ -385,23 +396,24 @@ async function selectExperiment(id){
 }
 
 async function deleteExperiment(id,code){
-    if(userRole === 'visitor') return alert('VocÃª nÃ£o tem permissÃ£o');
+    if(userRole === 'visitor') return alert('Você não tem permissão');
     if(!confirm(`Excluir "${code}"?`))return;
     try{
         const {error}=await s.from('experiments').delete().eq('id',id);
         if(error)throw error;
-        alert('âœ… ExcluÃ­do!');
+        alert('✅ Excluído!');
         renderExperimentsPage($('contentArea'));
     }catch(x){
         alert('Erro: '+x.message);
     }
 }
+
 // ============================================
 // USUARIOS PAGE
 // ============================================
 async function renderUsuariosPage(content){
     if(userRole === 'visitor'){
-        content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">âŒ Acesso negado</p></div>';
+        content.innerHTML='<div class="card"><p style="text-align:center;color:#991b1b;">❌ Acesso negado</p></div>';
         return;
     }
     
@@ -409,25 +421,25 @@ async function renderUsuariosPage(content){
         <div class="content-header">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                    <div class="content-title">GestÃ£o de UsuÃ¡rios</div>
-                    <div class="content-subtitle">Gerencie usuÃ¡rios e convites</div>
+                    <div class="content-title">Gestão de Usuários</div>
+                    <div class="content-subtitle">Gerencie usuários e convites</div>
                 </div>
-                <button class="btn-primary" onclick="openInviteModal()">âœ‰ï¸ Convidar UsuÃ¡rio</button>
+                <button class="btn-primary" onclick="openInviteModal()">✉️ Convidar Usuário</button>
             </div>
         </div>
         
         <div class="card">
-            <h3>ðŸ‘¥ UsuÃ¡rios Ativos</h3>
+            <h3>👥 Usuários Ativos</h3>
             <div id="usersList"></div>
         </div>
         
         <div class="card">
-            <h3>â³ Convites Pendentes</h3>
+            <h3>⏳ Convites Pendentes</h3>
             <div id="pendingInvitesList"></div>
         </div>
         
         <div class="card">
-            <h3>âœ… Convites Aceitos</h3>
+            <h3>✅ Convites Aceitos</h3>
             <div id="acceptedInvitesList"></div>
         </div>
     `;
@@ -441,7 +453,7 @@ async function loadUsersList(){
     const {data: roles} = await s.from('user_roles').select('user_id, role, created_at').order('created_at', {ascending: false});
     
     if(!roles || roles.length === 0){
-        document.getElementById('usersList').innerHTML='<p style="color:#6b7280;padding:20px;">Nenhum usuÃ¡rio</p>';
+        document.getElementById('usersList').innerHTML='<p style="color:#6b7280;padding:20px;">Nenhum usuário</p>';
         return;
     }
     
@@ -465,7 +477,7 @@ async function loadUsersList(){
                 <tr style="border-bottom:2px solid #e5e7eb;">
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">E-mail</th>
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Role</th>
-                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">AÃ§Ãµes</th>
+                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -480,10 +492,10 @@ async function loadUsersList(){
                         <td style="padding:12px;">
                             ${userRole === 'admin' && u.user_id !== user.id ? `
                                 <button class="btn-secondary" style="padding:6px 12px;font-size:12px;margin-right:8px;" onclick="changeUserRole('${u.user_id}', '${u.role}')">
-                                    âœï¸ Alterar Role
+                                    ✏️ Alterar Role
                                 </button>
                                 <button class="btn-icon" style="background:#dc2626;color:white;padding:6px 12px;border-radius:6px;" title="Excluir" onclick="deleteUser('${u.user_id}', '${u.email}')">
-                                    ðŸ—‘ï¸
+                                    🗑️
                                 </button>
                             ` : '-'}
                         </td>
@@ -514,7 +526,7 @@ async function loadPendingInvites(){
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">E-mail</th>
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Role</th>
                     <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Expira em</th>
-                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">AÃ§Ãµes</th>
+                    <th style="text-align:left;padding:12px;font-size:13px;color:#6b7280;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -589,8 +601,8 @@ function openInviteModal(){
     modal.innerHTML = `
         <div class="modal-content" style="max-width:500px;">
             <div class="modal-header">
-                <h2>Convidar UsuÃ¡rio</h2>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">Ã—</button>
+                <h2>Convidar Usuário</h2>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div style="margin-bottom:16px;">
                 <label>E-mail *</label>
@@ -604,7 +616,7 @@ function openInviteModal(){
                     <option value="visitor">Visitante</option>
                 </select>
             </div>
-            <button class="btn-primary" onclick="sendInvite()">âœ‰ï¸ Enviar Convite</button>
+            <button class="btn-primary" onclick="sendInvite()">✉️ Enviar Convite</button>
         </div>
     `;
     document.body.appendChild(modal);
@@ -617,7 +629,7 @@ async function sendInvite(){
     if(!email) return alert('Digite um e-mail');
     
     if(userRole === 'collaborator' && role === 'admin'){
-        return alert('VocÃª nÃ£o pode convidar administradores');
+        return alert('Você não pode convidar administradores');
     }
     
     try {
@@ -638,11 +650,11 @@ async function sendInvite(){
         modal.innerHTML = `
             <div class="modal-content" style="max-width:600px;">
                 <div class="modal-header">
-                    <h2>âœ… Convite Enviado!</h2>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">Ã—</button>
+                    <h2>✅ Convite Enviado!</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
                 </div>
                 <div style="margin-bottom:20px;">
-                    <p style="margin-bottom:12px;color:#374151;"><strong>DestinatÃ¡rio:</strong> ${email}</p>
+                    <p style="margin-bottom:12px;color:#374151;"><strong>Destinatário:</strong> ${email}</p>
                     <p style="margin-bottom:20px;color:#374151;"><strong>Role:</strong> ${roleLabels[role]}</p>
                     
                     <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Link do Convite:</label>
@@ -652,19 +664,19 @@ async function sendInvite(){
                             style="width:100%;padding:10px;border:1px solid #166534;border-radius:6px;font-size:13px;background:#fff;margin-bottom:8px;font-family:monospace;">
                         <a href="${inviteLink}" target="_blank" 
                             style="color:#166534;font-size:13px;word-break:break-all;text-decoration:underline;font-weight:600;">
-                            ðŸ”— Clique aqui para testar o link
+                            🔗 Clique aqui para testar o link
                         </a>
                     </div>
                     
                     <button onclick="copyInviteLinkFromModal('${inviteLink}')" 
                         style="width:100%;padding:10px;background:#166534;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;margin-bottom:12px;">
-                        ðŸ“‹ Copiar Link
+                        📋 Copiar Link
                     </button>
                     
                     <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;border-radius:4px;">
                         <p style="font-size:13px;color:#92400e;">
-                            ðŸ’¡ <strong>Envie este link para ${email}</strong><br>
-                            VÃ¡lido por 7 dias
+                            ⚠️ <strong>Envie este link para ${email}</strong><br>
+                            Válido por 7 dias
                         </p>
                     </div>
                 </div>
@@ -685,9 +697,9 @@ async function sendInvite(){
 window.copyInviteLinkFromModal = async function(link){
     try {
         await navigator.clipboard.writeText(link);
-        alert('âœ… Link copiado!\n\nCole no WhatsApp, E-mail ou onde preferir.');
+        alert('✅ Link copiado!\n\nCole no WhatsApp, E-mail ou onde preferir.');
     } catch(x) {
-        alert('âŒ Erro ao copiar');
+        alert('❌ Erro ao copiar');
     }
 }
 
@@ -695,7 +707,7 @@ async function copyInviteLink(token){
     const baseUrl = getBaseUrl();
     const link = `${baseUrl}?invite=${token}`;
     await navigator.clipboard.writeText(link);
-    alert('âœ… Link copiado!');
+    alert('✅ Link copiado!');
 }
 
 async function cancelInvite(id){
@@ -703,7 +715,7 @@ async function cancelInvite(id){
     try {
         const {error} = await s.from('invitations').delete().eq('id', id);
         if(error) throw error;
-        alert('âœ… Convite cancelado');
+        alert('✅ Convite cancelado');
         renderUsuariosPage($('contentArea'));
     } catch(x) {
         alert('Erro: ' + x.message);
@@ -717,7 +729,7 @@ async function changeUserRole(userId, currentRole){
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
                 <h2>Alterar Role</h2>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">Ã—</button>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
             </div>
             <div style="margin-bottom:16px;">
                 <label>Role Atual: <strong>${roleLabels[currentRole]}</strong></label>
@@ -741,7 +753,7 @@ async function confirmChangeRole(userId){
     try {
         const {error} = await s.from('user_roles').update({role: newRole}).eq('user_id', userId);
         if(error) throw error;
-        alert('âœ… Role alterado com sucesso!');
+        alert('✅ Role alterado com sucesso!');
         document.querySelectorAll('.modal').forEach(m => m.remove());
         renderUsuariosPage($('contentArea'));
     } catch(x) {
@@ -750,7 +762,7 @@ async function confirmChangeRole(userId){
 }
 
 async function deleteUser(userId, email){
-    if(!confirm(`âš ï¸ ATENÃ‡ÃƒO!\n\nDeseja realmente EXCLUIR o usuÃ¡rio:\n${email}\n\nEsta aÃ§Ã£o NÃƒO pode ser desfeita!`)){
+    if(!confirm(`⚠️ ATENÇÃO!\n\nDeseja realmente EXCLUIR o usuário:\n${email}\n\nEsta ação NÃO pode ser desfeita!`)){
         return;
     }
     
@@ -763,10 +775,10 @@ async function deleteUser(userId, email){
         const {error: profileError} = await s.from('user_profiles').delete().eq('id', userId);
         if(profileError) throw profileError;
         
-        // Nota: Para deletar da tabela auth.users, seria necessÃ¡rio usar Admin API
+        // Nota: Para deletar da tabela auth.users, seria necessário usar Admin API
         // Por enquanto, apenas removemos do sistema (role + profile)
         
-        alert('âœ… UsuÃ¡rio removido do sistema!');
+        alert('✅ Usuário removido do sistema!');
         renderUsuariosPage($('contentArea'));
     } catch(x) {
         alert('Erro ao excluir: ' + x.message);
@@ -783,12 +795,12 @@ function renderIdentificacaoPage(content){
     }
     content.innerHTML=`
         <div class="content-header">
-            <div class="content-title">IdentificaÃ§Ã£o</div>
-            <div class="content-subtitle">VisÃ£o geral do experimento</div>
+            <div class="content-title">Identificação</div>
+            <div class="content-subtitle">Visão geral do experimento</div>
         </div>
         <div class="card">
-            <h3>InformaÃ§Ãµes BÃ¡sicas</h3>
-            <p><strong>CÃ³digo:</strong> ${currentExperiment.code}</p>
+            <h3>Informações Básicas</h3>
+            <p><strong>Código:</strong> ${currentExperiment.code}</p>
             <p><strong>Nome:</strong> ${currentExperiment.name}</p>
             <p><strong>Data de Plantio:</strong> ${formatDate(currentExperiment.planting_date)}</p>
             <p><strong>Local:</strong> ${currentExperiment.farm}, ${currentExperiment.municipality}</p>
@@ -839,11 +851,12 @@ function renderColheitaPage(content){
         </div>
     `;
 }
+
 // ============================================
 // EXPERIMENT WIZARD
 // ============================================
 function openNewExperimentModal(){
-    if(userRole === 'visitor') return alert('Sem permissÃ£o');
+    if(userRole === 'visitor') return alert('Sem permissão');
     editingExpId=null;
     expData={collaborators:[],varieties:[],treatments:[],schedule:[]};
     currentStep=0;
@@ -853,7 +866,7 @@ function openNewExperimentModal(){
 }
 
 async function editExperiment(id){
-    if(userRole === 'visitor') return alert('Sem permissÃ£o');
+    if(userRole === 'visitor') return alert('Sem permissão');
     try{
         editingExpId=id;
         const {data,error}=await s.from('experiments').select('*').eq('id',id).single();
@@ -911,7 +924,7 @@ function renderWizard(){
         content.innerHTML=`
             <div class="form-grid">
                 <div class="form-grid cols-2">
-                    <div><label>CÃ³digo *</label><input type="text" id="exp_code" value="${expData.code||''}"></div>
+                    <div><label>Código *</label><input type="text" id="exp_code" value="${expData.code||''}"></div>
                     <div><label>Data de Plantio *</label><input type="date" id="exp_date" value="${expData.planting_date||''}"></div>
                 </div>
                 <div><label>Nome *</label><input type="text" id="exp_name" value="${expData.name||''}"></div>
@@ -933,7 +946,7 @@ function renderWizard(){
             <div class="form-grid">
                 <div class="form-grid cols-2">
                     <div><label>Fazenda *</label><input type="text" id="exp_farm" value="${expData.farm||''}"></div>
-                    <div><label>MunicÃ­pio/Estado *</label><input type="text" id="exp_city" value="${expData.municipality||''}"></div>
+                    <div><label>Município/Estado *</label><input type="text" id="exp_city" value="${expData.municipality||''}"></div>
                 </div>
                 <div>
                     <label>Coordenadas (opcional)</label>
@@ -961,7 +974,7 @@ function renderWizard(){
                 <div><label>Blocos *</label><input type="number" min="1" id="exp_blocks" value="${expData.blocks_count||3}"></div>
                 <div><label>Parcelas/Bloco *</label><input type="number" min="1" id="exp_plots" value="${expData.plots_per_block||12}"></div>
             </div>
-            <div style="margin-top:16px;"><label>Plantas Ãšteis/Parcela *</label><input type="number" min="1" id="exp_plants" value="${expData.useful_plants_per_plot||4}"></div>
+            <div style="margin-top:16px;"><label>Plantas Úteis/Parcela *</label><input type="number" min="1" id="exp_plants" value="${expData.useful_plants_per_plot||4}"></div>
         `;
     }
     else if(currentStep===4){
@@ -988,31 +1001,31 @@ function renderWizard(){
             </div>
         `;
     }
-else if(currentStep===6){
-    content.innerHTML=`
-        <div class="form-grid">
-            <div class="form-grid cols-2">
-                <div><label>Comprimento Parcela (m)</label><input type="number" step="0.1" id="exp_length" value="${expData.plot_length||''}"></div>
-                <div><label>Largura Parcela (m)</label><input type="number" step="0.1" id="exp_width" value="${expData.plot_width||''}"></div>
+    else if(currentStep===6){
+        content.innerHTML=`
+            <div class="form-grid">
+                <div class="form-grid cols-2">
+                    <div><label>Comprimento Parcela (m)</label><input type="number" step="0.1" id="exp_length" value="${expData.plot_length||''}"></div>
+                    <div><label>Largura Parcela (m)</label><input type="number" step="0.1" id="exp_width" value="${expData.plot_width||''}"></div>
+                </div>
+                <div class="form-grid cols-2">
+                    <div><label>Espaçamento Entre Linhas (m)</label><input type="number" step="0.1" id="exp_row" value="${expData.row_spacing||''}"></div>
+                    <div><label>Espaçamento Entre Plantas (m)</label><input type="number" step="0.1" id="exp_plant" value="${expData.plant_spacing||''}"></div>
+                </div>
             </div>
-            <div class="form-grid cols-2">
-                <div><label>EspaÃ§amento Entre Linhas (m)</label><input type="number" step="0.1" id="exp_row" value="${expData.row_spacing||''}"></div>
-                <div><label>EspaÃ§amento Entre Plantas (m)</label><input type="number" step="0.1" id="exp_plant" value="${expData.plant_spacing||''}"></div>
-            </div>
-        </div>
-    `;
-}
+        `;
+    }
     else if(currentStep===7){
         content.innerHTML=`
             <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-bottom:16px;border:1px solid #e5e7eb;">
                 <h4 style="margin-bottom:12px;font-size:15px;">Adicionar Atividade</h4>
                 <div class="form-grid">
                     <div class="form-grid cols-3">
-                        <div><label>Nome *</label><input type="text" id="activity_name" placeholder="Ex: AdubaÃ§Ã£o"></div>
-                        <div><label>Fase *</label><select id="activity_phase"><option value="pre_planting">PrÃ©-Plantio</option><option value="planting">Plantio</option><option value="monitoring" selected>Acompanhamento</option><option value="cultural_practices">Tratos Culturais</option><option value="harvest">Colheita</option></select></div>
-                        <div><label>Data InÃ­cio *</label><input type="date" id="activity_start"></div>
+                        <div><label>Nome *</label><input type="text" id="activity_name" placeholder="Ex: Adubação"></div>
+                        <div><label>Fase *</label><select id="activity_phase"><option value="pre_planting">Pré-Plantio</option><option value="planting">Plantio</option><option value="monitoring" selected>Acompanhamento</option><option value="cultural_practices">Tratos Culturais</option><option value="harvest">Colheita</option></select></div>
+                        <div><label>Data Início *</label><input type="date" id="activity_start"></div>
                     </div>
-                    <div><label>Data TÃ©rmino</label><input type="date" id="activity_end"></div>
+                    <div><label>Data Término</label><input type="date" id="activity_end"></div>
                 </div>
                 <button class="btn-primary btn-add-activity" id="addActivityBtn">+ Adicionar</button>
             </div>
@@ -1035,15 +1048,15 @@ else if(currentStep===6){
         });
         content.innerHTML=`
             <div class="review-section">
-                <h3 style="color:#166534;margin-bottom:16px;">RevisÃ£o Final</h3>
-                <div class="review-item"><strong>CÃ³digo:</strong> ${expData.code}</div>
+                <h3 style="color:#166534;margin-bottom:16px;">Revisão Final</h3>
+                <div class="review-item"><strong>Código:</strong> ${expData.code}</div>
                 <div class="review-item"><strong>Nome:</strong> ${expData.name}</div>
                 <div class="review-item"><strong>Data Plantio:</strong> ${formatDate(expData.planting_date)}</div>
                 <div class="review-item"><strong>Local:</strong> ${expData.farm}, ${expData.municipality}</div>
                 <div class="review-item"><strong>Variedades:</strong> ${expData.varieties?.length||0}</div>
                 <div class="review-item"><strong>Atividades:</strong> ${expData.schedule?.length||0}</div>
                 ${scheduleHtml?`<div style="margin-top:20px;"><h4 style="font-size:15px;color:#166534;margin-bottom:12px;">Cronograma</h4>${scheduleHtml}</div>`:''}
-                <p style="margin-top:16px;color:#166534;font-weight:600;">âœ“ Pronto para salvar!</p>
+                <p style="margin-top:16px;color:#166534;font-weight:600;">✅ Pronto para salvar!</p>
             </div>
         `;
     }
@@ -1061,7 +1074,7 @@ function rendercollaborators(){
     expData.collaborators.forEach((r,i)=>{
         const item=document.createElement('div');
         item.className='item';
-        item.innerHTML=`<span>${r}</span><button class="btn-remove">âœ•</button>`;
+        item.innerHTML=`<span>${r}</span><button class="btn-remove">✖</button>`;
         item.querySelector('.btn-remove').onclick=()=>{expData.collaborators.splice(i,1);rendercollaborators()};
         list.appendChild(item);
     });
@@ -1087,7 +1100,7 @@ function renderVarieties(){
     expData.varieties.forEach((v,i)=>{
         const item=document.createElement('div');
         item.className='item';
-        item.innerHTML=`<div><strong>${v.name}</strong> - ${v.use_type} | ${v.pulp_color}</div><button class="btn-remove">âœ•</button>`;
+        item.innerHTML=`<div><strong>${v.name}</strong> - ${v.use_type} | ${v.pulp_color}</div><button class="btn-remove">✖</button>`;
         item.querySelector('.btn-remove').onclick=()=>{expData.varieties.splice(i,1);renderVarieties()};
         list.appendChild(item);
     });
@@ -1095,7 +1108,7 @@ function renderVarieties(){
 
 function addVariety(){
     const name=$('var_name').value.trim();
-    if(!name)return alert('Nome obrigatÃ³rio!');
+    if(!name)return alert('Nome obrigatório!');
     if(!expData.varieties)expData.varieties=[];
     expData.varieties.push({name:name,use_type:$('var_use').value,pulp_color:$('var_color').value});
     $('var_name').value='';
@@ -1138,7 +1151,7 @@ function addActivity(){
     const phase=$('activity_phase').value;
     const start=$('activity_start').value;
     const end=$('activity_end').value;
-    if(!name||!start)return alert('Nome e Data InÃ­cio obrigatÃ³rios!');
+    if(!name||!start)return alert('Nome e Data Início obrigatórios!');
     if(!expData.schedule)expData.schedule=[];
     expData.schedule.push({activity_name:name,phase:phase,start_date:start,end_date:end||null});
     $('activity_name').value='';
@@ -1195,7 +1208,7 @@ function saveStepData(){
 
 async function saveExperiment(){
     if(!expData.code||!expData.name||!expData.objective||!expData.planting_date){
-        alert('Preencha campos obrigatÃ³rios!');
+        alert('Preencha campos obrigatórios!');
         return;
     }
     try{
@@ -1204,7 +1217,6 @@ async function saveExperiment(){
             name:expData.name,
             objective:expData.objective,
             researcher:expData.researchers?.join(', ')||'',
-
             planting_date:expData.planting_date,
             farm:expData.farm,
             municipality:expData.municipality,
@@ -1217,7 +1229,7 @@ async function saveExperiment(){
             plots_per_block:expData.plots_per_block,
             useful_plants_per_plot:expData.useful_plants_per_plot,
             plot_length:expData.plot_length||null,
-	    plot_width:expData.plot_width||null,
+            plot_width:expData.plot_width||null,
             row_spacing:expData.row_spacing||null,
             plant_spacing:expData.plant_spacing||null,
             created_by:user.id,
@@ -1231,12 +1243,12 @@ async function saveExperiment(){
             await s.from('varieties').delete().eq('experiment_id',editingExpId);
             await s.from('treatments').delete().eq('experiment_id',editingExpId);
             await s.from('experiment_schedule').delete().eq('experiment_id',editingExpId);
-            alert('âœ… Atualizado!');
+            alert('✅ Atualizado!');
         }else{
             const {data,error}=await s.from('experiments').insert([expPayload]).select().single();
             if(error)throw error;
             exp=data;
-            alert('âœ… Criado!');
+            alert('✅ Criado!');
         }
         if(expData.varieties&&expData.varieties.length>0){
             const {data:vars}=await s.from('varieties').insert(expData.varieties.map(v=>({experiment_id:exp.id,name:v.name,use_type:v.use_type,pulp_color:v.pulp_color}))).select();
@@ -1265,4 +1277,5 @@ async function saveExperiment(){
         console.error(x);
     }
 }
+```
 
