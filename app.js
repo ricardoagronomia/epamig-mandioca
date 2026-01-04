@@ -241,17 +241,16 @@ async function loadUserRole() {
 }
 
 function showApp() {
-  $("authScreen").style.display = "none";
-  $("appScreen").style.display = "flex";
-  $("headerUserEmail").textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
-  renderPage();
-}
-function showApp() {
   $('authScreen').style.display = 'none';
   $('appScreen').style.display = 'flex';
 
-  $('userEmail').textContent = user.email;
-  $('headerSubtitle').textContent = 'Pesquisa de Campo';
+  // preenche e-mail + role no cabeçalho
+  if (user) {
+    const el = $('userEmail');
+    if (el) el.textContent = `${user.email} · ${roleLabels[userRole] || ''}`;
+  }
+
+  $('headerSubtitle').textContent = 'Gestão de Usuários';
 
   // habilita itens conforme a role
   if (userRole === 'admin' || userRole === 'collaborator') {
@@ -266,7 +265,7 @@ function showApp() {
   }
 
   setupNavigation();
-  navigateTo('experiments');
+  navigateTo('users'); // ou 'experiments', se preferir
 }
 
 function setupNavigation() {
@@ -649,6 +648,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
