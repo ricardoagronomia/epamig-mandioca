@@ -484,12 +484,12 @@ async function submitExperimentForm(id) {
 
   const usefulRow = parseInt(document.getElementById("expUsefulRow").value || "0", 10);
   const usefulCol = parseInt(document.getElementById("expUsefulCol").value || "0", 10);
-  const userful_plants_per_plot = parseInt(
-    document.getElementById("expUsefulPlantsTotal").value ||
-      usefulRow * usefulCol ||
-      "0",
-    10
-  );
+  const useful_plants_per_plot = parseInt(
+  document.getElementById("expUsefulPlantsTotal").value ||
+    usefulRow * usefulCol ||
+    "0",
+  10
+);
 
   const plot_length = parseFloat(document.getElementById("expPlotLength").value || "0");
   const plot_width = parseFloat(document.getElementById("expPlotWidth").value || "0");
@@ -529,7 +529,7 @@ async function submitExperimentForm(id) {
     climate,
     blocks_count,
     plots_per_block,
-    userful_plants_per_plot,
+    useful_plants_per_plot,
     plot_length,
     plot_width,
     row_spacing,
@@ -576,6 +576,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
