@@ -321,7 +321,7 @@ function openExperimentFormModal(exp) {
 
         <label for="expMunicipality">Município / Estado</label>
         <input id="expMunicipality" type="text"
-          value="${escapeHtml(exp?.Municipality || "")}"
+          value="${escapeHtml(exp?.municipality || "")}"
           placeholder="Ex.: Pitangui - MG" />
 
         <label for="expLatitude">Latitude (DMS)</label>
@@ -576,4 +576,5 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
