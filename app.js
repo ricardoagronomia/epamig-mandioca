@@ -246,6 +246,49 @@ function showApp() {
   $("headerUserEmail").textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
   renderPage();
 }
+function showApp() {
+  $('authScreen').style.display = 'none';
+  $('appScreen').style.display = 'flex';
+
+  $('userEmail').textContent = user.email;
+  $('headerSubtitle').textContent = 'Pesquisa de Campo';
+
+  // habilita itens conforme a role
+  if (userRole === 'admin' || userRole === 'collaborator') {
+    const elNew = document.querySelector('[data-page="new-experiment"]');
+    if (elNew) elNew.classList.remove('disabled');
+
+    const elUsers = document.querySelector('[data-page="users"]');
+    if (elUsers) elUsers.classList.remove('disabled');
+
+    const elInvites = document.querySelector('[data-page="invites"]');
+    if (elInvites) elInvites.classList.remove('disabled');
+  }
+
+  setupNavigation();
+  navigateTo('experiments');
+}
+
+function setupNavigation() {
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.addEventListener('click', function () {
+      if (this.classList.contains('disabled')) return;
+      const page = this.dataset.page;
+      navigateTo(page);
+    });
+  });
+}
+
+function navigateTo(page) {
+  currentPage = page;
+
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.page === page) item.classList.add('active');
+  });
+
+  renderPage(page);
+}
 
 function renderPage() {
   const container = $("contentArea");
@@ -606,6 +649,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
