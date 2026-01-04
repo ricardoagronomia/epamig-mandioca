@@ -291,14 +291,30 @@ function navigateTo(page) {
   renderPage(page);
 }
 
-function renderPage() {
+function renderPage(page) {
   const container = $("contentArea");
+
   if (currentPage === "users") {
     renderUsersPage(container);
   } else if (currentPage === "invites") {
     renderInvitesPage(container);
+  } else if (currentPage === "experiments") {
+    // chamada para o módulo externo (experiments.js)
+    if (typeof renderExperimentsPage === "function") {
+      renderExperimentsPage(container);
+    } else {
+      container.innerHTML = `
+        <div class="card">
+          <p>Módulo de experimentos não carregado.</p>
+        </div>
+      `;
+    }
   } else {
-    container.innerHTML = "<div class='card'><p>Em desenvolvimento...</p></div>";
+    container.innerHTML = `
+      <div class="card">
+        <p>Em desenvolvimento...</p>
+      </div>
+    `;
   }
 }
 
@@ -650,6 +666,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
