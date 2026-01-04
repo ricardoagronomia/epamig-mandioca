@@ -317,9 +317,10 @@ function openExperimentFormModal(exp) {
           placeholder="Descreva o objetivo do experimento...">${escapeHtml(exp?.objective || "")}</textarea>
 
         <label for="expResearcher">Pesquisadores responsáveis</label>
-        <input id="expResearcher" type="text"
-          value="${escapeHtml(exp?.researcher || "")}"
-          placeholder="Ex.: Ricardo L. Ribeiro; Douglas S. Parreira" />
+<textarea id="expResearcher" rows="2"
+  style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
+  placeholder="Ex.: Ricardo L. Ribeiro; (um por linha ou separados por ponto e vírgula)">
+${escapeHtml(exp?.researcher || "")}</textarea>
 
         <label for="expPlantingDate">Data de plantio</label>
         <input id="expPlantingDate" type="date"
@@ -594,6 +595,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
