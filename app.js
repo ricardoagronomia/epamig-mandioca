@@ -57,6 +57,7 @@ function formatDate(dateString) {
     showAuth();
   }
 })();
+
 async function showInviteAcceptScreen(token) {
   try {
     const { data: invite, error } = await s
@@ -138,8 +139,10 @@ async function handleLogin() {
 }
 
 async function handleSignup() {
-  const email = $("signupEmail").value.trim();
+  const emailInput = $("signupEmail");
+  const email = emailInput.value.trim();
   const password = $("signupPassword").value;
+  const inviteToken = emailInput.dataset.inviteToken || null;
 
   if (!email || !password) {
     setAuthMessage("Preencha e-mail e senha.", "error");
@@ -151,12 +154,43 @@ async function handleSignup() {
   }
 
   try {
+    // se veio de convite, valida o token e obtém role
+    let roleToSet = "visitor";
+    if (inviteToken) {
+      const { data: invite, error: inviteError } = await s
+        .from("invitations")
+        .select("*")
+        .eq("token", inviteToken)
+        .is("accepted_at", null)
+        .single();
+
+      if (inviteError || !invite) {
+        setAuthMessage("Convite inválido ou já utilizado.", "error");
+        return;
+      }
+
+      // garante que o e-mail digitado == e-mail do convite
+      if (invite.email.toLowerCase() !== email.toLowerCase()) {
+        setAuthMessage("E-mail não confere com o e-mail convidado.", "error");
+        return;
+      }
+
+      roleToSet = invite.role;
+    }
+
     const { data, error } = await s.auth.signUp({ email, password });
     if (error) throw error;
 
-    // cria perfil + role visitor por padrão
     await s.from("user_profiles").upsert({ id: data.user.id, email });
-    await s.from("user_roles").upsert({ user_id: data.user.id, role: "visitor" });
+    await s.from("user_roles").upsert({ user_id: data.user.id, role: roleToSet });
+
+    // marca convite como aceito, se houver
+    if (inviteToken) {
+      await s
+        .from("invitations")
+        .update({ accepted_at: new Date().toISOString() })
+        .eq("token", inviteToken);
+    }
 
     setAuthMessage("Conta criada com sucesso. Faça login.", "success");
     $("tabLogin").click();
@@ -572,6 +606,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
