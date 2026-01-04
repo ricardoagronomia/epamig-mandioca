@@ -183,7 +183,7 @@ async function loadExperimentsIntoList() {
               <button
                 class="btn-secondary"
                 style="font-size:13px;"
-                onclick="openExperimentFormModal(${safeJson(exp)})"
+                onclick="openExperimentFormModalById('${exp.id}')"
               >
                 Editar
               </button>
@@ -206,6 +206,24 @@ async function loadExperimentsIntoList() {
     .join("");
 
   listEl.innerHTML = cardsHtml;
+}
+async function openExperimentFormModalById(id) {
+  if (!id || typeof s === "undefined") {
+    return;
+  }
+
+  const { data, error } = await s
+    .from("experiments")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    alert("Erro ao carregar experimento: " + error.message);
+    return;
+  }
+
+  openExperimentFormModal(data);
 }
 
 // seleciona um experimento (apenas no front, por enquanto)
@@ -576,6 +594,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
