@@ -466,55 +466,83 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
 async function submitExperimentForm(id) {
   if (typeof s === "undefined") return;
 
+  // CAMPOS BÁSICOS
   const code = document.getElementById("expCode").value.trim();
   const name = document.getElementById("expName").value.trim();
   const objective = document.getElementById("expObjective").value.trim();
   const researcher = document.getElementById("expResearcher").value.trim();
   const planting_date = document.getElementById("expPlantingDate").value || null;
 
+  // AMBIENTE / LOCAL
   const farm = document.getElementById("expFarm").value.trim();
-  const municipality = document.getElementById("expmunicipality").value.trim();
+  const municipality = document.getElementById("expMunicipality").value.trim();
   const latitude = document.getElementById("expLatitude").value.trim();
   const longitude = document.getElementById("expLongitude").value.trim();
   const soil_type = document.getElementById("expSoilType").value.trim();
   const climate = document.getElementById("expClimate").value.trim();
 
-  const blocks_count = parseInt(document.getElementById("expBlocks").value || "0", 10);
-  const plots_per_block = parseInt(document.getElementById("expPlotsPerBlock").value || "0", 10);
+  // DELINEAMENTO
+  const blocks_count = parseInt(
+    document.getElementById("expBlocks").value || "0",
+    10
+  );
+  const plots_per_block = parseInt(
+    document.getElementById("expPlotsPerBlock").value || "0",
+    10
+  );
 
-  const usefulRow = parseInt(document.getElementById("expUsefulRow").value || "0", 10);
-  const usefulCol = parseInt(document.getElementById("expUsefulCol").value || "0", 10);
+  const usefulRow = parseInt(
+    document.getElementById("expUsefulRow").value || "0",
+    10
+  );
+  const usefulCol = parseInt(
+    document.getElementById("expUsefulCol").value || "0",
+    10
+  );
   const useful_plants_per_plot = parseInt(
-  document.getElementById("expUsefulPlantsTotal").value ||
-    usefulRow * usefulCol ||
-    "0",
-  10
-);
+    document.getElementById("expUsefulPlantsTotal").value ||
+      usefulRow * usefulCol ||
+      "0",
+    10
+  );
 
-  const plot_length = parseFloat(document.getElementById("expPlotLength").value || "0");
-  const plot_width = parseFloat(document.getElementById("expPlotWidth").value || "0");
-  const row_spacing = parseFloat(document.getElementById("expRowSpacing").value || "0");
+  // DIMENSÕES
+  const plot_length = parseFloat(
+    document.getElementById("expPlotLength").value || "0"
+  );
+  const plot_width = parseFloat(
+    document.getElementById("expPlotWidth").value || "0"
+  );
+  const row_spacing = parseFloat(
+    document.getElementById("expRowSpacing").value || "0"
+  );
 
-  // se usuário não preencher áreas, calcula
-  let plot_area = parseFloat(document.getElementById("expPlotArea").value || "0");
+  // ÁREAS (CALCULADAS SE ESTIVEREM VAZIAS)
+  let plot_area = parseFloat(
+    document.getElementById("expPlotArea").value || "0"
+  );
   if (!plot_area && plot_length && plot_width) {
     plot_area = plot_length * plot_width;
   }
 
-  let total_area = parseFloat(document.getElementById("expTotalArea").value || "0");
+  let total_area = parseFloat(
+    document.getElementById("expTotalArea").value || "0"
+  );
   if (!total_area && plot_area && blocks_count && plots_per_block) {
     total_area = plot_area * blocks_count * plots_per_block;
   }
 
-  const status = document.getElementById("expStatus")
-    ? document.getElementById("expStatus").value
-    : "active";
+  // STATUS (se não tiver select, assume "active")
+  const statusEl = document.getElementById("expStatus");
+  const status = statusEl ? statusEl.value : "active";
 
+  // VALIDAÇÃO MÍNIMA
   if (!code || !planting_date || !objective) {
     alert("Preencha pelo menos código, data de plantio e objetivo.");
     return;
   }
 
+  // PAYLOAD ALINHADO COM A TABELA SUPABASE
   const payload = {
     code,
     name,
@@ -530,13 +558,15 @@ async function submitExperimentForm(id) {
     blocks_count,
     plots_per_block,
     useful_plants_per_plot,
+    treatments_count: 3,        // 3 tratamentos fixos: vertical, inclinada, horizontal
     plot_length,
     plot_width,
     row_spacing,
     plot_area,
     total_area,
     status,
-    created_by: typeof currentUser !== "undefined" && currentUser ? currentUser.id : null,
+    created_by:
+      typeof currentUser !== "undefined" && currentUser ? currentUser.id : null,
   };
 
   let error;
@@ -576,6 +606,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
