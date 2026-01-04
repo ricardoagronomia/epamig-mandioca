@@ -241,33 +241,35 @@ async function loadUserRole() {
 }
 
 function showApp() {
-  $('authScreen').style.display = 'none';
-  $('appScreen').style.display = 'flex';
+  $("authScreen").style.display = "none";
+  $("appScreen").style.display = "flex";
 
   // preenche e-mail + role no cabeçalho
-  if (user) {
-    const el = $('userEmail');
-    if (el) el.textContent = `${user.email} · ${roleLabels[userRole] || ''}`;
+  if (currentUser) {
+    const el = $("userEmail");
+    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
   }
 
-  $('headerSubtitle').textContent = 'Gestão de Usuários';
+  const subtitle = document.getElementById("headerSubtitle");
+  if (subtitle) subtitle.textContent = "Gestão de Usuários";
 
   // habilita itens conforme a role
-  if (userRole === 'admin' || userRole === 'collaborator') {
+  if (currentRole === "admin" || currentRole === "collaborator") {
     const elNew = document.querySelector('[data-page="new-experiment"]');
-    if (elNew) elNew.classList.remove('disabled');
+    if (elNew) elNew.classList.remove("disabled");
 
     const elUsers = document.querySelector('[data-page="users"]');
-    if (elUsers) elUsers.classList.remove('disabled');
+    if (elUsers) elUsers.classList.remove("disabled");
 
     const elInvites = document.querySelector('[data-page="invites"]');
-    if (elInvites) elInvites.classList.remove('disabled');
+    if (elInvites) elInvites.classList.remove("disabled");
   }
 
+  // navegação
   setupNavigation();
-  navigateTo('users'); // ou 'experiments', se preferir
+  navigateTo("users"); // ou "experiments", se preferir
 }
-
+  
 function setupNavigation() {
   document.querySelectorAll('.sidebar-item').forEach(item => {
     item.addEventListener('click', function () {
@@ -648,6 +650,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
