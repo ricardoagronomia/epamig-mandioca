@@ -40,6 +40,14 @@ function formatDate(dateString) {
   setupAuthUI();
   setupAppUI();
 
+  const params = new URLSearchParams(window.location.search);
+  const inviteToken = params.get("invite");
+
+  if (inviteToken) {
+    await showInviteAcceptScreen(inviteToken);
+    return;
+  }
+
   const { data: { session } } = await s.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -49,6 +57,37 @@ function formatDate(dateString) {
     showAuth();
   }
 })();
+async function showInviteAcceptScreen(token) {
+  try {
+    const { data: invite, error } = await s
+      .from("invitations")
+      .select("*")
+      .eq("token", token)
+      .is("accepted_at", null)
+      .single();
+
+    if (error || !invite) {
+      alert("Convite inválido ou já utilizado.");
+      showAuth();
+      return;
+    }
+
+    // mostra a tela de auth e pré‑preenche o formulário de cadastro
+    showAuth();
+    document.getElementById("tabSignup").click();
+
+    // preenche e bloqueia o e-mail de cadastro com o e‑mail do convite
+    const emailInput = document.getElementById("signupEmail");
+    emailInput.value = invite.email;
+    emailInput.readOnly = true;
+
+    // guarda o token em atributo data para usar no signup
+    emailInput.dataset.inviteToken = token;
+  } catch (err) {
+    alert("Erro ao carregar convite.");
+    showAuth();
+  }
+}
 
 // =====================================
 // AUTH UI
@@ -533,6 +572,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
