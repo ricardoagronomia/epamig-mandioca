@@ -4,7 +4,7 @@
 const { createClient } = supabase;
 
 const SUPABASE_URL = "https://khcravdcavrmbkhaiubx.supabase.co";
-const SUPABASE_KEY = "sb_publishable_nW23eRdaFpn7WbRhEjmcdg_nbEe9zCu";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6dmdlY292ZnVjbnBrdGl0c3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyOTk0NTYsImV4cCI6MjA4Mjg3NTQ1Nn0.WTtcpM3jtSa9TeVA4oEH-t_7naTrKZw83Tw6ZM0HwtI";
 const s = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // =====================================
@@ -499,3 +499,4 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
