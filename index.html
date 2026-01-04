@@ -21,12 +21,6 @@
     .main-container {
   margin-top: 0;
 }
-@media (max-width: 768px) {
-  .content-area {
-    padding: 16px;
-    margin-top: 72px; /* se precisar um pouco mais de espaço */
-  }
-}
 
   /* Se o header for fixo e estiver cobrindo o conteúdo, descomente: */
   /*
@@ -413,25 +407,29 @@
     }
 
     @media (max-width: 768px) {
-      .sidebar {
-        position: fixed;
-        inset: 56px 0 auto 0;
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        border-right: none;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-      }
-      .sidebar-section { border-bottom: none; }
-      .sidebar-section-title { display: none; }
-      .sidebar-item {
-        padding: 10px 14px;
-        white-space: nowrap;
-      }
-      .content-area { padding: 16px; margin-top: 56px; }
-    }
+  .sidebar {
+    position: fixed;
+    inset: 56px 0 auto 0;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  }
+  .sidebar-section { border-bottom: none; }
+  .sidebar-section-title { display: none; }
+  .sidebar-item {
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+  .content-area {
+    padding: 16px;
+    margin-top: 72px; /* usa só este valor */
+  }
+}
+
   </style>
 </head>
 <body>
@@ -531,4 +529,5 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
