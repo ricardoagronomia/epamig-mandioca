@@ -319,8 +319,8 @@ function openExperimentFormModal(exp) {
           value="${escapeHtml(exp?.farm || "")}"
           placeholder="Ex.: EPAMIG ITAP" />
 
-        <label for="expMunicipality">Município / Estado</label>
-        <input id="expMunicipality" type="text"
+        <label for="expmunicipality">Município / Estado</label>
+        <input id="expmunicipality" type="text"
           value="${escapeHtml(exp?.municipality || "")}"
           placeholder="Ex.: Pitangui - MG" />
 
@@ -473,7 +473,7 @@ async function submitExperimentForm(id) {
   const planting_date = document.getElementById("expPlantingDate").value || null;
 
   const farm = document.getElementById("expFarm").value.trim();
-  const Municipality = document.getElementById("expMunicipality").value.trim();
+  const municipality = document.getElementById("expmunicipality").value.trim();
   const latitude = document.getElementById("expLatitude").value.trim();
   const longitude = document.getElementById("expLongitude").value.trim();
   const soil_type = document.getElementById("expSoilType").value.trim();
@@ -522,7 +522,7 @@ async function submitExperimentForm(id) {
     researcher,
     planting_date,
     farm,
-    Municipality,
+    municipality,
     latitude,
     longitude,
     soil_type,
@@ -576,5 +576,6 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
