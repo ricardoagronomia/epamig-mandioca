@@ -255,15 +255,18 @@ function showApp() {
 
   // habilita itens conforme a role
   if (currentRole === "admin" || currentRole === "collaborator") {
-    const elNew = document.querySelector('[data-page="new-experiment"]');
-    if (elNew) elNew.classList.remove("disabled");
+  const elExperiments = document.querySelector('[data-page="experiments"]');
+  if (elExperiments) elExperiments.classList.remove("disabled");
 
-    const elUsers = document.querySelector('[data-page="users"]');
-    if (elUsers) elUsers.classList.remove("disabled");
+  const elNew = document.querySelector('[data-page="new-experiment"]');
+  if (elNew) elNew.classList.remove("disabled");
 
-    const elInvites = document.querySelector('[data-page="invites"]');
-    if (elInvites) elInvites.classList.remove("disabled");
-  }
+  const elUsers = document.querySelector('[data-page="users"]');
+  if (elUsers) elUsers.classList.remove("disabled");
+
+  const elInvites = document.querySelector('[data-page="invites"]');
+  if (elInvites) elInvites.classList.remove("disabled");
+}
 
   // navegação
   setupNavigation();
@@ -291,14 +294,29 @@ function navigateTo(page) {
   renderPage(page);
 }
 
-function renderPage() {
+function renderPage(page) {
   const container = $("contentArea");
+
   if (currentPage === "users") {
     renderUsersPage(container);
   } else if (currentPage === "invites") {
     renderInvitesPage(container);
+  } else if (currentPage === "experiments") {
+    if (typeof renderExperimentsPage === "function") {
+      renderExperimentsPage(container);
+    } else {
+      container.innerHTML = `
+        <div class="card">
+          <p>Módulo de experimentos não carregado.</p>
+        </div>
+      `;
+    }
   } else {
-    container.innerHTML = "<div class='card'><p>Em desenvolvimento...</p></div>";
+    container.innerHTML = `
+      <div class="card">
+        <p>Em desenvolvimento...</p>
+      </div>
+    `;
   }
 }
 
@@ -650,6 +668,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
