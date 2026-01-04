@@ -3,9 +3,10 @@
 // =====================================
 const { createClient } = supabase;
 
-const SUPABASE_URL = "https://khcravdcavrmbkhaiubx.supabase.co";
-const SUPABASE_KEY = "sb_publishable_nW23eRdaFpn7WbRhEjmcdg_nbEe9zCu";
-const s = createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL = "https://zzvgecovfucnpktitszv.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6dmdlY292ZnVjbnBrdGl0c3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyOTk0NTYsImV4cCI6MjA4Mjg3NTQ1Nn0.WTtcpM3jtSa9TeVA4oEH-t_7naTrKZw83Tw6ZM0HwtI"; // anon public key
+const s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 // =====================================
 // STATE
@@ -39,6 +40,14 @@ function formatDate(dateString) {
   setupAuthUI();
   setupAppUI();
 
+  const params = new URLSearchParams(window.location.search);
+  const inviteToken = params.get("invite");
+
+  if (inviteToken) {
+    await showInviteAcceptScreen(inviteToken);
+    return;
+  }
+
   const { data: { session } } = await s.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -48,6 +57,38 @@ function formatDate(dateString) {
     showAuth();
   }
 })();
+
+async function showInviteAcceptScreen(token) {
+  try {
+    const { data: invite, error } = await s
+      .from("invitations")
+      .select("*")
+      .eq("token", token)
+      .is("accepted_at", null)
+      .single();
+
+    if (error || !invite) {
+      alert("Convite inválido ou já utilizado.");
+      showAuth();
+      return;
+    }
+
+    // mostra a tela de auth e pré‑preenche o formulário de cadastro
+    showAuth();
+    document.getElementById("tabSignup").click();
+
+    // preenche e bloqueia o e-mail de cadastro com o e‑mail do convite
+    const emailInput = document.getElementById("signupEmail");
+    emailInput.value = invite.email;
+    emailInput.readOnly = true;
+
+    // guarda o token em atributo data para usar no signup
+    emailInput.dataset.inviteToken = token;
+  } catch (err) {
+    alert("Erro ao carregar convite.");
+    showAuth();
+  }
+}
 
 // =====================================
 // AUTH UI
@@ -98,8 +139,10 @@ async function handleLogin() {
 }
 
 async function handleSignup() {
-  const email = $("signupEmail").value.trim();
+  const emailInput = $("signupEmail");
+  const email = emailInput.value.trim();
   const password = $("signupPassword").value;
+  const inviteToken = emailInput.dataset.inviteToken || null;
 
   if (!email || !password) {
     setAuthMessage("Preencha e-mail e senha.", "error");
@@ -111,12 +154,43 @@ async function handleSignup() {
   }
 
   try {
+    // se veio de convite, valida o token e obtém role
+    let roleToSet = "visitor";
+    if (inviteToken) {
+      const { data: invite, error: inviteError } = await s
+        .from("invitations")
+        .select("*")
+        .eq("token", inviteToken)
+        .is("accepted_at", null)
+        .single();
+
+      if (inviteError || !invite) {
+        setAuthMessage("Convite inválido ou já utilizado.", "error");
+        return;
+      }
+
+      // garante que o e-mail digitado == e-mail do convite
+      if (invite.email.toLowerCase() !== email.toLowerCase()) {
+        setAuthMessage("E-mail não confere com o e-mail convidado.", "error");
+        return;
+      }
+
+      roleToSet = invite.role;
+    }
+
     const { data, error } = await s.auth.signUp({ email, password });
     if (error) throw error;
 
-    // cria perfil + role visitor por padrão
     await s.from("user_profiles").upsert({ id: data.user.id, email });
-    await s.from("user_roles").upsert({ user_id: data.user.id, role: "visitor" });
+    await s.from("user_roles").upsert({ user_id: data.user.id, role: roleToSet });
+
+    // marca convite como aceito, se houver
+    if (inviteToken) {
+      await s
+        .from("invitations")
+        .update({ accepted_at: new Date().toISOString() })
+        .eq("token", inviteToken);
+    }
 
     setAuthMessage("Conta criada com sucesso. Faça login.", "success");
     $("tabLogin").click();
@@ -169,8 +243,52 @@ async function loadUserRole() {
 function showApp() {
   $("authScreen").style.display = "none";
   $("appScreen").style.display = "flex";
-  $("headerUserEmail").textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
-  renderPage();
+
+  // preenche e-mail + role no cabeçalho
+  if (currentUser) {
+    const el = $("userEmail");
+    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
+  }
+
+  const subtitle = document.getElementById("headerSubtitle");
+  if (subtitle) subtitle.textContent = "Gestão de Usuários";
+
+  // habilita itens conforme a role
+  if (currentRole === "admin" || currentRole === "collaborator") {
+    const elNew = document.querySelector('[data-page="new-experiment"]');
+    if (elNew) elNew.classList.remove("disabled");
+
+    const elUsers = document.querySelector('[data-page="users"]');
+    if (elUsers) elUsers.classList.remove("disabled");
+
+    const elInvites = document.querySelector('[data-page="invites"]');
+    if (elInvites) elInvites.classList.remove("disabled");
+  }
+
+  // navegação
+  setupNavigation();
+  navigateTo("users"); // ou "experiments", se preferir
+}
+  
+function setupNavigation() {
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.addEventListener('click', function () {
+      if (this.classList.contains('disabled')) return;
+      const page = this.dataset.page;
+      navigateTo(page);
+    });
+  });
+}
+
+function navigateTo(page) {
+  currentPage = page;
+
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.page === page) item.classList.add('active');
+  });
+
+  renderPage(page);
 }
 
 function renderPage() {
@@ -403,15 +521,15 @@ window.openInviteModal = function () {
 };
 
 window.sendInvite = async function () {
-  const email = $("inviteEmail").value.trim();
-  const role = $("inviteRole").value;
+  const email = inviteEmail.value.trim();
+  const role = inviteRole.value;
 
   if (!email) {
     alert("Digite um e-mail.");
     return;
   }
   if (currentRole !== "admin" && role === "admin") {
-    alert("Apenas administradores podem convidar outros administradores.");
+    alert("Apenas administradores podem convidar administradores.");
     return;
   }
 
@@ -425,17 +543,50 @@ window.sendInvite = async function () {
       role,
       token,
       invited_by: currentUser.id,
-      expires_at: expiresAt.toISOString()
+      // se você quiser, pode adicionar expires_at depois e ajustar aqui
     });
     if (error) throw error;
 
-    alert("Convite criado. Copie o link a seguir para enviar ao usuário.");
     const link = `${window.location.origin}?invite=${token}`;
-    await navigator.clipboard?.writeText(link).catch(() => {});
-    closeModal();
-    renderInvitesPage($("contentArea"));
+
+    // reabre o corpo do modal mostrando o link gerado
+    $("modalBody").innerHTML = `
+      <p style="font-size:14px;color:#374151;margin-bottom:8px;">
+        Convite criado para <strong>${email}</strong> como <strong>${roleLabel(role)}</strong>.
+      </p>
+      <label style="font-size:13px;font-weight:500;color:#374151;margin-bottom:4px;display:block;">
+        Link do convite
+      </label>
+      <input type="text" id="inviteLinkField" value="${link}"
+             readonly
+             style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #d1d5db;
+                    font-size:13px;background:#f9fafb;margin-bottom:8px;">
+      <button class="btn-primary" style="width:100%;margin-bottom:6px;" onclick="copyInviteLinkFromModal()">
+        Copiar link
+      </button>
+      <button class="btn-secondary" style="width:100%;" onclick="closeModal()">
+        Fechar
+      </button>
+    `;
+
+    // tenta copiar automaticamente uma vez
+    try { await navigator.clipboard.writeText(link); } catch(_) {}
+
+    // atualiza lista na página de convites
+    renderInvitesPage(contentArea);
   } catch (err) {
     alert(err.message || "Erro ao enviar convite.");
+  }
+};
+
+window.copyInviteLinkFromModal = async function () {
+  const field = document.getElementById("inviteLinkField");
+  if (!field) return;
+  try {
+    await navigator.clipboard.writeText(field.value);
+    alert("Link copiado para a área de transferência.");
+  } catch (err) {
+    alert("Não foi possível copiar automaticamente. Copie o texto do campo manualmente.");
   }
 };
 
@@ -499,3 +650,11 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
+
+
+
+
+
+
+
