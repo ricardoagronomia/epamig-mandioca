@@ -404,15 +404,15 @@ window.openInviteModal = function () {
 };
 
 window.sendInvite = async function () {
-  const email = $("inviteEmail").value.trim();
-  const role = $("inviteRole").value;
+  const email = inviteEmail.value.trim();
+  const role = inviteRole.value;
 
   if (!email) {
     alert("Digite um e-mail.");
     return;
   }
   if (currentRole !== "admin" && role === "admin") {
-    alert("Apenas administradores podem convidar outros administradores.");
+    alert("Apenas administradores podem convidar administradores.");
     return;
   }
 
@@ -426,17 +426,50 @@ window.sendInvite = async function () {
       role,
       token,
       invited_by: currentUser.id,
-      expires_at: expiresAt.toISOString()
+      // se você quiser, pode adicionar expires_at depois e ajustar aqui
     });
     if (error) throw error;
 
-    alert("Convite criado. Copie o link a seguir para enviar ao usuário.");
     const link = `${window.location.origin}?invite=${token}`;
-    await navigator.clipboard?.writeText(link).catch(() => {});
-    closeModal();
-    renderInvitesPage($("contentArea"));
+
+    // reabre o corpo do modal mostrando o link gerado
+    $("modalBody").innerHTML = `
+      <p style="font-size:14px;color:#374151;margin-bottom:8px;">
+        Convite criado para <strong>${email}</strong> como <strong>${roleLabel(role)}</strong>.
+      </p>
+      <label style="font-size:13px;font-weight:500;color:#374151;margin-bottom:4px;display:block;">
+        Link do convite
+      </label>
+      <input type="text" id="inviteLinkField" value="${link}"
+             readonly
+             style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #d1d5db;
+                    font-size:13px;background:#f9fafb;margin-bottom:8px;">
+      <button class="btn-primary" style="width:100%;margin-bottom:6px;" onclick="copyInviteLinkFromModal()">
+        Copiar link
+      </button>
+      <button class="btn-secondary" style="width:100%;" onclick="closeModal()">
+        Fechar
+      </button>
+    `;
+
+    // tenta copiar automaticamente uma vez
+    try { await navigator.clipboard.writeText(link); } catch(_) {}
+
+    // atualiza lista na página de convites
+    renderInvitesPage(contentArea);
   } catch (err) {
     alert(err.message || "Erro ao enviar convite.");
+  }
+};
+
+window.copyInviteLinkFromModal = async function () {
+  const field = document.getElementById("inviteLinkField");
+  if (!field) return;
+  try {
+    await navigator.clipboard.writeText(field.value);
+    alert("Link copiado para a área de transferência.");
+  } catch (err) {
+    alert("Não foi possível copiar automaticamente. Copie o texto do campo manualmente.");
   }
 };
 
@@ -500,5 +533,6 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
