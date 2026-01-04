@@ -387,11 +387,13 @@
     .modal.active { display: flex; }
     .modal-content {
       max-width: 460px;
+      max-height: 90vh;          /* não passa da altura da tela */
       width: 100%;
       background: #ffffff;
       border-radius: 16px;
       padding: 20px 22px;
       box-shadow: 0 20px 40px rgba(15, 23, 42, 0.4);
+      overflow-y: auto;          /* permite rolagem vertical */
     }
     .modal-header {
       display: flex;
@@ -544,6 +546,7 @@
   <script src="experiments.js"></script>
 </body>
 </html>
+
 
 
 
