@@ -311,6 +311,16 @@ function renderPage(page) {
         </div>
       `;
     }
+  } else if (currentPage === "new-experiment") {
+    if (typeof renderNewExperimentPage === "function") {
+      renderNewExperimentPage(container);
+    } else {
+      container.innerHTML = `
+        <div class="card">
+          <p>Módulo de novo experimento não carregado.</p>
+        </div>
+      `;
+    }
   } else if (currentPage === "dbc-map") {
     if (typeof renderDbcMapPage === "function") {
       renderDbcMapPage(container);
@@ -321,59 +331,6 @@ function renderPage(page) {
         </div>
       `;
     }
-  } else {
-    container.innerHTML = `
-      <div class="card">
-        <p>Em desenvolvimento...</p>
-      </div>
-    `;
-  }
-}
-
-  container.innerHTML = `
-    <div class="content-header">
-      <div class="content-title">Mapa DBC</div>
-      <div class="content-subtitle">
-        Escolha um experimento para visualizar o mapa de blocos.
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="margin-bottom:12px;">
-        <label for="dbcExperimentSelect">Experimento</label>
-        <select id="dbcExperimentSelect">
-          ${experimentsOptionsHtml}
-        </select>
-      </div>
-
-      <div id="dbcMapArea">
-        <p style="color:#6b7280;font-size:14px;">
-          Selecione um experimento para carregar o mapa DBC.
-        </p>
-      </div>
-    </div>
-  `;
-
-  // placeholder: por enquanto só mostra um alert quando troca
-  const select = document.getElementById("dbcExperimentSelect");
-  select.addEventListener("change", () => {
-    const expId = select.value;
-    const mapArea = document.getElementById("dbcMapArea");
-    if (!expId) {
-      mapArea.innerHTML = `
-        <p style="color:#6b7280;font-size:14px;">
-          Selecione um experimento para carregar o mapa DBC.
-        </p>
-      `;
-      return;
-    }
-    mapArea.innerHTML = `
-      <div class="card">
-        <p>Mapa do experimento <strong>${expId}</strong> ainda não implementado.</p>
-      </div>
-    `;
-  });
-
   } else {
     container.innerHTML = `
       <div class="card">
@@ -731,6 +688,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
