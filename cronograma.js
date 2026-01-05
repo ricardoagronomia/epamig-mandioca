@@ -38,70 +38,59 @@ async function openExperimentScheduleModal(experimentId) {
   const title = `Cronograma - ${exp.code || "Experimento"}`;
 
   const bodyHtml = `
-    <div style="margin-bottom:12px;">
-      <div style="font-size:13px; color:#4b5563; margin-bottom:6px;">
-        Data de plantio: ${formatDateBr(exp.planting_date)}
-      </div>
+  <div style="margin-bottom:12px;">
+    <div style="font-size:13px; color:#4b5563; margin-bottom:6px;">
+      Data de plantio: ${formatDateBr(exp.planting_date)}
+    </div>
 
-      <!-- Adicionar nova ação -->
-      <div class="schedule-new-action"
-           style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+    <!-- Adicionar nova ação -->
+    <div class="schedule-new-action"
+         style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <input id="schedName" type="text"
           placeholder="Nome da ação"
-          style="flex:2 1 160px;" />
+          style="flex:2 1 200px;" />
 
-        <select id="schedPhase" style="flex:1 1 140px;">
+        <select id="schedPhase" style="flex:1 1 160px;">
           <option value="pre-plantio">Pré-plantio</option>
           <option value="plantio">Plantio</option>
           <option value="acompanhamento">Acompanhamento</option>
           <option value="tratos_culturais">Tratos culturais</option>
           <option value="colheita">Colheita</option>
         </select>
-        <div class="schedule-new-action"
-     style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
-
-  <div style="display:flex; gap:8px; flex-wrap:wrap;">
-    <input id="schedName" type="text"
-      placeholder="Nome da ação"
-      style="flex:2 1 160px;" />
-
-    <select id="schedPhase" style="flex:1 1 140px;">
-      <option value="pre-plantio">Pré-plantio</option>
-      <option value="plantio">Plantio</option>
-      <option value="acompanhamento">Acompanhamento</option>
-      <option value="tratos_culturais">Tratos culturais</option>
-      <option value="colheita">Colheita</option>
-    </select>
-  </div>
-
-  <div style="display:flex; gap:8px; flex-wrap:wrap;">
-    <input id="schedOwner" type="text"
-      placeholder="Responsável"
-      style="flex:1 1 160px;" />
-
-    <input id="schedDesc" type="text"
-      placeholder="Descrição / observações"
-      style="flex:2 1 220px;" />
-  </div>
-
-  <button type="button" id="btnAddSchedule"
-    class="btn-secondary"
-    style="align-self:flex-start;">
-    Adicionar
-  </button>
-</div>
-
-        <button type="button" id="btnAddSchedule"
-          class="btn-secondary"
-          style="flex:0 0 auto; align-self:flex-start;">
-          Adicionar
-        </button>
       </div>
 
-      <!-- Lista de ações -->
-      <div id="schedListContainer"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input id="schedOwner" type="text"
+          placeholder="Responsável"
+          style="flex:1 1 160px;" />
+
+        <input id="schedDesc" type="text"
+          placeholder="Descrição / observações"
+          style="flex:2 1 260px;" />
+      </div>
+
+      <button type="button" id="btnAddSchedule"
+        class="btn-secondary"
+        style="align-self:flex-start;">
+        Adicionar
+      </button>
     </div>
-  `;
+
+    <!-- Cabeçalho da lista -->
+    <div style="display:flex; gap:8px; font-size:12px; color:#6b7280; margin-bottom:4px;">
+      <div style="width:24px;"></div>
+      <div style="flex:1 1 auto;">Ação / fase / DAP / resp. / descrição</div>
+      <div style="flex:0 0 120px;">Início</div>
+      <div style="flex:0 0 120px;">Término</div>
+      <div style="width:32px;"></div>
+    </div>
+
+    <!-- Lista de ações -->
+    <div id="schedListContainer"></div>
+  </div>
+`;
 
   if (typeof openModal === "function") {
     openModal(title, bodyHtml);
@@ -321,6 +310,7 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
 
 
