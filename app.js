@@ -311,6 +311,21 @@ function renderPage(page) {
         </div>
       `;
     }
+  } else if (currentPage === "dbc-map") {
+    // Mapa DBC: por enquanto só um stub
+    container.innerHTML = `
+      <div class="content-header">
+        <div class="content-title">Mapa DBC</div>
+        <div class="content-subtitle">
+          Em breve: grade 3×4 por bloco com tratamentos.
+        </div>
+      </div>
+      <div class="card">
+        <p style="color:#6b7280;font-size:14px;">
+          Módulo Mapa DBC em desenvolvimento. Esta tela ainda não altera nada no banco.
+        </p>
+      </div>
+    `;
   } else {
     container.innerHTML = `
       <div class="card">
@@ -668,6 +683,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
