@@ -202,7 +202,7 @@ function renderScheduleList(experiment, actions) {
 
   container.innerHTML = "";
 
-  const phases = ["pre-plantio", "plantio", "acompanhamento", "tratos", "colheita"];
+  const phases = ["pre-plantio", "plantio", "acompanhamento", "tratos_culturais", "colheita"];
 
   phases.forEach((phase) => {
     const phaseActions = actions.filter((a) => a.phase === phase);
@@ -274,4 +274,5 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
