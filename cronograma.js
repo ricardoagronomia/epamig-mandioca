@@ -119,14 +119,21 @@ function createScheduleRow(experiment, action) {
   statusBtn.textContent = action.completed_at ? "✔" : "○";
   row.appendChild(statusBtn);
 
-  // Nome + DAP
-  const nameSpan = document.createElement("span");
-  nameSpan.style.flex = "1 1 auto";
-  nameSpan.style.marginRight = "8px";
+ // Nome + DAP
+const nameSpan = document.createElement("span");
+nameSpan.style.flex = "1 1 auto";
+nameSpan.style.marginRight = "8px";
+
+function updateNameText() {
   const dap = daysBetween(experiment.planting_date, action.start_date);
   const dapText = dap != null ? ` (DAP ${dap})` : "";
-  nameSpan.textContent = action.name + dapText;
-  row.appendChild(nameSpan);
+  const ownerText = action.owner ? ` • Resp.: ${action.owner}` : "";
+  const descText = action.description ? ` • ${action.description}` : "";
+  nameSpan.textContent = action.name + dapText + ownerText + descText;
+}
+
+updateNameText();
+row.appendChild(nameSpan);
 
   // Datas
   const startInput = document.createElement("input");
@@ -192,7 +199,7 @@ function createScheduleRow(experiment, action) {
       action.start_date = data.start_date;
       const dap = daysBetween(experiment.planting_date, action.start_date);
       const dapText = dap != null ? ` (DAP ${dap})` : "";
-      nameSpan.textContent = action.name + dapText;
+      updateNameText();
     }
   });
 
@@ -310,6 +317,7 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
 
 
