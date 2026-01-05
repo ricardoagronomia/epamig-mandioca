@@ -364,20 +364,22 @@ async function loadScheduleSummary(experimentId) {
     }
   });
 
+  const total = actions.length;
+
   let labelTotal;
-if (total === 1) {
-  labelTotal = "1 ação";
-} else {
-  labelTotal = `${total} ações`;
+  if (total === 1) {
+    labelTotal = "1 ação";
+  } else {
+    labelTotal = `${total} ações`;
+  }
+
+  const partes = [labelTotal];
+  if (late > 0) partes.push(`${late} atrasada${late !== 1 ? "s" : ""}`);
+  if (done > 0) partes.push(`${done} concluída${done !== 1 ? "s" : ""}`);
+
+  container.textContent = "Cronograma: " + partes.join(" · ");
 }
 
-const partes = [labelTotal];
-if (late > 0) partes.push(`${late} atrasada${late !== 1 ? "s" : ""}`);
-if (done > 0) partes.push(`${done} concluída${done !== 1 ? "s" : ""}`);
-
-container.textContent = "Cronograma: " + partes.join(" · ");
-
-}
 
 
 
