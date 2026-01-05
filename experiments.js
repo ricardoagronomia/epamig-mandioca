@@ -439,14 +439,35 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
         </div>
       </div>
 
-      <!-- CRONOGRAMA & REVISÃO (esqueleto simples) -->
+            <!-- CRONOGRAMA -->
       <div style="margin-bottom:12px;">
         <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-          Cronograma (planejamento geral)
+          Cronograma de ações
         </h3>
-        <p style="font-size:13px; color:#6b7280;">
-          O detalhamento do cronograma será feito em uma guia específica. Aqui você pode apenas registrar o planejamento geral no objetivo ou em anotações futuras.
-        </p>
+
+        <!-- Adicionar nova ação -->
+        <div class="schedule-new-action" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <input id="schedName" type="text"
+            placeholder="Nome da ação"
+            style="flex:2 1 160px;" />
+
+          <select id="schedPhase" style="flex:1 1 140px;">
+            <option value="pre-plantio">Pré-plantio</option>
+            <option value="plantio">Plantio</option>
+            <option value="acompanhamento">Acompanhamento</option>
+            <option value="tratos">Tratos culturais</option>
+            <option value="colheita">Colheita</option>
+          </select>
+
+          <button type="button" id="btnAddSchedule"
+            class="btn-secondary"
+            style="flex:0 0 auto; align-self:flex-start;">
+            Adicionar
+          </button>
+        </div>
+
+        <!-- Lista de ações -->
+        <div id="schedListContainer"></div>
       </div>
 
       <button type="button" class="btn-primary" style="margin-top:10px;"
@@ -461,6 +482,12 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
   } else {
     alert("Função openModal não encontrada no app principal.");
   }
+  const currentExperiment = exp || {};
+setupScheduleUI(currentExperiment);
+
+if (exp && exp.id) {
+  loadScheduleActions(exp);
+}
 }
 
 async function submitExperimentForm(id) {
@@ -575,8 +602,207 @@ function escapeHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
+    .replace(/'/g, "&#39;");
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+function daysBetween(date1, date2) {
+  if (!date1 || !date2) return null;
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.round((d2 - d1) / oneDay);
+}
+function createScheduleRow(experiment, action) {
+  const row = document.createElement('div');
+  row.className = 'sched-row';
+
+  // Botão status
+  const statusBtn = document.createElement('button');
+  statusBtn.type = 'button';
+  statusBtn.className = 'sched-status-btn';
+  statusBtn.textContent = action.completed_at ? '✔' : '○';
+  row.appendChild(statusBtn);
+
+  // Nome + DAP
+  const nameSpan = document.createElement('span');
+  nameSpan.style.flex = '1 1 auto';
+  nameSpan.style.marginRight = '8px';
+  const dap = daysBetween(experiment.planting_date, action.start_date);
+  const dapText = dap != null ? ` (DAP ${dap})` : '';
+  nameSpan.textContent = action.name + dapText;
+  row.appendChild(nameSpan);
+
+  // Datas
+  const startInput = document.createElement('input');
+  startInput.type = 'date';
+  startInput.value = action.start_date || '';
+  startInput.style.marginRight = '4px';
+  row.appendChild(startInput);
+
+  const endInput = document.createElement('input');
+  endInput.type = 'date';
+  endInput.value = action.end_date || '';
+  endInput.style.marginRight = '4px';
+  row.appendChild(endInput);
+
+  // Delete
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.textContent = '🗑';
+  delBtn.className = 'btn-danger';
+  row.appendChild(delBtn);
+
+  // Cores de status
+  function applyStatusColor() {
+    row.classList.remove('sched-done', 'sched-late');
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    if (action.completed_at) {
+      row.classList.add('sched-done');
+      statusBtn.textContent = '✔';
+    } else if (action.end_date && todayStr > action.end_date) {
+      row.classList.add('sched-late');
+      statusBtn.textContent = '○';
+    } else {
+      statusBtn.textContent = '○';
+    }
+  }
+
+  applyStatusColor();
+
+  // Eventos
+  statusBtn.addEventListener('click', async () => {
+    const newCompleted = action.completed_at ? null : new Date().toISOString();
+    const { data, error } = await supabase
+      .from('scheduled_actions')
+      .update({ completed_at: newCompleted })
+      .eq('id', action.id)
+      .select()
+      .single();[web:144]
+
+    if (!error) {
+      action.completed_at = data.completed_at;
+      applyStatusColor();
+    }
+  });
+
+  startInput.addEventListener('change', async () => {
+    const { data, error } = await supabase
+      .from('scheduled_actions')
+      .update({ start_date: startInput.value })
+      .eq('id', action.id)
+      .select()
+      .single();[web:144]
+    if (!error) {
+      action.start_date = data.start_date;
+      const dap = daysBetween(experiment.planting_date, action.start_date);
+      const dapText = dap != null ? ` (DAP ${dap})` : '';
+      nameSpan.textContent = action.name + dapText;
+    }
+  });
+
+  endInput.addEventListener('change', async () => {
+    const { data, error } = await supabase
+      .from('scheduled_actions')
+      .update({ end_date: endInput.value })
+      .eq('id', action.id)
+      .select()
+      .single();[web:144]
+    if (!error) {
+      action.end_date = data.end_date;
+      applyStatusColor();
+    }
+  });
+
+  delBtn.addEventListener('click', async () => {
+    const { error } = await supabase
+      .from('scheduled_actions')
+      .delete()
+      .eq('id', action.id);[web:148]
+    if (!error) {
+      row.remove();
+    }
+  });
+
+  return row;
+}
+function renderScheduleList(experiment, actions) {
+  const container = document.getElementById('schedListContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  const phases = ['pre-plantio', 'plantio', 'acompanhamento', 'tratos', 'colheita'];
+
+  phases.forEach(phase => {
+    const phaseActions = actions.filter(a => a.phase === phase);
+    if (!phaseActions.length) return;
+
+    const section = document.createElement('div');
+    section.className = 'sched-phase-section';
+    section.style.marginBottom = '8px';
+
+    const title = document.createElement('h4');
+    title.textContent = phase.toUpperCase();
+    title.style.fontSize = '13px';
+    title.style.margin = '6px 0';
+    section.appendChild(title);
+
+    phaseActions.forEach(a => {
+      const row = createScheduleRow(experiment, a);
+      section.appendChild(row);
+    });
+
+    container.appendChild(section);
+  });
+}
+function setupScheduleUI(experiment) {
+  const btnAdd = document.getElementById('btnAddSchedule');
+  const nameInput = document.getElementById('schedName');
+  const phaseSelect = document.getElementById('schedPhase');
+
+  if (!btnAdd || !nameInput || !phaseSelect) return;
+
+  btnAdd.onclick = async () => {
+    const name = nameInput.value.trim();
+    const phase = phaseSelect.value;
+    if (!name) return;
+
+    const { data, error } = await supabase
+      .from('scheduled_actions')
+      .insert({
+        experiment_id: experiment.id,
+        name,
+        phase,
+        start_date: null,
+        end_date: null,
+        completed_at: null,
+      })
+      .select()
+      .single();[web:148]
+
+    if (!error && data) {
+      nameInput.value = '';
+      loadScheduleActions(experiment);
+    } else {
+      console.error('Erro ao adicionar ação:', error);
+    }
+  };
+}
+async function loadScheduleActions(experiment) {
+  const { data, error } = await supabase
+    .from('scheduled_actions')
+    .select('*')
+    .eq('experiment_id', experiment.id)
+    .order('start_date', { ascending: true });[web:148]
+
+  if (error) {
+    console.error('Erro ao carregar cronograma:', error);
+    return;
+  }
+
+  renderScheduleList(experiment, data || []);
 }
 
 // serializa objeto para usar em atributo HTML sem quebrar aspas
@@ -584,6 +810,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
