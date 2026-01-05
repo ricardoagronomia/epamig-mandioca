@@ -312,20 +312,54 @@ function renderPage(page) {
       `;
     }
   } else if (currentPage === "dbc-map") {
-    // Mapa DBC: por enquanto só um stub
-    container.innerHTML = `
-      <div class="content-header">
-        <div class="content-title">Mapa DBC</div>
-        <div class="content-subtitle">
-          Em breve: grade 3×4 por bloco com tratamentos.
-        </div>
+  const experimentsOptionsHtml = `
+    <option value="">Selecione um experimento...</option>
+  `;
+
+  container.innerHTML = `
+    <div class="content-header">
+      <div class="content-title">Mapa DBC</div>
+      <div class="content-subtitle">
+        Escolha um experimento para visualizar o mapa de blocos.
       </div>
-      <div class="card">
+    </div>
+
+    <div class="card">
+      <div style="margin-bottom:12px;">
+        <label for="dbcExperimentSelect">Experimento</label>
+        <select id="dbcExperimentSelect">
+          ${experimentsOptionsHtml}
+        </select>
+      </div>
+
+      <div id="dbcMapArea">
         <p style="color:#6b7280;font-size:14px;">
-          Módulo Mapa DBC em desenvolvimento. Esta tela ainda não altera nada no banco.
+          Selecione um experimento para carregar o mapa DBC.
         </p>
       </div>
+    </div>
+  `;
+
+  // placeholder: por enquanto só mostra um alert quando troca
+  const select = document.getElementById("dbcExperimentSelect");
+  select.addEventListener("change", () => {
+    const expId = select.value;
+    const mapArea = document.getElementById("dbcMapArea");
+    if (!expId) {
+      mapArea.innerHTML = `
+        <p style="color:#6b7280;font-size:14px;">
+          Selecione um experimento para carregar o mapa DBC.
+        </p>
+      `;
+      return;
+    }
+    mapArea.innerHTML = `
+      <div class="card">
+        <p>Mapa do experimento <strong>${expId}</strong> ainda não implementado.</p>
+      </div>
     `;
+  });
+
   } else {
     container.innerHTML = `
       <div class="card">
@@ -683,6 +717,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
