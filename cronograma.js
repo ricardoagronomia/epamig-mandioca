@@ -1,5 +1,13 @@
 // cronograma.js
 // Módulo independente para o cronograma dos experimentos
+// Calcula diferença em dias entre duas datas (YYYY-MM-DD ou ISO)
+function daysBetween(date1, date2) {
+  if (!date1 || !date2) return null;
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.round((d2 - d1) / oneDay);
+}
 
 async function openExperimentScheduleModal(experimentId) {
   if (typeof s === "undefined") {
@@ -45,3 +53,4 @@ async function openExperimentScheduleModal(experimentId) {
     alert("Função openModal não encontrada no app principal.");
   }
 }
+
