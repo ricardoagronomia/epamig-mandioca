@@ -293,255 +293,174 @@ function openExperimentFormModal(exp) {
   const plotWidth = exp?.plot_width || "";
   const rowSpacing = exp?.row_spacing || "";
 
-    const bodyHtml = `
+  const bodyHtml = `
     <form id="experimentForm">
-      <!-- TABS -->
-      <div style="display:flex; gap:6px; margin-bottom:12px; border-radius:999px; background:var(--gray-100); padding:4px;">
-        <button type="button" id="tabExpGeneral"
-          style="flex:1; border:none; border-radius:999px; padding:8px 0; font-size:13px; font-weight:600; cursor:pointer;
-                 background:var(--green); color:#fff; box-shadow:0 2px 6px rgba(22,101,52,0.4);">
-          Geral
-        </button>
-        <button type="button" id="tabExpSchedule"
-          style="flex:1; border:none; border-radius:999px; padding:8px 0; font-size:13px; font-weight:600; cursor:pointer;
-                 background:transparent; color:var(--gray-600);">
-          Cronograma
-        </button>
-      </div>
-
-      <!-- CONTEÚDO ABA GERAL -->
-      <div id="expTabGeneral">
-        <!-- LOCALIZAÇÃO -->
-        <div style="margin-bottom:12px;">
-          <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-            Localização
-          </h3>
-
-          <label for="expCode">Código do experimento</label>
-          <input id="expCode" type="text"
-            value="${escapeHtml(exp?.code || "")}"
-            placeholder="Ex.: 001" />
-
-          <label for="expName">Nome do experimento</label>
-          <input id="expName" type="text"
-            value="${escapeHtml(exp?.name || "")}"
-            placeholder="Ex.: Posições de plantio em mandioca" />
-
-          <label for="expObjective">Objetivo</label>
-          <textarea id="expObjective" rows="3"
-            style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
-            placeholder="Descreva o objetivo do experimento...">${escapeHtml(exp?.objective || "")}</textarea>
-
-          <label for="expResearcher">Pesquisadores responsáveis</label>
-          <textarea id="expResearcher" rows="2"
-            style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
-            placeholder="Ex.: Ricardo L. Ribeiro; Douglas S. Parreira (um por linha ou separados por ponto e vírgula)">${escapeHtml(exp?.researcher || "")}</textarea>
-
-          <label for="expPlantingDate">Data de plantio</label>
-          <input id="expPlantingDate" type="date"
-            value="${exp?.planting_date ? exp.planting_date.split("T")[0] : ""}" />
-        </div>
-
-        <!-- AMBIENTE -->
-        <div style="margin-bottom:12px;">
-          <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-            Ambiente
-          </h3>
-
-          <label for="expFarm">Local / fazenda</label>
-          <input id="expFarm" type="text"
-            value="${escapeHtml(exp?.farm || "")}"
-            placeholder="Ex.: EPAMIG ITAP" />
-
-          <label for="expMunicipality">Município / Estado</label>
-          <input id="expMunicipality" type="text"
-            value="${escapeHtml(exp?.municipality || "")}"
-            placeholder="Ex.: Pitangui - MG" />
-
-          <label for="expLatitude">Latitude (DMS)</label>
-          <input id="expLatitude" type="text"
-            value="${escapeHtml(exp?.latitude || "")}"
-            placeholder="Ex.: 19º44'24&quot;S" />
-
-          <label for="expLongitude">Longitude (DMS)</label>
-          <input id="expLongitude" type="text"
-            value="${escapeHtml(exp?.longitude || "")}"
-            placeholder="Ex.: 44º53'41&quot;O" />
-
-          <label for="expSoilType">Tipo de solo</label>
-          <input id="expSoilType" type="text"
-            value="${escapeHtml(exp?.soil_type || "")}"
-            placeholder="Ex.: Latossolo Vermelho-Amarelo" />
-
-          <label for="expClimate">Clima</label>
-          <input id="expClimate" type="text"
-            value="${escapeHtml(exp?.climate || "")}"
-            placeholder="Ex.: Cwa - Subtropical úmido com inverno seco" />
-        </div>
-
-        <!-- DELINEAMENTO E DIMENSÕES -->
-        <div style="margin-bottom:12px;">
-          <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-            Delineamento e dimensões
-          </h3>
-
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <div style="flex:1 1 120px;">
-              <label for="expBlocks">Número de blocos</label>
-              <input id="expBlocks" type="number" min="1"
-                value="${blocks}" />
-            </div>
-            <div style="flex:1 1 120px;">
-              <label for="expPlotsPerBlock">Parcelas por bloco</label>
-              <input id="expPlotsPerBlock" type="number" min="1"
-                value="${plotsPerBlock}" />
-            </div>
-          </div>
-
-          <div style="margin-top:8px; padding:8px 10px; border-radius:10px; background:var(--gray-50); font-size:13px; color:#4b5563;">
-            Variedades fixas: Amarela, Amarelinha, Cacau, Sabará.<br/>
-            Tratamentos fixos: vertical, inclinada, horizontal.
-          </div>
-
-          <div style="margin-top:10px;">
-            <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Disposição das plantas na parcela</div>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <div style="flex:1 1 110px;">
-                <label>Plantas totais/linha</label>
-                <input type="number" value="${plantsPerRow}" disabled />
-              </div>
-              <div style="flex:1 1 110px;">
-                <label>Plantas totais/coluna</label>
-                <input type="number" value="${plantsPerCol}" disabled />
-              </div>
-              <div style="flex:1 1 110px;">
-                <label>Plantas úteis/linha</label>
-                <input id="expUsefulRow" type="number" min="1"
-                  value="${usefulPlantsPerRow}" />
-              </div>
-              <div style="flex:1 1 110px;">
-                <label>Plantas úteis/coluna</label>
-                <input id="expUsefulCol" type="number" min="1"
-                  value="${usefulPlantsPerCol}" />
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top:10px;">
-            <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Dimensões da parcela</div>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <div style="flex:1 1 120px;">
-                <label for="expPlotLength">Comprimento (m)</label>
-                <input id="expPlotLength" type="number" step="0.01" min="0"
-                  value="${plotLength}" />
-              </div>
-              <div style="flex:1 1 120px;">
-                <label for="expPlotWidth">Largura (m)</label>
-                <input id="expPlotWidth" type="number" step="0.01" min="0"
-                  value="${plotWidth}" />
-              </div>
-              <div style="flex:1 1 120px;">
-                <label for="expRowSpacing">Espaç. linhas (m)</label>
-                <input id="expRowSpacing" type="number" step="0.01" min="0"
-                  value="${row_spacing || ""}" />
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top:10px;">
-            <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Áreas</div>
-            <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:13px;">
-              <div style="flex:1 1 140px;">
-                <label>Plantas úteis/parcela</label>
-                <input id="expUsefulPlantsTotal" type="number" min="1"
-                  value="${usefulPlantsTotal}" />
-              </div>
-              <div style="flex:1 1 140px;">
-                <label>Área/parcela (m²)</label>
-                <input id="expPlotArea" type="number" step="0.01" min="0"
-                  value="${exp?.plot_area || ""}" />
-              </div>
-              <div style="flex:1 1 160px;">
-                <label>Área total (m²)</label>
-                <input id="expTotalArea" type="number" step="0.01" min="0"
-                  value="${exp?.total_area || ""}" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CONTEÚDO ABA CRONOGRAMA -->
-      <div id="expTabSchedule" style="display:none;">
+      <!-- LOCALIZAÇÃO -->
+      <div style="margin-bottom:12px;">
         <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-          Cronograma do experimento
+          Localização
         </h3>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Cadastre as ações planejadas por fase. Em uma próxima etapa, essas ações alimentarão a guia de acompanhamento.
-        </p>
 
-        <div style="margin-bottom:10px; padding:10px; border-radius:10px; background:var(--gray-50);">
-          <label for="expActionName">Nova ação</label>
-          <input id="expActionName" type="text"
-            placeholder="Ex.: Coleta de dados de altura de plantas aos 60 DAP" />
+        <label for="expCode">Código do experimento</label>
+        <input id="expCode" type="text"
+          value="${escapeHtml(exp?.code || "")}"
+          placeholder="Ex.: 001" />
 
-          <label for="expActionPhase">Fase</label>
-          <select id="expActionPhase">
-            <option value="pre-plantio">Pré-plantio</option>
-            <option value="plantio">Plantio</option>
-            <option value="acompanhamento">Acompanhamento</option>
-            <option value="tratos-culturais">Tratos culturais</option>
-          </select>
+        <label for="expName">Nome do experimento</label>
+        <input id="expName" type="text"
+          value="${escapeHtml(exp?.name || "")}"
+          placeholder="Ex.: Posições de plantio em mandioca" />
 
-          <button type="button" class="btn-secondary" style="margin-top:8px; width:100%;"
-            onclick="addScheduledAction('${exp?.id || ""}')">
-            Adicionar ação ao cronograma
-          </button>
+        <label for="expObjective">Objetivo</label>
+        <textarea id="expObjective" rows="3"
+          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
+          placeholder="Descreva o objetivo do experimento...">${escapeHtml(exp?.objective || "")}</textarea>
+
+        <label for="expResearcher">Pesquisadores responsáveis</label>
+<textarea id="expResearcher" rows="2"
+  style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
+  placeholder="Ex.: Ricardo L. Ribeiro; (um por linha ou separados por ponto e vírgula)">
+${escapeHtml(exp?.researcher || "")}</textarea>
+
+        <label for="expPlantingDate">Data de plantio</label>
+        <input id="expPlantingDate" type="date"
+          value="${exp?.planting_date ? exp.planting_date.split("T")[0] : ""}" />
+      </div>
+
+      <!-- AMBIENTE -->
+      <div style="margin-bottom:12px;">
+        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
+          Ambiente
+        </h3>
+
+        <label for="expFarm">Local / fazenda</label>
+        <input id="expFarm" type="text"
+          value="${escapeHtml(exp?.farm || "")}"
+          placeholder="Ex.: EPAMIG ITAP" />
+
+        <label for="expmunicipality">Município / Estado</label>
+        <input id="expmunicipality" type="text"
+          value="${escapeHtml(exp?.municipality || "")}"
+          placeholder="Ex.: Pitangui - MG" />
+
+        <label for="expLatitude">Latitude (DMS)</label>
+        <input id="expLatitude" type="text"
+          value="${escapeHtml(exp?.latitude || "")}"
+          placeholder="Ex.: 19º44'24&quot;S" />
+
+        <label for="expLongitude">Longitude (DMS)</label>
+        <input id="expLongitude" type="text"
+          value="${escapeHtml(exp?.longitude || "")}"
+          placeholder="Ex.: 44º53'41&quot;O" />
+
+        <label for="expSoilType">Tipo de solo</label>
+        <input id="expSoilType" type="text"
+          value="${escapeHtml(exp?.soil_type || "")}"
+          placeholder="Ex.: Latossolo Vermelho-Amarelo" />
+
+        <label for="expClimate">Clima</label>
+        <input id="expClimate" type="text"
+          value="${escapeHtml(exp?.climate || "")}"
+          placeholder="Ex.: Cwa - Subtropical úmido com inverno seco" />
+      </div>
+
+      <!-- DELINEAMENTO E DIMENSÕES -->
+      <div style="margin-bottom:12px;">
+        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
+          Delineamento e dimensões
+        </h3>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div style="flex:1 1 120px;">
+            <label for="expBlocks">Número de blocos</label>
+            <input id="expBlocks" type="number" min="1"
+              value="${blocks}" />
+          </div>
+          <div style="flex:1 1 120px;">
+            <label for="expPlotsPerBlock">Parcelas por bloco</label>
+            <input id="expPlotsPerBlock" type="number" min="1"
+              value="${plotsPerBlock}" />
+          </div>
         </div>
 
-        <div id="expScheduleList">
-          <p style="font-size:13px; color:#6b7280;">Carregando ações do cronograma...</p>
+        <div style="margin-top:8px; padding:8px 10px; border-radius:10px; background:var(--gray-50); font-size:13px; color:#4b5563;">
+          Variedades fixas: Amarela, Amarelinha, Cacau, Sabará.<br/>
+          Tratamentos fixos: vertical, inclinada, horizontal.
+        </div>
+
+        <div style="margin-top:10px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Disposição das plantas na parcela</div>
+          <<div style="display:flex; flex-wrap:wrap; gap:8px;">
+  <div style="flex:1 1 120px;">
+    <label for="expPlotLength">Comprimento (m)</label>
+    <input id="expPlotLength" type="number" step="0.01" min="0"
+      value="${plotLength}" />
+  </div>
+  <div style="flex:1 1 120px;">
+    <label for="expPlotWidth">Largura (m)</label>
+    <input id="expPlotWidth" type="number" step="0.01" min="0"
+      value="${plotWidth}" />
+  </div>
+  <div style="flex:1 1 120px;">
+    <label for="expRowSpacing">Espaç. linhas (m)</label>
+    <input id="expRowSpacing" type="number" step="0.01" min="0"
+      value="${rowSpacing}" />
+  </div>
+  <div style="flex:1 1 120px;">
+    <label for="expPlantSpacing">Espaç. plantas (m)</label>
+    <input id="expPlantSpacing" type="number" step="0.01" min="0"
+      value="1.00" />
+  </div>
+</div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Áreas (calculadas)</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:13px;">
+            <div style="flex:1 1 140px;">
+              <label>Plantas úteis/parcela</label>
+              <input id="expUsefulPlantsTotal" type="number" min="1"
+                value="${usefulPlantsTotal}" />
+            </div>
+            <div style="flex:1 1 140px;">
+              <label>Área/parcela (m²)</label>
+              <input id="expPlotArea" type="number" step="0.01" min="0"
+                value="${exp?.plot_area || ""}" />
+            </div>
+            <div style="flex:1 1 160px;">
+              <label>Área total (m²)</label>
+              <input id="expTotalArea" type="number" step="0.01" min="0"
+                value="${exp?.total_area || ""}" />
+            </div>
+          </div>
+          <p style="font-size:12px; color:#6b7280; margin-top:4px;">
+            Dica: após informar comprimento e largura, ajuste a área/parcela e área total manualmente se necessário.
+          </p>
         </div>
       </div>
 
-      <button type="button" class="btn-primary" style="margin-top:12px;"
+      <!-- CRONOGRAMA & REVISÃO (esqueleto simples) -->
+      <div style="margin-bottom:12px;">
+        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
+          Cronograma (planejamento geral)
+        </h3>
+        <p style="font-size:13px; color:#6b7280;">
+          O detalhamento do cronograma será feito em uma guia específica. Aqui você pode apenas registrar o planejamento geral no objetivo ou em anotações futuras.
+        </p>
+      </div>
+
+      <button type="button" class="btn-primary" style="margin-top:10px;"
         onclick="submitExperimentForm('${exp?.id || ""}')">
         ${isEdit ? "Salvar alterações" : "Criar experimento"}
       </button>
     </form>
   `;
 
-    if (typeof openModal === "function") {
+  if (typeof openModal === "function") {
     openModal(title, bodyHtml);
-
-    const tabGeneral = document.getElementById("tabExpGeneral");
-    const tabSchedule = document.getElementById("tabExpSchedule");
-    const boxGeneral = document.getElementById("expTabGeneral");
-    const boxSchedule = document.getElementById("expTabSchedule");
-
-    if (tabGeneral && tabSchedule && boxGeneral && boxSchedule) {
-      tabGeneral.onclick = () => {
-        tabGeneral.style.background = "var(--green)";
-        tabGeneral.style.color = "#fff";
-        tabSchedule.style.background = "transparent";
-        tabSchedule.style.color = "var(--gray-600)";
-        boxGeneral.style.display = "block";
-        boxSchedule.style.display = "none";
-      };
-      tabSchedule.onclick = () => {
-        tabSchedule.style.background = "var(--green)";
-        tabSchedule.style.color = "#fff";
-        tabGeneral.style.background = "transparent";
-        tabGeneral.style.color = "var(--gray-600)";
-        boxGeneral.style.display = "none";
-        boxSchedule.style.display = "block";
-        // em breve: carregar ações do cronograma aqui
-      };
-    }
   } else {
     alert("Função openModal não encontrada no app principal.");
   }
-
 }
 
 async function submitExperimentForm(id) {
@@ -665,8 +584,6 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
-
-
 
 
 
