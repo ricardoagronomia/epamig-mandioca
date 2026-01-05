@@ -558,7 +558,7 @@ async function submitExperimentForm(id) {
     blocks_count,
     plots_per_block,
     useful_plants_per_plot,
-    treatments_count: 3,        // 3 tratamentos fixos: vertical, inclinada, horizontal
+    treatments_count: 3, // 3 tratamentos fixos
     plot_length,
     plot_width,
     row_spacing,
@@ -606,6 +606,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
