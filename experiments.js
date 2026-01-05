@@ -772,8 +772,10 @@ async function loadScheduleActions(experiment) {
     console.error('Erro ao carregar cronograma:', error);
     return;
   }
+  renderScheduleList(experiment, data || []);
+} 
+
   async function openExperimentScheduleModal(experimentId) {
-  // buscar experimento para ter planting_date e code
   const { data: exp, error } = await supabase
     .from('experiments')
     .select('*')
@@ -837,6 +839,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
