@@ -292,6 +292,7 @@ function openExperimentFormModal(exp) {
   const plotLength = exp?.plot_length || "";
   const plotWidth = exp?.plot_width || "";
   const rowSpacing = exp?.row_spacing || "";
+  const plantSpacing = exp?.plant_spacing || "1.00";
 
   const bodyHtml = `
     <form id="experimentForm">
@@ -409,7 +410,7 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
   <div style="flex:1 1 120px;">
     <label for="expPlantSpacing">Espaç. plantas (m)</label>
     <input id="expPlantSpacing" type="number" step="0.01" min="0"
-      value="1.00" />
+  value="${plantSpacing}" />
   </div>
 </div>
         </div>
@@ -593,6 +594,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
