@@ -450,10 +450,21 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
         </p>
       </div>
 
-      <button type="button" class="btn-primary" style="margin-top:10px;"
-        onclick="submitExperimentForm('${exp?.id || ""}')">
-        ${isEdit ? "Salvar alterações" : "Criar experimento"}
-      </button>
+            <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;">
+        <button type="button" class="btn-primary"
+          onclick="submitExperimentForm('${exp?.id || ""}')">
+          ${isEdit ? "Salvar alterações" : "Criar experimento"}
+        </button>
+
+        ${
+          isEdit && exp?.id
+            ? `<button type="button" class="btn-secondary"
+                onclick="openExperimentScheduleModal('${exp.id}')">
+                Cronograma
+               </button>`
+            : ""
+        }
+      </div>
     </form>
   `;
 
@@ -594,6 +605,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
