@@ -596,20 +596,16 @@ async function submitExperimentForm(id) {
   }
 
   if (error) {
-    alert("Erro ao salvar experimento: " + error.message);
-    return;
-  }
-  if (typeof closeModal === "function") {
-  closeModal();
+  alert("Erro ao salvar experimento: " + error.message);
+  return;
 }
+
 alert(id ? "Experimento atualizado com sucesso." : "Experimento criado com sucesso.");
 
-await loadExperimentsIntoList();
+if (typeof closeModal === "function") {
+  closeModal();
+}
 
-
-  if (typeof closeModal === "function") {
-    closeModal();
-  }
   await loadExperimentsIntoList();
 }
 
@@ -632,6 +628,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
