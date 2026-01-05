@@ -89,6 +89,14 @@ async function openExperimentScheduleModal(experimentId) {
 
     <!-- Lista de ações -->
     <div id="schedListContainer"></div>
+          <!-- Lista de ações -->
+      <div id="schedListContainer"></div>
+
+      <!-- Mensagem de status -->
+      <div id="schedStatusMsg"
+           style="margin-top:6px; font-size:12px; color:#6b7280; min-height:16px;">
+        As alterações são salvas automaticamente.
+      </div>
   </div>
 `;
 
@@ -102,6 +110,19 @@ async function openExperimentScheduleModal(experimentId) {
   // Inicializar UI e carregar ações existentes
   setupScheduleUI(exp);
   loadScheduleActions(exp);
+}
+
+function showScheduleStatus(message) {
+  const el = document.getElementById("schedStatusMsg");
+  if (!el) return;
+  el.textContent = message;
+
+  // volta para texto padrão depois de 2,5s
+  setTimeout(() => {
+    if (el.textContent === message) {
+      el.textContent = "As alterações são salvas automaticamente.";
+    }
+  }, 2500);
 }
 
 function createScheduleRow(experiment, action) {
@@ -379,6 +400,7 @@ async function loadScheduleSummary(experimentId) {
 
   container.textContent = "Cronograma: " + partes.join(" · ");
 }
+
 
 
 
