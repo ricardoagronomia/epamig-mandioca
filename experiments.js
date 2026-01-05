@@ -825,7 +825,6 @@ async function loadScheduleActions(experiment) {
     return;
   }
 
-  // agora que o HTML foi colocado no DOM, inicializar cronograma
   setupScheduleUI(exp);
   loadScheduleActions(exp);
 }
@@ -838,6 +837,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
