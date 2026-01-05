@@ -502,6 +502,7 @@ async function submitExperimentForm(id) {
   const plot_length = parseFloat(val("expPlotLength") || "0");
   const plot_width = parseFloat(val("expPlotWidth") || "0");
   const row_spacing = parseFloat(val("expRowSpacing") || "0");
+  const plant_spacing = parseFloat(val("expPlantSpacing") || "0");
 
   // ÁREAS (CALCULADAS SE ESTIVEREM VAZIAS)
   let plot_area = parseFloat(val("expPlotArea") || "0");
@@ -540,6 +541,7 @@ async function submitExperimentForm(id) {
     plot_length,
     plot_width,
     row_spacing,
+    plant_spacing,
     plot_area,
     total_area,
     status,
@@ -558,6 +560,13 @@ async function submitExperimentForm(id) {
     alert("Erro ao salvar experimento: " + error.message);
     return;
   }
+  if (typeof closeModal === "function") {
+  closeModal();
+}
+alert(id ? "Experimento atualizado com sucesso." : "Experimento criado com sucesso.");
+
+await loadExperimentsIntoList();
+
 
   if (typeof closeModal === "function") {
     closeModal();
@@ -584,6 +593,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
