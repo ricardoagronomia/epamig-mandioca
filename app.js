@@ -336,8 +336,8 @@ function renderPage(page) {
     </div>
   `;
 
-  const select = document.getElementById("dbcExperimentSelect");
-  const mapArea = document.getElementById("dbcMapArea");
+  const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
+  const dbcMapArea = document.getElementById("dbcMapArea");
 
   // 1) Buscar experimentos no Supabase
   (async () => {
@@ -347,8 +347,8 @@ function renderPage(page) {
       .order("created_at", { ascending: false });
 
     if (error) {
-      select.innerHTML = `<option value="">Erro ao carregar experimentos</option>`;
-      mapArea.innerHTML = `
+      dbcExperimentSelect.innerHTML = `<option value="">Erro ao carregar experimentos</option>`;
+      dbcMapArea.innerHTML = `
         <p style="color:#b91c1c;font-size:14px;">
           Não foi possível carregar a lista de experimentos.
         </p>
@@ -357,11 +357,11 @@ function renderPage(page) {
     }
 
     if (!experiments || experiments.length === 0) {
-      select.innerHTML = `<option value="">Nenhum experimento encontrado</option>`;
+      dbcExperimentSelect.innerHTML = `<option value="">Nenhum experimento encontrado</option>`;
       return;
     }
 
-    select.innerHTML = `
+    dbcExperimentSelect.innerHTML = `
       <option value="">Selecione um experimento...</option>
       ${experiments
         .map(
@@ -373,10 +373,10 @@ function renderPage(page) {
   })();
 
   // 2) Reagir à mudança do select
-  select.addEventListener("change", () => {
-    const expId = select.value;
+  dbcExperimentSelect.addEventListener("change", () => {
+    const expId = dbcExperimentSelect.value;
     if (!expId) {
-      mapArea.innerHTML = `
+      dbcMapArea.innerHTML = `
         <p style="color:#6b7280;font-size:14px;">
           Selecione um experimento para carregar o mapa DBC.
         </p>
@@ -384,8 +384,7 @@ function renderPage(page) {
       return;
     }
 
-    // placeholder por enquanto
-    mapArea.innerHTML = `
+    dbcMapArea.innerHTML = `
       <div class="card">
         <p>Mapa do experimento selecionado ainda será implementado.</p>
       </div>
@@ -793,6 +792,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
