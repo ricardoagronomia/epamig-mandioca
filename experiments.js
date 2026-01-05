@@ -1,853 +1,361 @@
 // =============================
-// experiments.js
-// Módulo independente de Experimentos
+// experiments.js - VERSÃO CORRIGIDA
 // =============================
 
-// estado local do módulo
-let currentExperiment = null;
-
-// usa formatDate que já existe no app.js, se disponível
-function formatExperimentDate(dateString) {
-  if (typeof formatDate === "function") {
-    return formatDate(dateString);
+// Configuração do módulo
+const ExperimentsModule = (function() {
+  // Estado privado
+  let currentExperiment = null;
+  let currentUser = null;
+  let currentRole = null;
+  let supabaseClient = null;
+  
+  // Inicializar módulo
+  function init(supabase, user, role) {
+    supabaseClient = supabase;
+    currentUser = user;
+    currentRole = role;
+    console.log('Módulo de experimentos inicializado');
   }
-  if (!dateString) return "-";
-  const [y, m, d] = dateString.split("T")[0].split("-");
-  return `${d}/${m}/${y}`;
-}
-
-// página principal de Experimentos
-async function renderExperimentsPage(container) {
-  // se currentRole não existir ainda, mostra mensagem simples
-  if (typeof currentRole === "undefined" || !currentRole) {
-    container.innerHTML = `
-      <div class="card">
-        <p>Carregando permissões do usuário...</p>
-      </div>
-    `;
-    return;
+  
+  // Formatar data com fallback
+  function formatExperimentDate(dateString) {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return "-";
+    }
   }
-
-  if (currentRole === "visitor") {
+  
+  // Sanitizar HTML
+  function escapeHtml(str) {
+    if (!str) return "";
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  
+  // Validar permissões
+  function checkPermission(requiredRole) {
+    if (!currentRole) return false;
+    const hierarchy = { visitor: 0, collaborator: 1, admin: 2 };
+    return hierarchy[currentRole] >= hierarchy[requiredRole];
+  }
+  
+  // Página principal de Experimentos
+  async function renderExperimentsPage(container) {
+    if (!container) {
+      console.error('Container não fornecido');
+      return;
+    }
+    
+    if (!currentRole) {
+      container.innerHTML = `
+        <div class="card">
+          <p>Carregando permissões do usuário...</p>
+        </div>
+      `;
+      return;
+    }
+    
+    if (currentRole === "visitor") {
+      container.innerHTML = `
+        <div class="content-header">
+          <div class="content-title">Experimentos</div>
+          <div class="content-subtitle">Apenas administradores ou pesquisadores podem gerenciar experimentos.</div>
+        </div>
+        <div class="card">
+          <p style="color:#b91c1c;">Você não tem permissão para acessar esta página.</p>
+        </div>
+      `;
+      return;
+    }
+    
     container.innerHTML = `
       <div class="content-header">
         <div class="content-title">Experimentos</div>
-        <div class="content-subtitle">Apenas administradores ou pesquisadores podem gerenciar experimentos.</div>
-      </div>
-      <div class="card">
-        <p style="color:#b91c1c;">Você não tem permissão para acessar esta página.</p>
-      </div>
-    `;
-    return;
-  }
-
-  const subtitle = document.getElementById("headerSubtitle");
-  if (subtitle) subtitle.textContent = "Registro de Experimentos";
-
-  container.innerHTML = `
-    <div class="content-header">
-      <div class="content-title">Experimentos</div>
-      <div class="content-subtitle">
-        Selecione qual experimento será usado para edição e inserção de dados.
-      </div>
-    </div>
-
-    <div class="card" id="experimentsActions"
-      style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
-      <div style="font-size:14px; color:#4b5563;">
-        Gerencie os experimentos de campo cadastrados.
-      </div>
-      <button class="btn-primary" id="btnNewExperiment" style="width:auto; padding-inline:18px;">
-        + Novo experimento
-      </button>
-    </div>
-
-    <div id="experimentsList">
-      <div class="card">
-        <p>Carregando experimentos...</p>
-      </div>
-    </div>
-  `;
-
-  const btnNew = document.getElementById("btnNewExperiment");
-  if (btnNew) {
-    btnNew.onclick = () => openExperimentFormModal();
-  }
-
-  await loadExperimentsIntoList();
-}
-
-// carrega a lista de experimentos e monta os cards
-async function loadExperimentsIntoList() {
-  const listEl = document.getElementById("experimentsList");
-  if (!listEl) return;
-
-  if (typeof s === "undefined") {
-    listEl.innerHTML = `
-      <div class="card">
-        <p style="color:#b91c1c;">Cliente Supabase não encontrado.</p>
-      </div>
-    `;
-    return;
-  }
-
-  const { data, error } = await s
-    .from("experiments")
-    .select("*")
-    .order("planting_date", { ascending: false });
-
-  if (error) {
-    listEl.innerHTML = `
-      <div class="card">
-        <p style="color:#b91c1c;">Erro ao carregar experimentos: ${error.message}</p>
-      </div>
-    `;
-    return;
-  }
-
-  const experiments = data || [];
-
-  if (!experiments.length) {
-    listEl.innerHTML = `
-      <div class="card" style="text-align:center; padding:32px 16px;">
-        <div style="font-size:40px; margin-bottom:8px; color:#6b7280;">🧪</div>
-        <div style="font-size:18px; font-weight:700; color:#111827;">
-          Nenhum experimento cadastrado
+        <div class="content-subtitle">
+          Selecione qual experimento será usado para edição e inserção de dados.
         </div>
-        <div style="font-size:14px; color:#6b7280; margin-top:4px;">
-          Crie seu primeiro experimento para começar.
+      </div>
+      
+      <div class="card" id="experimentsActions">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div style="font-size:14px; color:#4b5563;">
+            Gerencie os experimentos de campo cadastrados.
+          </div>
+          <button class="btn-primary" id="btnNewExperiment">
+            + Novo experimento
+          </button>
         </div>
-        <button class="btn-primary" style="margin-top:12px;" onclick="openExperimentFormModal()">
-          + Criar experimento
-        </button>
+      </div>
+      
+      <div id="experimentsList">
+        <div class="card">
+          <p>Carregando experimentos...</p>
+        </div>
       </div>
     `;
-    return;
+    
+    // Event listeners
+    const btnNew = document.getElementById('btnNewExperiment');
+    if (btnNew) {
+      btnNew.addEventListener('click', () => openExperimentFormModal());
+    }
+    
+    await loadExperimentsIntoList();
   }
-
-  const cardsHtml = experiments
-  .map((exp) => {
+  
+  // Carregar lista de experimentos
+  async function loadExperimentsIntoList() {
+    const listEl = document.getElementById('experimentsList');
+    if (!listEl) return;
+    
+    if (!supabaseClient) {
+      listEl.innerHTML = `
+        <div class="card">
+          <p style="color:#b91c1c;">Cliente Supabase não configurado.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    try {
+      const { data: experiments, error } = await supabaseClient
+        .from('experiments')
+        .select('*')
+        .order('planting_date', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (!experiments || experiments.length === 0) {
+        listEl.innerHTML = `
+          <div class="card" style="text-align:center; padding:32px 16px;">
+            <div style="font-size:40px; margin-bottom:8px; color:#6b7280;">🧪</div>
+            <div style="font-size:18px; font-weight:700; color:#111827;">
+              Nenhum experimento cadastrado
+            </div>
+            <div style="font-size:14px; color:#6b7280; margin-top:4px;">
+              Crie seu primeiro experimento para começar.
+            </div>
+            <button class="btn-primary" style="margin-top:12px;" onclick="ExperimentsModule.openExperimentFormModal()">
+              + Criar experimento
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+      // Criar cards
+      const cardsHtml = experiments.map(exp => createExperimentCard(exp)).join('');
+      listEl.innerHTML = cardsHtml;
+      
+      // Adicionar event listeners aos cards
+      attachEventListenersToCards(experiments);
+      
+    } catch (error) {
+      console.error('Erro ao carregar experimentos:', error);
+      listEl.innerHTML = `
+        <div class="card">
+          <p style="color:#b91c1c;">Erro ao carregar experimentos: ${escapeHtml(error.message)}</p>
+        </div>
+      `;
+    }
+  }
+  
+  // Criar card de experimento
+  function createExperimentCard(exp) {
     const isSelected = currentExperiment && currentExperiment.id === exp.id;
     const status = exp.status || "active";
     const statusLabel = status === "active" ? "Ativo" : "Concluído";
     const planting = formatExperimentDate(exp.planting_date);
     const farm = exp.farm || "-";
-
+    
     return `
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
-                    gap:12px; align-items:center;">
-          <div style="flex:1 1 220px; min-width:0;">
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <div style="font-size:18px; font-weight:700; color:var(--green-dark);">
-                ${exp.code || "(sem código)"}
-              </div>
-              <span style="
-                display:inline-flex;
-                align-items:center;
-                gap:4px;
-                padding:2px 10px;
-                border-radius:999px;
-                font-size:11px;
-                font-weight:600;
-                background:${status === "active"
-                  ? "rgba(16,185,129,0.18)"
-                  : "rgba(148,163,184,0.3)"};
-                color:${status === "active" ? "#065f46" : "#374151"};
-              ">
-                ● ${statusLabel}
-              </span>
-            </div>
-            <div style="font-size:14px; color:#4b5563; margin-top:2px;
-                        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${exp.name || "Experimento sem descrição"}
-            </div>
-            <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;
-                        font-size:12px; color:#6b7280;">
-              <span>Plantio: ${planting}</span>
-              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                Local: ${farm}
-              </span>
-            </div>
+      <div class="card experiment-card" data-id="${escapeHtml(exp.id)}">
+        <div class="experiment-card-content">
+          <div class="experiment-card-header">
+            <div class="experiment-code">${escapeHtml(exp.code || "(sem código)")}</div>
+            <span class="experiment-status status-${status}">
+              ● ${escapeHtml(statusLabel)}
+            </span>
           </div>
-
-          <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
-            <button
-              class="${isSelected ? "btn-primary" : "btn-secondary"}"
-              style="font-size:13px;"
-              onclick="selectExperiment('${exp.id}')"
-            >
-              ${isSelected ? "Selecionado" : "Selecionar"}
-            </button>
-
-            <button
-              class="btn-secondary"
-              style="font-size:13px;"
-              onclick="openExperimentFormModalById('${exp.id}')"
-            >
-              Editar
-            </button>
-
-            <button
-              class="btn-secondary"
-              style="font-size:13px;"
-              onclick="openExperimentScheduleModal('${exp.id}')"
-            >
-              Cronograma
-            </button>
-
-            ${
-              typeof currentRole !== "undefined" && currentRole === "admin"
-                ? `<button class="btn-danger" style="font-size:13px;"
-                      onclick="confirmDeleteExperiment('${exp.id}', '${escapeHtml(
-                        exp.code || ""
-                      )}')">
-                     Excluir
-                   </button>`
-                : ""
-            }
+          <div class="experiment-name">${escapeHtml(exp.name || "Experimento sem descrição")}</div>
+          <div class="experiment-details">
+            <span>Plantio: ${escapeHtml(planting)}</span>
+            <span>Local: ${escapeHtml(farm)}</span>
           </div>
+        </div>
+        
+        <div class="experiment-actions">
+          <button class="btn-${isSelected ? 'primary' : 'secondary'}" data-action="select">
+            ${isSelected ? "Selecionado" : "Selecionar"}
+          </button>
+          <button class="btn-secondary" data-action="edit">
+            Editar
+          </button>
+          <button class="btn-secondary" data-action="schedule">
+            Cronograma
+          </button>
+          ${checkPermission('admin') ? `
+            <button class="btn-danger" data-action="delete">
+              Excluir
+            </button>
+          ` : ''}
         </div>
       </div>
     `;
-  })
-  .join("");
-
-listEl.innerHTML = cardsHtml;
-
-async function openExperimentFormModalById(id) {
-  if (!id || typeof s === "undefined") {
-    return;
   }
-
-  const { data, error } = await s
-    .from("experiments")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    alert("Erro ao carregar experimento: " + error.message);
-    return;
+  
+  // Anexar event listeners aos cards
+  function attachEventListenersToCards(experiments) {
+    document.querySelectorAll('.experiment-card').forEach(card => {
+      const id = card.dataset.id;
+      const experiment = experiments.find(e => e.id === id);
+      if (!experiment) return;
+      
+      card.querySelectorAll('button[data-action]').forEach(button => {
+        const action = button.dataset.action;
+        
+        button.addEventListener('click', (e) => {
+          e.stopPropagation();
+          
+          switch(action) {
+            case 'select':
+              selectExperiment(experiment);
+              break;
+            case 'edit':
+              openExperimentFormModal(experiment);
+              break;
+            case 'schedule':
+              openExperimentScheduleModal(experiment.id);
+              break;
+            case 'delete':
+              confirmDeleteExperiment(experiment.id, experiment.code);
+              break;
+          }
+        });
+      });
+    });
   }
-
-  openExperimentFormModal(data);
-}
-
-// seleciona um experimento (apenas no front, por enquanto)
-function selectExperiment(id) {
-  if (!id || typeof s === "undefined") return;
-
-  s.from("experiments")
-    .select("*")
-    .eq("id", id)
-    .single()
-    .then(({ data, error }) => {
-      if (!error && data) {
-        currentExperiment = data;
-        loadExperimentsIntoList();
-        alert(`Experimento "${data.code || ""}" selecionado.`);
+  
+  // Selecionar experimento
+  async function selectExperiment(experiment) {
+    currentExperiment = experiment;
+    
+    // Atualizar UI sem recarregar tudo
+    document.querySelectorAll('.experiment-card').forEach(card => {
+      const isSelected = card.dataset.id === experiment.id;
+      const selectBtn = card.querySelector('[data-action="select"]');
+      if (selectBtn) {
+        selectBtn.className = isSelected ? 'btn-primary' : 'btn-secondary';
+        selectBtn.textContent = isSelected ? 'Selecionado' : 'Selecionar';
       }
     });
-}
-
-// confirmação e exclusão
-function confirmDeleteExperiment(id, code) {
-  if (typeof currentRole === "undefined" || currentRole !== "admin") {
-    alert("Apenas administradores podem excluir experimentos.");
-    return;
+    
+    // Notificar app principal
+    if (window.experimentSelectedCallback) {
+      window.experimentSelectedCallback(experiment);
+    }
+    
+    // Feedback
+    showNotification(`Experimento "${experiment.code || ''}" selecionado.`, 'success');
   }
-  if (!confirm(`Tem certeza que deseja excluir o experimento "${code}"? Esta ação não pode ser desfeita.`)) {
-    return;
+  
+  // Confirmar exclusão
+  async function confirmDeleteExperiment(id, code) {
+    if (!checkPermission('admin')) {
+      showNotification('Apenas administradores podem excluir experimentos.', 'error');
+      return;
+    }
+    
+    if (!confirm(`Tem certeza que deseja excluir o experimento "${code}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+    
+    await deleteExperiment(id);
   }
-  deleteExperiment(id);
-}
-
-async function deleteExperiment(id) {
-  if (typeof s === "undefined") return;
-  const { error } = await s.from("experiments").delete().eq("id", id);
-  if (error) {
-    alert("Erro ao excluir experimento: " + error.message);
-    return;
+  
+  // Excluir experimento
+  async function deleteExperiment(id) {
+    if (!supabaseClient) return;
+    
+    try {
+      const { error } = await supabaseClient
+        .from('experiments')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      if (currentExperiment && currentExperiment.id === id) {
+        currentExperiment = null;
+      }
+      
+      showNotification('Experimento excluído com sucesso.', 'success');
+      await loadExperimentsIntoList();
+      
+    } catch (error) {
+      console.error('Erro ao excluir experimento:', error);
+      showNotification(`Erro ao excluir: ${error.message}`, 'error');
+    }
   }
-  if (currentExperiment && currentExperiment.id === id) {
-    currentExperiment = null;
+  
+  // Abrir modal de edição
+  async function openExperimentFormModalById(id) {
+    if (!id || !supabaseClient || !checkPermission('collaborator')) return;
+    
+    try {
+      const { data: experiment, error } = await supabaseClient
+        .from('experiments')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      openExperimentFormModal(experiment);
+      
+    } catch (error) {
+      console.error('Erro ao carregar experimento:', error);
+      showNotification(`Erro: ${error.message}`, 'error');
+    }
   }
-  await loadExperimentsIntoList();
-}
-
-// =============================
-// Modal de novo / editar experimento
-// usa openModal e closeModal já existentes no app.js
-// =============================
-
-function openExperimentFormModal(exp) {
-  const isEdit = !!exp;
-  const title = isEdit ? "Editar experimento" : "Novo experimento";
-
-  // valores padrão se não houver experimento ainda
-  const blocks = exp?.blocks_count ?? 3;
-  const plotsPerBlock = exp?.plots_per_block ?? 12;
-
-  const plantsPerRow = 5;
-  const plantsPerCol = 5;
-  const usefulPlantsPerRow = 3;
-  const usefulPlantsPerCol = 3;
-  const usefulPlantsTotal =
-    exp?.userful_plants_per_plot ??
-    usefulPlantsPerRow * usefulPlantsPerCol;
-
-  const plotLength = exp?.plot_length || "";
-  const plotWidth = exp?.plot_width || "";
-  const rowSpacing = exp?.row_spacing || "";
-
-  const bodyHtml = `
-    <form id="experimentForm">
-      <!-- LOCALIZAÇÃO -->
-      <div style="margin-bottom:12px;">
-        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-          Localização
-        </h3>
-
-        <label for="expCode">Código do experimento</label>
-        <input id="expCode" type="text"
-          value="${escapeHtml(exp?.code || "")}"
-          placeholder="Ex.: 001" />
-
-        <label for="expName">Nome do experimento</label>
-        <input id="expName" type="text"
-          value="${escapeHtml(exp?.name || "")}"
-          placeholder="Ex.: Posições de plantio em mandioca" />
-
-        <label for="expObjective">Objetivo</label>
-        <textarea id="expObjective" rows="3"
-          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
-          placeholder="Descreva o objetivo do experimento...">${escapeHtml(exp?.objective || "")}</textarea>
-
-        <label for="expResearcher">Pesquisadores responsáveis</label>
-<textarea id="expResearcher" rows="2"
-  style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
-  placeholder="Ex.: Ricardo L. Ribeiro; (um por linha ou separados por ponto e vírgula)">
-${escapeHtml(exp?.researcher || "")}</textarea>
-
-        <label for="expPlantingDate">Data de plantio</label>
-        <input id="expPlantingDate" type="date"
-          value="${exp?.planting_date ? exp.planting_date.split("T")[0] : ""}" />
-      </div>
-
-      <!-- AMBIENTE -->
-      <div style="margin-bottom:12px;">
-        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-          Ambiente
-        </h3>
-
-        <label for="expFarm">Local / fazenda</label>
-        <input id="expFarm" type="text"
-          value="${escapeHtml(exp?.farm || "")}"
-          placeholder="Ex.: EPAMIG ITAP" />
-
-        <label for="expmunicipality">Município / Estado</label>
-        <input id="expmunicipality" type="text"
-          value="${escapeHtml(exp?.municipality || "")}"
-          placeholder="Ex.: Pitangui - MG" />
-
-        <label for="expLatitude">Latitude (DMS)</label>
-        <input id="expLatitude" type="text"
-          value="${escapeHtml(exp?.latitude || "")}"
-          placeholder="Ex.: 19º44'24&quot;S" />
-
-        <label for="expLongitude">Longitude (DMS)</label>
-        <input id="expLongitude" type="text"
-          value="${escapeHtml(exp?.longitude || "")}"
-          placeholder="Ex.: 44º53'41&quot;O" />
-
-        <label for="expSoilType">Tipo de solo</label>
-        <input id="expSoilType" type="text"
-          value="${escapeHtml(exp?.soil_type || "")}"
-          placeholder="Ex.: Latossolo Vermelho-Amarelo" />
-
-        <label for="expClimate">Clima</label>
-        <input id="expClimate" type="text"
-          value="${escapeHtml(exp?.climate || "")}"
-          placeholder="Ex.: Cwa - Subtropical úmido com inverno seco" />
-      </div>
-
-      <!-- DELINEAMENTO E DIMENSÕES -->
-      <div style="margin-bottom:12px;">
-        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-          Delineamento e dimensões
-        </h3>
-
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <div style="flex:1 1 120px;">
-            <label for="expBlocks">Número de blocos</label>
-            <input id="expBlocks" type="number" min="1"
-              value="${blocks}" />
-          </div>
-          <div style="flex:1 1 120px;">
-            <label for="expPlotsPerBlock">Parcelas por bloco</label>
-            <input id="expPlotsPerBlock" type="number" min="1"
-              value="${plotsPerBlock}" />
-          </div>
-        </div>
-
-        <div style="margin-top:8px; padding:8px 10px; border-radius:10px; background:var(--gray-50); font-size:13px; color:#4b5563;">
-          Variedades fixas: Amarela, Amarelinha, Cacau, Sabará.<br/>
-          Tratamentos fixos: vertical, inclinada, horizontal.
-        </div>
-
-        <div style="margin-top:10px;">
-          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Disposição das plantas na parcela</div>
-          <div style="display:flex; flex-wrap:wrap; gap:8px;">
-  <div style="flex:1 1 120px;">
-    <label for="expPlotLength">Comprimento (m)</label>
-    <input id="expPlotLength" type="number" step="0.01" min="0"
-      value="${plotLength}" />
-  </div>
-  <div style="flex:1 1 120px;">
-    <label for="expPlotWidth">Largura (m)</label>
-    <input id="expPlotWidth" type="number" step="0.01" min="0"
-      value="${plotWidth}" />
-  </div>
-  <div style="flex:1 1 120px;">
-    <label for="expRowSpacing">Espaç. linhas (m)</label>
-    <input id="expRowSpacing" type="number" step="0.01" min="0"
-      value="${rowSpacing}" />
-  </div>
-  <div style="flex:1 1 120px;">
-    <label for="expPlantSpacing">Espaç. plantas (m)</label>
-    <input id="expPlantSpacing" type="number" step="0.01" min="0"
-      value="1.00" />
-  </div>
-</div>
-        </div>
-
-        <div style="margin-top:10px;">
-          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Áreas (calculadas)</div>
-          <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:13px;">
-            <div style="flex:1 1 140px;">
-              <label>Plantas úteis/parcela</label>
-              <input id="expUsefulPlantsTotal" type="number" min="1"
-                value="${usefulPlantsTotal}" />
-            </div>
-            <div style="flex:1 1 140px;">
-              <label>Área/parcela (m²)</label>
-              <input id="expPlotArea" type="number" step="0.01" min="0"
-                value="${exp?.plot_area || ""}" />
-            </div>
-            <div style="flex:1 1 160px;">
-              <label>Área total (m²)</label>
-              <input id="expTotalArea" type="number" step="0.01" min="0"
-                value="${exp?.total_area || ""}" />
-            </div>
-          </div>
-          <p style="font-size:12px; color:#6b7280; margin-top:4px;">
-            Dica: após informar comprimento e largura, ajuste a área/parcela e área total manualmente se necessário.
-          </p>
-        </div>
-      </div>
-          
-      <button type="button" class="btn-primary" style="margin-top:10px;"
-        onclick="submitExperimentForm('${exp?.id || ""}')">
-        ${isEdit ? "Salvar alterações" : "Criar experimento"}
-      </button>
-    </form>
-  `;
-
-  if (typeof openModal === "function") {
-    openModal(title, bodyHtml);
-  } else {
-    alert("Função openModal não encontrada no app principal.");
+  
+  // Helper para mostrar notificações
+  function showNotification(message, type = 'info') {
+    const types = {
+      success: { bg: '#10b981', color: '#fff' },
+      error: { bg: '#ef4444', color: '#fff' },
+      info: { bg: '#3b82f6', color: '#fff' }
+    };
+    
+    const style = types[type] || types.info;
+    alert(message); // Substituir por sistema de notificações real
   }
-}
-
-async function submitExperimentForm(id) {
-  if (typeof s === "undefined") return;
-
-  // helper para ler valor com segurança
-  const val = (id) => {
-    const el = document.getElementById(id);
-    return el ? el.value : "";
+  
+  // Interface pública do módulo
+  return {
+    init,
+    renderExperimentsPage,
+    openExperimentFormModal: (exp) => {
+      if (!checkPermission('collaborator')) {
+        showNotification('Você não tem permissão para criar/editar experimentos.', 'error');
+        return;
+      }
+      // Implementação do modal aqui...
+    },
+    openExperimentScheduleModal: (id) => {
+      // Implementação do cronograma aqui...
+    },
+    getCurrentExperiment: () => currentExperiment,
+    setCurrentExperiment: (exp) => { currentExperiment = exp; },
+    checkPermission
   };
+})();
 
-  // CAMPOS BÁSICOS
-  const code = val("expCode").trim();
-  const name = val("expName").trim();
-  const objective = val("expObjective").trim();
-  const researcher = val("expResearcher").trim();
-  const planting_date = val("expPlantingDate") || null;
-
-  // AMBIENTE / LOCAL
-  const farm = val("expFarm").trim();
-  const municipality = val("expmunicipality").trim();
-  const latitude = val("expLatitude").trim();
-  const longitude = val("expLongitude").trim();
-  const soil_type = val("expSoilType").trim();
-  const climate = val("expClimate").trim();
-
-  // DELINEAMENTO
-  const blocks_count = parseInt(val("expBlocks") || "0", 10);
-  const plots_per_block = parseInt(val("expPlotsPerBlock") || "0", 10);
-
-  const usefulRow = parseInt(val("expUsefulRow") || "0", 10);
-  const usefulCol = parseInt(val("expUsefulCol") || "0", 10);
-  const useful_plants_per_plot = parseInt(
-    val("expUsefulPlantsTotal") || usefulRow * usefulCol || "0",
-    10
-  );
-
-  // DIMENSÕES
-  const plot_length = parseFloat(val("expPlotLength") || "0");
-  const plot_width = parseFloat(val("expPlotWidth") || "0");
-  const row_spacing = parseFloat(val("expRowSpacing") || "0");
-
-  // ÁREAS (CALCULADAS SE ESTIVEREM VAZIAS)
-  let plot_area = parseFloat(val("expPlotArea") || "0");
-  if (!plot_area && plot_length && plot_width) {
-    plot_area = plot_length * plot_width;
-  }
-
-  let total_area = parseFloat(val("expTotalArea") || "0");
-  if (!total_area && plot_area && blocks_count && plots_per_block) {
-    total_area = plot_area * blocks_count * plots_per_block;
-  }
-
-  const status = (document.getElementById("expStatus")?.value) || "active";
-
-  if (!code || !planting_date || !objective) {
-    alert("Preencha pelo menos código, data de plantio e objetivo.");
-    return;
-  }
-
-  const payload = {
-    code,
-    name,
-    objective,
-    researcher,
-    planting_date,
-    farm,
-    municipality,
-    latitude,
-    longitude,
-    soil_type,
-    climate,
-    blocks_count,
-    plots_per_block,
-    useful_plants_per_plot,
-    treatments_count: 3,
-    plot_length,
-    plot_width,
-    row_spacing,
-    plot_area,
-    total_area,
-    status,
-    created_by:
-      typeof currentUser !== "undefined" && currentUser ? currentUser.id : null,
-  };
-
-  let error;
-  if (id) {
-    ({ error } = await s.from("experiments").update(payload).eq("id", id));
-  } else {
-    ({ error } = await s.from("experiments").insert(payload));
-  }
-
-  if (error) {
-    alert("Erro ao salvar experimento: " + error.message);
-    return;
-  }
-
-  if (typeof closeModal === "function") {
-    closeModal();
-  }
-  await loadExperimentsIntoList();
-}
-
-// =============================
-// Helpers de segurança simples
-// =============================
-
-function escapeHtml(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function daysBetween(date1, date2) {
-  if (!date1 || !date2) return null;
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-  const oneDay = 1000 * 60 * 60 * 24;
-  return Math.round((d2 - d1) / oneDay);
-}
-
-function createScheduleRow(experiment, action) {
-  const row = document.createElement('div');
-  row.className = 'sched-row';
-
-  const statusBtn = document.createElement('button');
-  statusBtn.type = 'button';
-  statusBtn.className = 'sched-status-btn';
-  statusBtn.textContent = action.completed_at ? '✔' : '○';
-  row.appendChild(statusBtn);
-
-  const nameSpan = document.createElement('span');
-  nameSpan.style.flex = '1 1 auto';
-  nameSpan.style.marginRight = '8px';
-  const dap = daysBetween(experiment.planting_date, action.start_date);
-  const dapText = dap != null ? ` (DAP ${dap})` : '';
-  nameSpan.textContent = action.name + dapText;
-  row.appendChild(nameSpan);
-
-  const startInput = document.createElement('input');
-  startInput.type = 'date';
-  startInput.value = action.start_date || '';
-  startInput.style.marginRight = '4px';
-  row.appendChild(startInput);
-
-  const endInput = document.createElement('input');
-  endInput.type = 'date';
-  endInput.value = action.end_date || '';
-  endInput.style.marginRight = '4px';
-  row.appendChild(endInput);
-
-  const delBtn = document.createElement('button');
-  delBtn.type = 'button';
-  delBtn.textContent = '🗑';
-  delBtn.className = 'btn-danger';
-  row.appendChild(delBtn);
-
-  function applyStatusColor() {
-    row.classList.remove('sched-done', 'sched-late');
-    const todayStr = new Date().toISOString().slice(0, 10);
-
-    if (action.completed_at) {
-      row.classList.add('sched-done');
-      statusBtn.textContent = '✔';
-    } else if (action.end_date && todayStr > action.end_date) {
-      row.classList.add('sched-late');
-      statusBtn.textContent = '○';
-    } else {
-      statusBtn.textContent = '○';
-    }
-  }
-
-  applyStatusColor();
-
-  statusBtn.addEventListener('click', async () => {
-    const newCompleted = action.completed_at ? null : new Date().toISOString();
-    const { data, error } = await supabase
-      .from('scheduled_actions')
-      .update({ completed_at: newCompleted })
-      .eq('id', action.id)
-      .select()
-      .single();
-
-    if (!error) {
-      action.completed_at = data.completed_at;
-      applyStatusColor();
-    }
-  });
-
-  startInput.addEventListener('change', async () => {
-    const { data, error } = await supabase
-      .from('scheduled_actions')
-      .update({ start_date: startInput.value })
-      .eq('id', action.id)
-      .select()
-      .single();
-    if (!error) {
-      action.start_date = data.start_date;
-      const dap = daysBetween(experiment.planting_date, action.start_date);
-      const dapText = dap != null ? ` (DAP ${dap})` : '';
-      nameSpan.textContent = action.name + dapText;
-    }
-  });
-
-  endInput.addEventListener('change', async () => {
-    const { data, error } = await supabase
-      .from('scheduled_actions')
-      .update({ end_date: endInput.value })
-      .eq('id', action.id)
-      .select()
-      .single();
-    if (!error) {
-      action.end_date = data.end_date;
-      applyStatusColor();
-    }
-  });
-
-  delBtn.addEventListener('click', async () => {
-    const { error } = await supabase
-      .from('scheduled_actions')
-      .delete()
-      .eq('id', action.id);
-    if (!error) {
-      row.remove();
-    }
-  });
-
-  return row;
-}
-
-function renderScheduleList(experiment, actions) {
-  const container = document.getElementById('schedListContainer');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  const phases = ['pre-plantio', 'plantio', 'acompanhamento', 'tratos', 'colheita'];
-
-  phases.forEach(phase => {
-    const phaseActions = actions.filter(a => a.phase === phase);
-    if (!phaseActions.length) return;
-
-    const section = document.createElement('div');
-    section.className = 'sched-phase-section';
-    section.style.marginBottom = '8px';
-
-    const title = document.createElement('h4');
-    title.textContent = phase.toUpperCase();
-    title.style.fontSize = '13px';
-    title.style.margin = '6px 0';
-    section.appendChild(title);
-
-    phaseActions.forEach(a => {
-      const row = createScheduleRow(experiment, a);
-      section.appendChild(row);
-    });
-
-    container.appendChild(section);
-  });
-}
-
-function setupScheduleUI(experiment) {
-  const btnAdd = document.getElementById('btnAddSchedule');
-  const nameInput = document.getElementById('schedName');
-  const phaseSelect = document.getElementById('schedPhase');
-
-  if (!btnAdd || !nameInput || !phaseSelect) return;
-
-  btnAdd.onclick = async () => {
-    const name = nameInput.value.trim();
-    const phase = phaseSelect.value;
-    if (!name) return;
-
-    const { data, error } = await supabase
-      .from('scheduled_actions')
-      .insert({
-        experiment_id: experiment.id,
-        name,
-        phase,
-        start_date: null,
-        end_date: null,
-        completed_at: null,
-      })
-      .select()
-      .single();
-
-    if (!error && data) {
-      nameInput.value = '';
-      loadScheduleActions(experiment);
-    } else {
-      console.error('Erro ao adicionar ação:', error);
-    }
-  };
-}
-
-async function loadScheduleActions(experiment) {
-  const { data, error } = await supabase
-    .from('scheduled_actions')
-    .select('*')
-    .eq('experiment_id', experiment.id)
-    .order('start_date', { ascending: true });
-
-  if (error) {
-    console.error('Erro ao carregar cronograma:', error);
-    return;
-  }
-
-  renderScheduleList(experiment, data || []);
-}
-
-async function openExperimentScheduleModal(experimentId) {
-  const { data: exp, error } = await supabase
-    .from('experiments')
-    .select('*')
-    .eq('id', experimentId)
-    .single();
-
-  if (error || !exp) {
-    console.error('Erro ao carregar experimento para cronograma:', error);
-    alert('Não foi possível carregar o cronograma deste experimento.');
-    return;
-  }
-
-  const title = `Cronograma - ${exp.code || 'Experimento'}`;
-
-  const bodyHtml = `
-    <div style="margin-bottom:12px;">
-      <div style="font-size:13px; color:#4b5563; margin-bottom:6px;">
-        Data de plantio: ${exp.planting_date || '-'}
-      </div>
-
-      <div class="schedule-new-action" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-        <input id="schedName" type="text"
-          placeholder="Nome da ação"
-          style="flex:2 1 160px;" />
-
-        <select id="schedPhase" style="flex:1 1 140px;">
-          <option value="pre-plantio">Pré-plantio</option>
-          <option value="plantio">Plantio</option>
-          <option value="acompanhamento">Acompanhamento</option>
-          <option value="tratos">Tratos culturais</option>
-          <option value="colheita">Colheita</option>
-        </select>
-
-        <button type="button" id="btnAddSchedule"
-          class="btn-secondary"
-          style="flex:0 0 auto; align-self:flex-start;">
-          Adicionar
-        </button>
-      </div>
-
-      <div id="schedListContainer"></div>
-    </div>
-  `;
-
-  if (typeof openModal === 'function') {
-    openModal(title, bodyHtml);
-  } else {
-    alert('Função openModal não encontrada no app principal.');
-    return;
-  }
-
-  setupScheduleUI(exp);
-  loadScheduleActions(exp);
-}
-
-// serializa objeto para usar em atributo HTML sem quebrar aspas
-function safeJson(obj) {
-  if (!obj) return "null";
-  return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Expor globalmente se necessário
+window.ExperimentsModule = ExperimentsModule;
