@@ -67,8 +67,8 @@ async function openExperimentScheduleModal(experimentId) {
           style="flex:1 1 160px;" />
 
         <input id="schedDesc" type="text"
-          placeholder="Descrição / observações"
-          style="flex:2 1 260px;" />
+        placeholder="Descrição / observações"
+        style="flex:1 1 400px;" />
       </div>
 
       <button type="button" id="btnAddSchedule"
@@ -310,6 +310,7 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
 
 
