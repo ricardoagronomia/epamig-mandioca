@@ -466,83 +466,61 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
 async function submitExperimentForm(id) {
   if (typeof s === "undefined") return;
 
+  // helper para ler valor com segurança
+  const val = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+  };
+
   // CAMPOS BÁSICOS
-  const code = document.getElementById("expCode").value.trim();
-  const name = document.getElementById("expName").value.trim();
-  const objective = document.getElementById("expObjective").value.trim();
-  const researcher = document.getElementById("expResearcher").value.trim();
-  const planting_date = document.getElementById("expPlantingDate").value || null;
+  const code = val("expCode").trim();
+  const name = val("expName").trim();
+  const objective = val("expObjective").trim();
+  const researcher = val("expResearcher").trim();
+  const planting_date = val("expPlantingDate") || null;
 
   // AMBIENTE / LOCAL
-  const farm = document.getElementById("expFarm").value.trim();
-  const municipality = document.getElementById("expMunicipality").value.trim();
-  const latitude = document.getElementById("expLatitude").value.trim();
-  const longitude = document.getElementById("expLongitude").value.trim();
-  const soil_type = document.getElementById("expSoilType").value.trim();
-  const climate = document.getElementById("expClimate").value.trim();
+  const farm = val("expFarm").trim();
+  const municipality = val("expMunicipality").trim();
+  const latitude = val("expLatitude").trim();
+  const longitude = val("expLongitude").trim();
+  const soil_type = val("expSoilType").trim();
+  const climate = val("expClimate").trim();
 
   // DELINEAMENTO
-  const blocks_count = parseInt(
-    document.getElementById("expBlocks").value || "0",
-    10
-  );
-  const plots_per_block = parseInt(
-    document.getElementById("expPlotsPerBlock").value || "0",
-    10
-  );
+  const blocks_count = parseInt(val("expBlocks") || "0", 10);
+  const plots_per_block = parseInt(val("expPlotsPerBlock") || "0", 10);
 
-  const usefulRow = parseInt(
-    document.getElementById("expUsefulRow").value || "0",
-    10
-  );
-  const usefulCol = parseInt(
-    document.getElementById("expUsefulCol").value || "0",
-    10
-  );
+  const usefulRow = parseInt(val("expUsefulRow") || "0", 10);
+  const usefulCol = parseInt(val("expUsefulCol") || "0", 10);
   const useful_plants_per_plot = parseInt(
-    document.getElementById("expUsefulPlantsTotal").value ||
-      usefulRow * usefulCol ||
-      "0",
+    val("expUsefulPlantsTotal") || usefulRow * usefulCol || "0",
     10
   );
 
   // DIMENSÕES
-  const plot_length = parseFloat(
-    document.getElementById("expPlotLength").value || "0"
-  );
-  const plot_width = parseFloat(
-    document.getElementById("expPlotWidth").value || "0"
-  );
-  const row_spacing = parseFloat(
-    document.getElementById("expRowSpacing").value || "0"
-  );
+  const plot_length = parseFloat(val("expPlotLength") || "0");
+  const plot_width = parseFloat(val("expPlotWidth") || "0");
+  const row_spacing = parseFloat(val("expRowSpacing") || "0");
 
   // ÁREAS (CALCULADAS SE ESTIVEREM VAZIAS)
-  let plot_area = parseFloat(
-    document.getElementById("expPlotArea").value || "0"
-  );
+  let plot_area = parseFloat(val("expPlotArea") || "0");
   if (!plot_area && plot_length && plot_width) {
     plot_area = plot_length * plot_width;
   }
 
-  let total_area = parseFloat(
-    document.getElementById("expTotalArea").value || "0"
-  );
+  let total_area = parseFloat(val("expTotalArea") || "0");
   if (!total_area && plot_area && blocks_count && plots_per_block) {
     total_area = plot_area * blocks_count * plots_per_block;
   }
 
-  // STATUS (se não tiver select, assume "active")
-  const statusEl = document.getElementById("expStatus");
-  const status = statusEl ? statusEl.value : "active";
+  const status = (document.getElementById("expStatus")?.value) || "active";
 
-  // VALIDAÇÃO MÍNIMA
   if (!code || !planting_date || !objective) {
     alert("Preencha pelo menos código, data de plantio e objetivo.");
     return;
   }
 
-  // PAYLOAD ALINHADO COM A TABELA SUPABASE
   const payload = {
     code,
     name,
@@ -558,7 +536,7 @@ async function submitExperimentForm(id) {
     blocks_count,
     plots_per_block,
     useful_plants_per_plot,
-    treatments_count: 3, // 3 tratamentos fixos
+    treatments_count: 3,
     plot_length,
     plot_width,
     row_spacing,
@@ -606,6 +584,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
