@@ -481,7 +481,7 @@ async function submitExperimentForm(id) {
 
   // AMBIENTE / LOCAL
   const farm = val("expFarm").trim();
-  const municipality = val("expMunicipality").trim();
+  const municipality = val("expmunicipality").trim();
   const latitude = val("expLatitude").trim();
   const longitude = val("expLongitude").trim();
   const soil_type = val("expSoilType").trim();
@@ -584,6 +584,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
