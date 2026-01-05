@@ -119,7 +119,7 @@ function createScheduleRow(experiment, action) {
   statusBtn.textContent = action.completed_at ? "✔" : "○";
   row.appendChild(statusBtn);
 
- // Nome + DAP
+ // Nome + DAP + resp + descrição
 const nameSpan = document.createElement("span");
 nameSpan.style.flex = "1 1 auto";
 nameSpan.style.marginRight = "8px";
@@ -127,13 +127,16 @@ nameSpan.style.marginRight = "8px";
 function updateNameText() {
   const dap = daysBetween(experiment.planting_date, action.start_date);
   const dapText = dap != null ? ` (DAP ${dap})` : "";
+
   const ownerText = action.owner ? ` • Resp.: ${action.owner}` : "";
   const descText = action.description ? ` • ${action.description}` : "";
+
   nameSpan.textContent = action.name + dapText + ownerText + descText;
 }
 
 updateNameText();
 row.appendChild(nameSpan);
+;
 
   // Datas
   const startInput = document.createElement("input");
@@ -188,20 +191,18 @@ row.appendChild(nameSpan);
   });
 
   startInput.addEventListener("change", async () => {
-    const { data, error } = await s
-      .from("scheduled_actions")
-      .update({ start_date: startInput.value })
-      .eq("id", action.id)
-      .select()
-      .single();
+  const { data, error } = await s
+    .from("scheduled_actions")
+    .update({ start_date: startInput.value })
+    .eq("id", action.id)
+    .select()
+    .single();
 
-    if (!error) {
-      action.start_date = data.start_date;
-      const dap = daysBetween(experiment.planting_date, action.start_date);
-      const dapText = dap != null ? ` (DAP ${dap})` : "";
-      updateNameText();
-    }
-  });
+  if (!error) {
+    action.start_date = data.start_date;
+    updateNameText();
+  }
+});
 
   endInput.addEventListener("change", async () => {
     const { data, error } = await s
@@ -317,6 +318,7 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
 
 
