@@ -57,7 +57,39 @@ async function openExperimentScheduleModal(experimentId) {
           <option value="tratos_culturais">Tratos culturais</option>
           <option value="colheita">Colheita</option>
         </select>
+        <div class="schedule-new-action"
+     style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
 
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <input id="schedName" type="text"
+      placeholder="Nome da ação"
+      style="flex:2 1 160px;" />
+
+    <select id="schedPhase" style="flex:1 1 140px;">
+      <option value="pre-plantio">Pré-plantio</option>
+      <option value="plantio">Plantio</option>
+      <option value="acompanhamento">Acompanhamento</option>
+      <option value="tratos_culturais">Tratos culturais</option>
+      <option value="colheita">Colheita</option>
+    </select>
+  </div>
+
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <input id="schedOwner" type="text"
+      placeholder="Responsável"
+      style="flex:1 1 160px;" />
+
+    <input id="schedDesc" type="text"
+      placeholder="Descrição / observações"
+      style="flex:2 1 220px;" />
+  </div>
+
+  <button type="button" id="btnAddSchedule"
+    class="btn-secondary"
+    style="align-self:flex-start;">
+    Adicionar
+  </button>
+</div>
 
         <button type="button" id="btnAddSchedule"
           class="btn-secondary"
@@ -254,12 +286,16 @@ function setupScheduleUI(experiment) {
   const btnAdd = document.getElementById("btnAddSchedule");
   const nameInput = document.getElementById("schedName");
   const phaseSelect = document.getElementById("schedPhase");
+  const ownerInput = document.getElementById("schedOwner");
+  const descInput = document.getElementById("schedDesc");
 
   if (!btnAdd || !nameInput || !phaseSelect) return;
 
   btnAdd.onclick = async () => {
     const name = nameInput.value.trim();
     const phase = phaseSelect.value;
+    const owner = ownerInput?.value.trim() || null;
+    const description = descInput?.value.trim() || null;
     if (!name) return;
 
     const { error } = await s
@@ -268,6 +304,8 @@ function setupScheduleUI(experiment) {
         experiment_id: experiment.id,
         name,
         phase,
+        owner,
+        description,
         start_date: null,
         end_date: null,
         completed_at: null,
@@ -275,12 +313,16 @@ function setupScheduleUI(experiment) {
 
     if (!error) {
       nameInput.value = "";
+      if (ownerInput) ownerInput.value = "";
+      if (descInput) descInput.value = "";
       loadScheduleActions(experiment);
     } else {
       console.error("Erro ao adicionar ação:", error);
     }
   };
 }
+
+
 
 
 
