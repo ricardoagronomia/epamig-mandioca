@@ -64,11 +64,11 @@ async function openExperimentScheduleModal(experimentId) {
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <input id="schedOwner" type="text"
           placeholder="Responsável"
-          style="flex:1 1 160px;" />
+          style="flex:1 1 180px;" />
 
         <input id="schedDesc" type="text"
         placeholder="Descrição / observações"
-        style="flex:1 1 400px;" />
+        style="flex:1 1 500px;" />
       </div>
 
       <button type="button" id="btnAddSchedule"
@@ -310,6 +310,7 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
 
 
