@@ -53,7 +53,7 @@ async function openExperimentScheduleModal(experimentId) {
 
         <button type="button" id="btnAddSchedule"
           class="btn-secondary"
-          style="flex:0 0 auto; alignself:flex-start;">
+          style="flex:0 0 auto; align-self:flex-start;">
           Adicionar
         </button>
       </div>
@@ -132,6 +132,69 @@ function createScheduleRow(experiment, action) {
       statusBtn.textContent = "○";
     }
   }
+
+  applyStatusColor();
+
+  // Eventos Supabase
+  statusBtn.addEventListener("click", async () => {
+    const newCompleted = action.completed_at ? null : new Date().toISOString();
+    const { data, error } = await s
+      .from("scheduled_actions")
+      .update({ completed_at: newCompleted })
+      .eq("id", action.id)
+      .select()
+      .single();
+
+    if (!error) {
+      action.completed_at = data.completed_at;
+      applyStatusColor();
+    }
+  });
+
+  startInput.addEventListener("change", async () => {
+    const { data, error } = await s
+      .from("scheduled_actions")
+      .update({ start_date: startInput.value })
+      .eq("id", action.id)
+      .select()
+      .single();
+
+    if (!error) {
+      action.start_date = data.start_date;
+      const dap = daysBetween(experiment.planting_date, action.start_date);
+      const dapText = dap != null ? ` (DAP ${dap})` : "";
+      nameSpan.textContent = action.name + dapText;
+    }
+  });
+
+  endInput.addEventListener("change", async () => {
+    const { data, error } = await s
+      .from("scheduled_actions")
+      .update({ end_date: endInput.value })
+      .eq("id", action.id)
+      .select()
+      .single();
+
+    if (!error) {
+      action.end_date = data.end_date;
+      applyStatusColor();
+    }
+  });
+
+  delBtn.addEventListener("click", async () => {
+    const { error } = await s
+      .from("scheduled_actions")
+      .delete()
+      .eq("id", action.id);
+
+    if (!error) {
+      row.remove();
+    }
+  });
+
+  return row;
+} // <-- ESTA chave fecha createScheduleRow
+
 function renderScheduleList(experiment, actions) {
   const container = document.getElementById("schedListContainer");
   if (!container) return;
@@ -210,66 +273,3 @@ function setupScheduleUI(experiment) {
     }
   };
 }
-
-  applyStatusColor();
-
-  // Eventos Supabase
-  statusBtn.addEventListener("click", async () => {
-    const newCompleted = action.completed_at ? null : new Date().toISOString();
-    const { data, error } = await s
-      .from("scheduled_actions")
-      .update({ completed_at: newCompleted })
-      .eq("id", action.id)
-      .select()
-      .single();
-
-    if (!error) {
-      action.completed_at = data.completed_at;
-      applyStatusColor();
-    }
-  });
-
-  startInput.addEventListener("change", async () => {
-    const { data, error } = await s
-      .from("scheduled_actions")
-      .update({ start_date: startInput.value })
-      .eq("id", action.id)
-      .select()
-      .single();
-
-    if (!error) {
-      action.start_date = data.start_date;
-      const dap = daysBetween(experiment.planting_date, action.start_date);
-      const dapText = dap != null ? ` (DAP ${dap})` : "";
-      nameSpan.textContent = action.name + dapText;
-    }
-  });
-
-  endInput.addEventListener("change", async () => {
-    const { data, error } = await s
-      .from("scheduled_actions")
-      .update({ end_date: endInput.value })
-      .eq("id", action.id)
-      .select()
-      .single();
-
-    if (!error) {
-      action.end_date = data.end_date;
-      applyStatusColor();
-    }
-  });
-
-  delBtn.addEventListener("click", async () => {
-    const { error } = await s
-      .from("scheduled_actions")
-      .delete()
-      .eq("id", action.id);
-
-    if (!error) {
-      row.remove();
-    }
-  });
-
-  return row;
-}
-
