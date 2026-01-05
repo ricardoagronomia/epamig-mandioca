@@ -132,6 +132,84 @@ function createScheduleRow(experiment, action) {
       statusBtn.textContent = "○";
     }
   }
+function renderScheduleList(experiment, actions) {
+  const container = document.getElementById("schedListContainer");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const phases = ["pre-plantio", "plantio", "acompanhamento", "tratos", "colheita"];
+
+  phases.forEach((phase) => {
+    const phaseActions = actions.filter((a) => a.phase === phase);
+    if (!phaseActions.length) return;
+
+    const section = document.createElement("div");
+    section.className = "sched-phase-section";
+    section.style.marginBottom = "8px";
+
+    const title = document.createElement("h4");
+    title.textContent = phase.toUpperCase();
+    title.style.fontSize = "13px";
+    title.style.margin = "6px 0";
+    section.appendChild(title);
+
+    phaseActions.forEach((a) => {
+      section.appendChild(createScheduleRow(experiment, a));
+    });
+
+    container.appendChild(section);
+  });
+}
+
+async function loadScheduleActions(experiment) {
+  if (typeof s === "undefined") return;
+
+  const { data, error } = await s
+    .from("scheduled_actions")
+    .select("*")
+    .eq("experiment_id", experiment.id)
+    .order("start_date", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao carregar cronograma:", error);
+    return;
+  }
+
+  renderScheduleList(experiment, data || []);
+}
+
+function setupScheduleUI(experiment) {
+  const btnAdd = document.getElementById("btnAddSchedule");
+  const nameInput = document.getElementById("schedName");
+  const phaseSelect = document.getElementById("schedPhase");
+
+  if (!btnAdd || !nameInput || !phaseSelect) return;
+
+  btnAdd.onclick = async () => {
+    const name = nameInput.value.trim();
+    const phase = phaseSelect.value;
+    if (!name) return;
+
+    const { error } = await s
+      .from("scheduled_actions")
+      .insert({
+        experiment_id: experiment.id,
+        name,
+        phase,
+        start_date: null,
+        end_date: null,
+        completed_at: null,
+      });
+
+    if (!error) {
+      nameInput.value = "";
+      loadScheduleActions(experiment);
+    } else {
+      console.error("Erro ao adicionar ação:", error);
+    }
+  };
+}
 
   applyStatusColor();
 
@@ -194,3 +272,4 @@ function createScheduleRow(experiment, action) {
 
   return row;
 }
+
