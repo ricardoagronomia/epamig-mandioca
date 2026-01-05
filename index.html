@@ -29,8 +29,6 @@
   }
   */
 </style>
-
-  <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -486,9 +484,43 @@
     padding: 16px;
     margin-top: 120px;   /* compensa o top da barra + folga para o título */
   }
-}
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { ... }
+  .sidebar { ... }
+  .card { ... }
+  /* etc... */
 
-  </style>
+  /* === Mapa DBC: grade 3×4 === */
+  .dbc-block-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .dbc-plot-cell {
+    border-radius: 10px;
+    padding: 6px 8px;
+    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #111827;
+    border: 1px solid rgba(148,163,184,0.6);
+    background: #f9fafb;
+  }
+
+  .dbc-plot-label-main {
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .dbc-plot-label-sub {
+    font-size: 11px;
+    color: #374151;
+  }
+</style>
 </head>
 <body>
   <!-- AUTH -->
@@ -604,6 +636,7 @@
 
 </body>
 </html>
+
 
 
 
