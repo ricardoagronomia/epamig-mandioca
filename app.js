@@ -312,12 +312,19 @@ function renderPage(page) {
       `;
     }
   } else if (currentPage === "dbc-map") {
-  if (typeof renderDbcMapPage === "function") {
-    renderDbcMapPage(container);
+    if (typeof renderDbcMapPage === "function") {
+      renderDbcMapPage(container);
+    } else {
+      container.innerHTML = `
+        <div class="card">
+          <p>Módulo Mapa DBC não carregado.</p>
+        </div>
+      `;
+    }
   } else {
     container.innerHTML = `
       <div class="card">
-        <p>Módulo Mapa DBC não carregado.</p>
+        <p>Em desenvolvimento...</p>
       </div>
     `;
   }
@@ -724,6 +731,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
