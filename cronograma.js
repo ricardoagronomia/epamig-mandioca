@@ -238,10 +238,19 @@ function renderScheduleList(experiment, actions) {
 
   container.innerHTML = "";
 
+  // Ordena por start_date, nulos por último
+  const sorted = [...actions].sort((a, b) => {
+    if (!a.start_date && !b.start_date) return 0;
+    if (!a.start_date) return 1;   // a sem data vai para baixo
+    if (!b.start_date) return -1;  // b sem data vai para baixo
+
+    return a.start_date.localeCompare(b.start_date);
+  });
+
   const phases = ["pre-plantio", "plantio", "acompanhamento", "tratos_culturais", "colheita"];
 
   phases.forEach((phase) => {
-    const phaseActions = actions.filter((a) => a.phase === phase);
+    const phaseActions = sorted.filter((a) => a.phase === phase);
     if (!phaseActions.length) return;
 
     const section = document.createElement("div");
@@ -318,6 +327,7 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
 
 
