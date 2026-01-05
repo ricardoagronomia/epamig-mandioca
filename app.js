@@ -304,7 +304,7 @@ function renderPage(page) {
   } else if (currentPage === "experiments") {
     if (typeof renderExperimentsPage === "function") {
       renderExperimentsPage(container);
-      } else if (page === 'dbc-map') {
+  } else if (page === 'dbc-map') {
     renderDbcMapPage(container);
     } else {
       container.innerHTML = `
@@ -670,6 +670,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
