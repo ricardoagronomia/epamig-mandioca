@@ -390,7 +390,7 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
 
         <div style="margin-top:10px;">
           <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Disposição das plantas na parcela</div>
-          <<div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
   <div style="flex:1 1 120px;">
     <label for="expPlotLength">Comprimento (m)</label>
     <input id="expPlotLength" type="number" step="0.01" min="0"
@@ -679,7 +679,7 @@ function createScheduleRow(experiment, action) {
       .update({ completed_at: newCompleted })
       .eq('id', action.id)
       .select()
-      .single();[web:144]
+      .single();
 
     if (!error) {
       action.completed_at = data.completed_at;
@@ -693,7 +693,7 @@ function createScheduleRow(experiment, action) {
       .update({ start_date: startInput.value })
       .eq('id', action.id)
       .select()
-      .single();[web:144]
+      .single();
     if (!error) {
       action.start_date = data.start_date;
       const dap = daysBetween(experiment.planting_date, action.start_date);
@@ -708,7 +708,7 @@ function createScheduleRow(experiment, action) {
       .update({ end_date: endInput.value })
       .eq('id', action.id)
       .select()
-      .single();[web:144]
+      .single();
     if (!error) {
       action.end_date = data.end_date;
       applyStatusColor();
@@ -719,7 +719,7 @@ function createScheduleRow(experiment, action) {
     const { error } = await supabase
       .from('scheduled_actions')
       .delete()
-      .eq('id', action.id);[web:148]
+      .eq('id', action.id);
     if (!error) {
       row.remove();
     }
@@ -780,7 +780,7 @@ function setupScheduleUI(experiment) {
         completed_at: null,
       })
       .select()
-      .single();[web:148]
+      .single();
 
     if (!error && data) {
       nameInput.value = '';
@@ -795,7 +795,7 @@ async function loadScheduleActions(experiment) {
     .from('scheduled_actions')
     .select('*')
     .eq('experiment_id', experiment.id)
-    .order('start_date', { ascending: true });[web:148]
+    .order('start_date', { ascending: true });
 
   if (error) {
     console.error('Erro ao carregar cronograma:', error);
@@ -810,6 +810,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
