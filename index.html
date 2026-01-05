@@ -395,6 +395,48 @@
       box-shadow: 0 20px 40px rgba(15, 23, 42, 0.4);
       overflow-y: auto;          /* permite rolagem vertical */
     }
+      /* Cronograma de experimentos */
+  .sched-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    padding: 4px 6px;
+    border-radius: 4px;
+  }
+
+  .sched-row.sched-done {
+    background-color: #dcfce7;   /* verde claro */
+  }
+
+  .sched-row.sched-late {
+    background-color: #fee2e2;   /* vermelho claro */
+  }
+
+  .sched-status-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid #9ca3af;
+    background: white;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .sched-row span {
+    flex: 1 1 auto;
+    min-width: 160px;
+  }
+
+  .sched-row input[type="date"] {
+    flex: 0 0 120px;
+  }
+
+  .sched-row .btn-danger {
+    padding: 2px 6px;
+  }
+
     /* Deixar o botão principal largo no mobile */
 @media (max-width: 640px) {
   .modal-content .btn-primary {
@@ -554,6 +596,7 @@
   <script src="cronograma.js"></script>
 </body>
 </html>
+
 
 
 
