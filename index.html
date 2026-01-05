@@ -4,31 +4,33 @@
   <meta charset="UTF-8" />
   <title>MandiocaTrack - Pesquisa de Campo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-  body {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+    body {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
- .header {
-  position: sticky;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-  }
+    .header {
+      position: sticky;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+
     .main-container {
-  margin-top: 0;
-}
+      margin-top: 0;
+    }
 
-  /* Se o header for fixo e estiver cobrindo o conteúdo, descomente: */
-  /*
-  main, #appContainer, #appRoot {
-    padding-top: 60px;  // ajuste 60px para a altura real do cabeçalho
-  }
-  */
-</style>
+    /* Se o header for fixo e estiver cobrindo o conteúdo, descomente: */
+    /*
+    main, #appContainer, #appRoot {
+      padding-top: 60px;  // ajuste 60px para a altura real do cabeçalho
+    }
+    */
+  </style>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -93,7 +95,13 @@
       color: var(--gray-600);
     }
 
-    .tabs { display: flex; margin: 24px 0 16px; border-radius: 999px; background: var(--gray-100); padding: 4px; }
+    .tabs {
+      display: flex;
+      margin: 24px 0 16px;
+      border-radius: 999px;
+      background: var(--gray-100);
+      padding: 4px;
+    }
     .tabs button {
       flex: 1;
       border: none;
@@ -176,14 +184,13 @@
     .app-layout { display: flex; flex-direction: column; height: 100vh; }
 
     .header {
-  background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
-  color: #f9fafb;
-  padding: 6px 12px;  /* antes era 10px 20px */
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
-  z-index: 10;
-}
-
+      background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
+      color: #f9fafb;
+      padding: 6px 12px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+      z-index: 10;
     }
+
     .header-content {
       display: flex;
       align-items: center;
@@ -295,7 +302,7 @@
       overflow-y: auto;
     }
     .content-header {
-      margin-top: 24px;    /* novo espaço abaixo do header */
+      margin-top: 24px;
       margin-bottom: 10px;
     }
 
@@ -337,290 +344,4 @@
     tr:last-child td { border-bottom: none; }
 
     .tag-role {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .tag-role.admin { background: rgba(22,101,52,0.16); color: var(--green-dark); }
-    .tag-role.collaborator { background: rgba(251,191,36,0.16); color: #92400e; }
-    .tag-role.visitor { background: rgba(156,163,175,0.16); color: #374151; }
-
-    .btn-secondary {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--gray-300);
-      background: var(--gray-50);
-      color: var(--gray-800);
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .btn-danger {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #fca5a5;
-      background: #fee2e2;
-      color: #b91c1c;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .btn-link {
-      border: none;
-      background: none;
-      color: var(--green);
-      font-size: 13px;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.45);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 50;
-    }
-    .modal.active { display: flex; }
-    .modal-content {
-      max-width: 720px;
-      max-height: 90vh;          /* não passa da altura da tela */
-      width: 100%;
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 20px 22px;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.4);
-      overflow-y: auto;          /* permite rolagem vertical */
-    }
-      /* Cronograma de experimentos */
-  .sched-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-    padding: 4px 6px;
-    border-radius: 4px;
-  }
-
-  .sched-row.sched-done {
-    background-color: #dcfce7;   /* verde claro */
-  }
-
-  .sched-row.sched-late {
-    background-color: #fee2e2;   /* vermelho claro */
-  }
-
-  .sched-status-btn {
-    width: 24px;
-    height: 24px;
-    border-radius: 999px;
-    border: 1px solid #9ca3af;
-    background: white;
-    font-size: 14px;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .sched-row span {
-    flex: 1 1 auto;
-    min-width: 160px;
-  }
-
-  .sched-row input[type="date"] {
-    flex: 0 0 120px;
-  }
-
-  .sched-row .btn-danger {
-    padding: 2px 6px;
-  }
-
-    /* Deixar o botão principal largo no mobile */
-@media (max-width: 640px) {
-  .modal-content .btn-primary {
-    width: 100%;
-    justify-content: center;
-  }
-}
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .modal-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--green-dark);
-    }
-    .modal-close {
-      border: none;
-      background: none;
-      font-size: 22px;
-      cursor: pointer;
-      color: var(--gray-400);
-    }
-
-    @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    top: 100px;           /* mais espaço abaixo do header verde */
-    width: 100%;
-    height: auto;
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    border-right: none;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-  }
-  .sidebar-section { border-bottom: none; }
-  .sidebar-section-title { display: none; }
-  .sidebar-item {
-    padding: 10px 14px;
-    white-space: nowrap;
-  }
-  .content-area {
-    padding: 16px;
-    margin-top: 120px;   /* compensa o top da barra + folga para o título */
-  }
-}
-
-  </style>
-</head>
-<body>
-  <!-- AUTH -->
-  <div id="authScreen">
-    <div class="auth-container">
-      <div class="logo-wrap">
-        <div class="logo-icon">
-          <img src="logo-mandioca.png" alt="MandiocaTrack">
-        </div>
-        <div class="logo-title">MandiocaTrack</div>
-        <div class="logo-subtitle">Pesquisa de Campo</div>
-      </div>
-      <div class="tabs">
-        <button id="tabLogin" class="active">Entrar</button>
-        <button id="tabSignup">Cadastrar</button>
-      </div>
-      <div id="loginForm">
-        <label for="loginEmail">E-mail</label>
-        <input type="email" id="loginEmail" placeholder="seu@email">
-        <label for="loginPassword">Senha</label>
-        <input type="password" id="loginPassword" placeholder="Sua senha">
-        <button id="btnLogin" class="btn-primary">Entrar</button>
-      </div>
-      <div id="signupForm" style="display:none;">
-        <label for="signupEmail">E-mail</label>
-        <input type="email" id="signupEmail" placeholder="seu@email">
-        <label for="signupPassword">Senha (mínimo 6 caracteres)</label>
-        <input type="password" id="signupPassword" placeholder="Crie uma senha">
-        <button id="btnSignup" class="btn-primary">Criar Conta</button>
-      </div>
-      <div id="authMessage" class="auth-message"></div>
-    </div>
-  </div>
-
-  <!-- APP -->
-  <div id="appScreen" class="app-layout">
-    <div class="header">
-      <div class="header-content">
-        <div class="header-left">
-          <div class="header-icon">
-            <img src="logo-mandioca.png" alt="MandiocaTrack">
-          </div>
-          <div>
-            <div class="header-title">MandiocaTrack</div>
-            <div class="header-subtitle">Gestão de Usuários</div>
-          </div>
-        </div>
-        <div class="header-right">
-        <div id="userEmail" class="header-user"></div>
-        <button id="btnLogout" class="btn-outline">Sair</button>
-          </div>
-
-      </div>
-    </div>
-
-    <div class="main-container">
-      <aside class="sidebar">
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">Principal</div>
-          <div class="sidebar-item active" data-page="users">
-            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 
-            0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 
-            2c-2.33 0-7 1.17-7 3.5V20h7v-1c0-1.1.9-2 2-2h3.26C14.62 14.59 11.64 13 
-            8 13zm8 0c-.29 0-.62.02-.97.05C16.21 13.84 18 15.23 18 17v3h4v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-            Usuários
-          </div>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">Acesso</div>
-          <div class="sidebar-item" data-page="invites">
-            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 
-            18c0 1.1.9 2 2 2h16c1.1 0 2-.9 
-            2-2V6c0-1.1-.9-2-2-2zm-1 10H5v-2h14v2zm0-4H5V8h14v2z"/></svg>
-            Convites
-          </div>
-        </div>
-        <div class="sidebar-item disabled" data-page="experiments">
-  <svg viewBox="0 0 24 24">
-    <path d="M9 2v2H5v2h4v6.586l-2.293 2.293A1 1 0 0 0 7 16h10a1 1 0 0 0 .707-1.707L15 12.586V6h4V4h-4V2H9zm2 4h2v7a1 1 0 0 0 .293.707L14.586 15H9.414l1.293-1.293A1 1 0 0 0 11 13V6z"/>
-  </svg>
-  Experimentos
-</div>
-        <div class="sidebar-item" data-page="dbc-map">
-  <svg viewBox="0 0 24 24">
-    <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"></path>
-  </svg>
-  Mapa DBC
-</div>
-      </aside>
-
-      <main class="content-area" id="contentArea">
-        <!-- renderizado via JS -->
-      </main>
-    </div>
-  </div>
-
-  <!-- MODAL GENÉRICO -->
-  <div id="modalRoot" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title" id="modalTitle"></div>
-        <button class="modal-close" id="modalClose">&times;</button>
-      </div>
-      <div id="modalBody"></div>
-    </div>
-  </div>
-
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
-  <script src="app.js"></script>
-  <script src="experiments.js"></script>
-  <script src="cronograma.js"></script>
-  <script src="mapadbc.js"></script> <!-- <<< garantir esta linha -->
-
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      dis
