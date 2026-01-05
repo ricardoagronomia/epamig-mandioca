@@ -395,6 +395,13 @@
       box-shadow: 0 20px 40px rgba(15, 23, 42, 0.4);
       overflow-y: auto;          /* permite rolagem vertical */
     }
+    /* Deixar o botão principal largo no mobile */
+@media (max-width: 640px) {
+  .modal-content .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
     .modal-header {
       display: flex;
       align-items: center;
@@ -546,6 +553,7 @@
   <script src="experiments.js"></script>
 </body>
 </html>
+
 
 
 
