@@ -171,11 +171,6 @@ async function loadExperimentsIntoList() {
         </div>
       </div>
 
-      <!-- Resumo do cronograma -->
-      <div style="margin-top:6px; font-size:12px; color:#6b7280;">
-        <span id="schedSummary-${exp.id}">Cronograma: carregando...</span>
-      </div>
-
       <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
         <button
           class="${isSelected ? "btn-primary" : "btn-secondary"}"
@@ -653,6 +648,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
