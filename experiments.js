@@ -214,7 +214,35 @@ async function loadExperimentsIntoList() {
     .join("");
 
   listEl.innerHTML = cardsHtml;
-}
+    // cria área de resumo do cronograma em cada card
+  const cards = listEl.querySelectorAll('.card[data-experiment-id]');
+  cards.forEach((card) => {
+    const id = card.getAttribute('data-experiment-id');
+    if (!id) return;
+
+    // evita duplicar se já existir
+    if (card.querySelector('.sched-summary')) return;
+
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'sched-summary';
+    summaryDiv.style.marginTop = '6px';
+    summaryDiv.style.fontSize = '12px';
+    summaryDiv.style.color = '#6b7280';
+    summaryDiv.textContent = 'Cronograma: carregando...';
+
+    // insere antes da barra de botões (último filho interno)
+    const inner = card.firstElementChild;
+    if (inner && inner.lastElementChild) {
+      inner.insertBefore(summaryDiv, inner.lastElementChild);
+    } else {
+      card.appendChild(summaryDiv);
+    }
+
+    if (typeof loadScheduleSummary === 'function') {
+      loadScheduleSummary(id);
+    }
+  });
+
 async function openExperimentFormModalById(id) {
   if (!id || typeof s === "undefined") {
     return;
@@ -602,6 +630,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
