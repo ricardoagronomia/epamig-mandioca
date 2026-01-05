@@ -296,14 +296,12 @@ function navigateTo(page) {
 
 function renderPage(page) {
   const container = $("contentArea");
-  const p = page || currentPage;
 
-  if (p === "users") {
+  if (currentPage === "users") {
     renderUsersPage(container);
-  } else if (p === "invites") {
+  } else if (currentPage === "invites") {
     renderInvitesPage(container);
-  } else if (p === "experiments") {
-    // se o módulo de experimentos já estiver definido em outro arquivo
+  } else if (currentPage === "experiments") {
     if (typeof renderExperimentsPage === "function") {
       renderExperimentsPage(container);
     } else {
@@ -313,8 +311,6 @@ function renderPage(page) {
         </div>
       `;
     }
-  } else if (p === "dbc-map") {
-    renderDbcMapPage(container);
   } else {
     container.innerHTML = `
       <div class="card">
@@ -672,9 +668,6 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
-
-
-
 
 
 
