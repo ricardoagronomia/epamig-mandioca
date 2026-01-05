@@ -126,87 +126,95 @@ async function loadExperimentsIntoList() {
   }
 
   const cardsHtml = experiments
-    .map((exp) => {
-      const isSelected = currentExperiment && currentExperiment.id === exp.id;
-      const status = exp.status || "active";
-      const statusLabel = status === "active" ? "Ativo" : "Concluído";
-      const planting = formatExperimentDate(exp.planting_date);
-      const farm = exp.farm || "-";
+  .map((exp) => {
+    const isSelected = currentExperiment && currentExperiment.id === exp.id;
+    const status = exp.status || "active";
+    const statusLabel = status === "active" ? "Ativo" : "Concluído";
+    const planting = formatExperimentDate(exp.planting_date);
+    const farm = exp.farm || "-";
 
-      return `
-        <div class="card" style="margin-bottom:12px;">
-          <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
-                      gap:12px; align-items:center;">
-            <div style="flex:1 1 220px; min-width:0;">
-              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <div style="font-size:18px; font-weight:700; color:var(--green-dark);">
-                  ${exp.code || "(sem código)"}
-                </div>
-                <span style="
-                  display:inline-flex;
-                  align-items:center;
-                  gap:4px;
-                  padding:2px 10px;
-                  border-radius:999px;
-                  font-size:11px;
-                  font-weight:600;
-                  background:${status === "active"
-                    ? "rgba(16,185,129,0.18)"
-                    : "rgba(148,163,184,0.3)"};
-                  color:${status === "active" ? "#065f46" : "#374151"};
-                ">
-                  ● ${statusLabel}
-                </span>
+    return `
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
+                    gap:12px; align-items:center;">
+          <div style="flex:1 1 220px; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div style="font-size:18px; font-weight:700; color:var(--green-dark);">
+                ${exp.code || "(sem código)"}
               </div>
-              <div style="font-size:14px; color:#4b5563; margin-top:2px;
-                          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                ${exp.name || "Experimento sem descrição"}
-              </div>
-              <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;
-                          font-size:12px; color:#6b7280;">
-                <span>Plantio: ${planting}</span>
-                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                  Local: ${farm}
-                </span>
-              </div>
+              <span style="
+                display:inline-flex;
+                align-items:center;
+                gap:4px;
+                padding:2px 10px;
+                border-radius:999px;
+                font-size:11px;
+                font-weight:600;
+                background:${status === "active"
+                  ? "rgba(16,185,129,0.18)"
+                  : "rgba(148,163,184,0.3)"};
+                color:${status === "active" ? "#065f46" : "#374151"};
+              ">
+                ● ${statusLabel}
+              </span>
             </div>
-
-            <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
-              <button
-                class="${isSelected ? "btn-primary" : "btn-secondary"}"
-                style="font-size:13px;"
-                onclick="selectExperiment('${exp.id}')"
-              >
-                ${isSelected ? "Selecionado" : "Selecionar"}
-              </button>
-
-              <button
-                class="btn-secondary"
-                style="font-size:13px;"
-                onclick="openExperimentFormModalById('${exp.id}')"
-              >
-                Editar
-              </button>
-
-              ${
-                typeof currentRole !== "undefined" && currentRole === "admin"
-                  ? `<button class="btn-danger" style="font-size:13px;"
-                        onclick="confirmDeleteExperiment('${exp.id}', '${escapeHtml(
-                          exp.code || ""
-                        )}')">
-                       Excluir
-                     </button>`
-                  : ""
-              }
+            <div style="font-size:14px; color:#4b5563; margin-top:2px;
+                        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${exp.name || "Experimento sem descrição"}
+            </div>
+            <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;
+                        font-size:12px; color:#6b7280;">
+              <span>Plantio: ${planting}</span>
+              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                Local: ${farm}
+              </span>
             </div>
           </div>
-        </div>
-      `;
-    })
-    .join("");
 
-  listEl.innerHTML = cardsHtml;
-}
+          <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
+            <button
+              class="${isSelected ? "btn-primary" : "btn-secondary"}"
+              style="font-size:13px;"
+              onclick="selectExperiment('${exp.id}')"
+            >
+              ${isSelected ? "Selecionado" : "Selecionar"}
+            </button>
+
+            <button
+              class="btn-secondary"
+              style="font-size:13px;"
+              onclick="openExperimentFormModalById('${exp.id}')"
+            >
+              Editar
+            </button>
+
+            <button
+              class="btn-secondary"
+              style="font-size:13px;"
+              onclick="openExperimentScheduleModal('${exp.id}')"
+            >
+              Cronograma
+            </button>
+
+            ${
+              typeof currentRole !== "undefined" && currentRole === "admin"
+                ? `<button class="btn-danger" style="font-size:13px;"
+                      onclick="confirmDeleteExperiment('${exp.id}', '${escapeHtml(
+                        exp.code || ""
+                      )}')">
+                     Excluir
+                   </button>`
+                : ""
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  })
+  .join("");
+
+listEl.innerHTML = cardsHtml;
+
 async function openExperimentFormModalById(id) {
   if (!id || typeof s === "undefined") {
     return;
@@ -438,38 +446,7 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
           </p>
         </div>
       </div>
-
-            <!-- CRONOGRAMA -->
-      <div style="margin-bottom:12px;">
-        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
-          Cronograma de ações
-        </h3>
-
-        <!-- Adicionar nova ação -->
-        <div class="schedule-new-action" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-          <input id="schedName" type="text"
-            placeholder="Nome da ação"
-            style="flex:2 1 160px;" />
-
-          <select id="schedPhase" style="flex:1 1 140px;">
-            <option value="pre-plantio">Pré-plantio</option>
-            <option value="plantio">Plantio</option>
-            <option value="acompanhamento">Acompanhamento</option>
-            <option value="tratos">Tratos culturais</option>
-            <option value="colheita">Colheita</option>
-          </select>
-
-          <button type="button" id="btnAddSchedule"
-            class="btn-secondary"
-            style="flex:0 0 auto; align-self:flex-start;">
-            Adicionar
-          </button>
-        </div>
-
-        <!-- Lista de ações -->
-        <div id="schedListContainer"></div>
-      </div>
-
+          
       <button type="button" class="btn-primary" style="margin-top:10px;"
         onclick="submitExperimentForm('${exp?.id || ""}')">
         ${isEdit ? "Salvar alterações" : "Criar experimento"}
@@ -482,12 +459,6 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
   } else {
     alert("Função openModal não encontrada no app principal.");
   }
-  const currentExperiment = exp || {};
-setupScheduleUI(currentExperiment);
-
-if (exp && exp.id) {
-  loadScheduleActions(exp);
-}
 }
 
 async function submitExperimentForm(id) {
@@ -801,6 +772,63 @@ async function loadScheduleActions(experiment) {
     console.error('Erro ao carregar cronograma:', error);
     return;
   }
+  async function openExperimentScheduleModal(experimentId) {
+  // buscar experimento para ter planting_date e code
+  const { data: exp, error } = await supabase
+    .from('experiments')
+    .select('*')
+    .eq('id', experimentId)
+    .single();
+
+  if (error || !exp) {
+    console.error('Erro ao carregar experimento para cronograma:', error);
+    alert('Não foi possível carregar o cronograma deste experimento.');
+    return;
+  }
+
+  const title = `Cronograma - ${exp.code || 'Experimento'}`;
+
+  const bodyHtml = `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:13px; color:#4b5563; margin-bottom:6px;">
+        Data de plantio: ${exp.planting_date || '-'}
+      </div>
+
+      <div class="schedule-new-action" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <input id="schedName" type="text"
+          placeholder="Nome da ação"
+          style="flex:2 1 160px;" />
+
+        <select id="schedPhase" style="flex:1 1 140px;">
+          <option value="pre-plantio">Pré-plantio</option>
+          <option value="plantio">Plantio</option>
+          <option value="acompanhamento">Acompanhamento</option>
+          <option value="tratos">Tratos culturais</option>
+          <option value="colheita">Colheita</option>
+        </select>
+
+        <button type="button" id="btnAddSchedule"
+          class="btn-secondary"
+          style="flex:0 0 auto; align-self:flex-start;">
+          Adicionar
+        </button>
+      </div>
+
+      <div id="schedListContainer"></div>
+    </div>
+  `;
+
+  if (typeof openModal === 'function') {
+    openModal(title, bodyHtml);
+  } else {
+    alert('Função openModal não encontrada no app principal.');
+    return;
+  }
+
+  // agora que o HTML foi colocado no DOM, inicializar cronograma
+  setupScheduleUI(exp);
+  loadScheduleActions(exp);
+}
 
   renderScheduleList(experiment, data || []);
 }
@@ -810,6 +838,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
