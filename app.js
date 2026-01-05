@@ -312,84 +312,16 @@ function renderPage(page) {
       `;
     }
   } else if (currentPage === "dbc-map") {
-  container.innerHTML = `
-    <div class="content-header">
-      <div class="content-title">Mapa DBC</div>
-      <div class="content-subtitle">
-        Escolha um experimento para visualizar o mapa de blocos.
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="margin-bottom:12px;">
-        <label for="dbcExperimentSelect">Experimento</label>
-        <select id="dbcExperimentSelect">
-          <option value="">Carregando experimentos...</option>
-        </select>
-      </div>
-
-      <div id="dbcMapArea">
-        <p style="color:#6b7280;font-size:14px;">
-          Selecione um experimento para carregar o mapa DBC.
-        </p>
-      </div>
-    </div>
-  `;
-
-  const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
-  const dbcMapArea = document.getElementById("dbcMapArea");
-
-  // 1) Buscar experimentos no Supabase
-  (async () => {
-    const { data: experiments, error } = await s
-      .from("experiments")
-      .select("id, name")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      dbcExperimentSelect.innerHTML = `<option value="">Erro ao carregar experimentos</option>`;
-      dbcMapArea.innerHTML = `
-        <p style="color:#b91c1c;font-size:14px;">
-          Não foi possível carregar a lista de experimentos.
-        </p>
-      `;
-      return;
-    }
-
-    if (!experiments || experiments.length === 0) {
-      dbcExperimentSelect.innerHTML = `<option value="">Nenhum experimento encontrado</option>`;
-      return;
-    }
-
-    dbcExperimentSelect.innerHTML = `
-      <option value="">Selecione um experimento...</option>
-      ${experiments
-        .map(
-          (exp) =>
-            `<option value="${exp.id}">${exp.name}</option>`
-        )
-        .join("")}
-    `;
-  })();
-
-  // 2) Reagir à mudança do select
-  dbcExperimentSelect.addEventListener("change", () => {
-    const expId = dbcExperimentSelect.value;
-    if (!expId) {
-      dbcMapArea.innerHTML = `
-        <p style="color:#6b7280;font-size:14px;">
-          Selecione um experimento para carregar o mapa DBC.
-        </p>
-      `;
-      return;
-    }
-
-    dbcMapArea.innerHTML = `
+  if (typeof renderDbcMapPage === "function") {
+    renderDbcMapPage(container);
+  } else {
+    container.innerHTML = `
       <div class="card">
-        <p>Mapa do experimento selecionado ainda será implementado.</p>
+        <p>Módulo Mapa DBC não carregado.</p>
       </div>
     `;
-  });
+  }
+}
 
   container.innerHTML = `
     <div class="content-header">
@@ -792,6 +724,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
