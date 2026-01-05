@@ -327,6 +327,52 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+async function loadScheduleSummary(experimentId) {
+  if (typeof s === "undefined") return;
+
+  const container = document.querySelector(
+    `.card[data-experiment-id="${experimentId}"] .sched-summary`
+  );
+  if (!container) return;
+
+  const { data, error } = await s
+    .from("scheduled_actions")
+    .select("end_date, completed_at")
+    .eq("experiment_id", experimentId);
+
+  if (error) {
+    container.textContent = "Cronograma: erro ao carregar";
+    console.error("Erro resumo cronograma:", error);
+    return;
+  }
+
+  const actions = data || [];
+  if (!actions.length) {
+    container.textContent = "Cronograma: nenhuma ação cadastrada";
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  let done = 0;
+  let late = 0;
+
+  actions.forEach((a) => {
+    if (a.completed_at) {
+      done += 1;
+    } else if (a.end_date && today > a.end_date) {
+      late += 1;
+    }
+  });
+
+  const total = actions.length;
+  const partes = [`${total} ação${total !== 1 ? "es" : ""}`];
+  if (late > 0) partes.push(`${late} atrasada${late !== 1 ? "s" : ""}`);
+  if (done > 0) partes.push(`${done} concluída${done !== 1 ? "s" : ""}`);
+
+  container.textContent = "Cronograma: " + partes.join(" · ");
+}
+
+
 
 
 
