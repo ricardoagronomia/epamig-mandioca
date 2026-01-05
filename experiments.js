@@ -171,7 +171,7 @@ async function loadExperimentsIntoList() {
               </div>
             </div>
 
-            <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
               <button
                 class="${isSelected ? "btn-primary" : "btn-secondary"}"
                 style="font-size:13px;"
@@ -186,6 +186,14 @@ async function loadExperimentsIntoList() {
                 onclick="openExperimentFormModalById('${exp.id}')"
               >
                 Editar
+              </button>
+
+              <button
+                class="btn-secondary"
+                style="font-size:13px;"
+                onclick="openExperimentScheduleModal('${exp.id}')"
+              >
+                Cronograma
               </button>
 
               ${
@@ -440,7 +448,7 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
         </div>
       </div>
 
-          <!-- CRONOGRAMA & REVISÃO (esqueleto simples) -->
+         <!-- CRONOGRAMA & REVISÃO (esqueleto simples) -->
       <div style="margin-bottom:12px;">
         <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
           Cronograma (planejamento geral)
@@ -450,13 +458,13 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
         </p>
       </div>
 
-      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;">
-        <button type="button" class="btn-primary"
-          onclick="submitExperimentForm('${exp?.id || ""}')">
-          ${isEdit ? "Salvar alterações" : "Criar experimento"}
-        </button>
-
-        ${
+      <button type="button" class="btn-primary" style="margin-top:10px;"
+        onclick="submitExperimentForm('${exp?.id || ""}')">
+        ${isEdit ? "Salvar alterações" : "Criar experimento"}
+      </button>
+    </form>
+  `;
+ ${
           exp && exp.id
             ? `<button type="button" class="btn-secondary"
                 onclick="openExperimentScheduleModal('${exp.id}')">
@@ -605,6 +613,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
