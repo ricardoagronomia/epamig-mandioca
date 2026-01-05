@@ -10,6 +10,13 @@ function daysBetween(date1, date2) {
   return Math.round((d2 - d1) / oneDay);
 }
 
+// Formata data YYYY-MM-DD para DD/MM/YYYY
+function formatDateBr(isoDate) {
+  if (!isoDate) return "-";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 async function openExperimentScheduleModal(experimentId) {
   if (typeof s === "undefined") {
     alert("Cliente Supabase não encontrado.");
@@ -33,7 +40,7 @@ async function openExperimentScheduleModal(experimentId) {
   const bodyHtml = `
     <div style="margin-bottom:12px;">
       <div style="font-size:13px; color:#4b5563; margin-bottom:6px;">
-        Data de plantio: ${exp.planting_date || "-"}
+        Data de plantio: ${formatDateBr(exp.planting_date)}
       </div>
 
       <!-- Adicionar nova ação -->
@@ -274,5 +281,6 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 
 
