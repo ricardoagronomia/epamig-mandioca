@@ -138,7 +138,30 @@ async function loadExperimentsIntoList() {
     <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
                 gap:12px; align-items:center;">
       <div style="flex:1 1 220px; min-width:0;">
-        ...
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div style="font-size:18px; font-weight:700; color:var(--green-dark);">
+            ${exp.code || "(sem código)"}
+          </div>
+          <span style="
+            display:inline-flex;
+            align-items:center;
+            gap:4px;
+            padding:2px 10px;
+            border-radius:999px;
+            font-size:11px;
+            font-weight:600;
+            background:${status === "active"
+              ? "rgba(16,185,129,0.18)"
+              : "rgba(148,163,184,0.3)"};
+            color:${status === "active" ? "#065f46" : "#374151"};
+          ">
+            ● ${statusLabel}
+          </span>
+        </div>
+        <div style="font-size:14px; color:#4b5563; margin-top:2px;
+                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${exp.name || "Experimento sem descrição"}
+        </div>
         <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;
                     font-size:12px; color:#6b7280;">
           <span>Plantio: ${planting}</span>
@@ -148,7 +171,7 @@ async function loadExperimentsIntoList() {
         </div>
       </div>
 
-      <!-- AQUI entra o resumo do cronograma -->
+      <!-- Resumo do cronograma -->
       <div style="margin-top:6px; font-size:12px; color:#6b7280;">
         <span id="schedSummary-${exp.id}">Cronograma: carregando...</span>
       </div>
@@ -630,6 +653,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
