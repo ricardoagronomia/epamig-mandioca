@@ -134,10 +134,10 @@ async function loadExperimentsIntoList() {
       const farm = exp.farm || "-";
 
       return `
-        <div class="card" style="margin-bottom:12px;">
-          <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
-                      gap:12px; align-items:center;">
-            <div style="flex:1 1 220px; min-width:0;">
+  <div class="card" data-experiment-id="${exp.id}" style="margin-bottom:12px;">
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
+                gap:12px; align-items:center;">
+                <div style="flex:1 1 220px; min-width:0;">
               <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <div style="font-size:18px; font-weight:700; color:var(--green-dark);">
                   ${exp.code || "(sem código)"}
@@ -602,6 +602,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
