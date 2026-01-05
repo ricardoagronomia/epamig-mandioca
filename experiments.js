@@ -584,18 +584,17 @@ function daysBetween(date1, date2) {
   const oneDay = 1000 * 60 * 60 * 24;
   return Math.round((d2 - d1) / oneDay);
 }
+
 function createScheduleRow(experiment, action) {
   const row = document.createElement('div');
   row.className = 'sched-row';
 
-  // Botão status
   const statusBtn = document.createElement('button');
   statusBtn.type = 'button';
   statusBtn.className = 'sched-status-btn';
   statusBtn.textContent = action.completed_at ? '✔' : '○';
   row.appendChild(statusBtn);
 
-  // Nome + DAP
   const nameSpan = document.createElement('span');
   nameSpan.style.flex = '1 1 auto';
   nameSpan.style.marginRight = '8px';
@@ -604,7 +603,6 @@ function createScheduleRow(experiment, action) {
   nameSpan.textContent = action.name + dapText;
   row.appendChild(nameSpan);
 
-  // Datas
   const startInput = document.createElement('input');
   startInput.type = 'date';
   startInput.value = action.start_date || '';
@@ -617,14 +615,12 @@ function createScheduleRow(experiment, action) {
   endInput.style.marginRight = '4px';
   row.appendChild(endInput);
 
-  // Delete
   const delBtn = document.createElement('button');
   delBtn.type = 'button';
   delBtn.textContent = '🗑';
   delBtn.className = 'btn-danger';
   row.appendChild(delBtn);
 
-  // Cores de status
   function applyStatusColor() {
     row.classList.remove('sched-done', 'sched-late');
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -642,7 +638,6 @@ function createScheduleRow(experiment, action) {
 
   applyStatusColor();
 
-  // Eventos
   statusBtn.addEventListener('click', async () => {
     const newCompleted = action.completed_at ? null : new Date().toISOString();
     const { data, error } = await supabase
@@ -698,6 +693,7 @@ function createScheduleRow(experiment, action) {
 
   return row;
 }
+
 function renderScheduleList(experiment, actions) {
   const container = document.getElementById('schedListContainer');
   if (!container) return;
@@ -728,6 +724,7 @@ function renderScheduleList(experiment, actions) {
     container.appendChild(section);
   });
 }
+
 function setupScheduleUI(experiment) {
   const btnAdd = document.getElementById('btnAddSchedule');
   const nameInput = document.getElementById('schedName');
@@ -761,6 +758,7 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
 async function loadScheduleActions(experiment) {
   const { data, error } = await supabase
     .from('scheduled_actions')
@@ -772,10 +770,11 @@ async function loadScheduleActions(experiment) {
     console.error('Erro ao carregar cronograma:', error);
     return;
   }
-  renderScheduleList(experiment, data || []);
-} 
 
-  async function openExperimentScheduleModal(experimentId) {
+  renderScheduleList(experiment, data || []);
+}
+
+async function openExperimentScheduleModal(experimentId) {
   const { data: exp, error } = await supabase
     .from('experiments')
     .select('*')
@@ -831,14 +830,12 @@ async function loadScheduleActions(experiment) {
   loadScheduleActions(exp);
 }
 
-  renderScheduleList(experiment, data || []);
-}
-
 // serializa objeto para usar em atributo HTML sem quebrar aspas
 function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
