@@ -214,6 +214,7 @@ async function loadExperimentsIntoList() {
     .join("");
 
   listEl.innerHTML = cardsHtml;
+  
     // cria área de resumo do cronograma em cada card
   const cards = listEl.querySelectorAll('.card[data-experiment-id]');
   cards.forEach((card) => {
@@ -242,6 +243,7 @@ async function loadExperimentsIntoList() {
       loadScheduleSummary(id);
     }
   });
+}
 
 async function openExperimentFormModalById(id) {
   if (!id || typeof s === "undefined") {
@@ -630,6 +632,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
