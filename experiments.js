@@ -602,10 +602,10 @@ function escapeHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
-    .replace(/'/g, "&#39;");
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
 function daysBetween(date1, date2) {
   if (!date1 || !date2) return null;
   const d1 = new Date(date1);
@@ -810,6 +810,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
