@@ -133,83 +133,43 @@ async function loadExperimentsIntoList() {
       const planting = formatExperimentDate(exp.planting_date);
       const farm = exp.farm || "-";
 
-     return `
-  <div class="card" style="margin-bottom:12px;">
-    <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
-                gap:12px; align-items:center;">
-      <div style="flex:1 1 220px; min-width:0;">
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <div style="font-size:18px; font-weight:700; color:var(--green-dark);">
-            ${exp.code || "(sem código)"}
-          </div>
-          <span style="
-            display:inline-flex;
-            align-items:center;
-            gap:4px;
-            padding:2px 10px;
-            border-radius:999px;
-            font-size:11px;
-            font-weight:600;
-            background:${status === "active"
-              ? "rgba(16,185,129,0.18)"
-              : "rgba(148,163,184,0.3)"};
-            color:${status === "active" ? "#065f46" : "#374151"};
-          ">
-            ● ${statusLabel}
-          </span>
-        </div>
-        <div style="font-size:14px; color:#4b5563; margin-top:2px;
-                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          ${exp.name || "Experimento sem descrição"}
-        </div>
-        <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;
-                    font-size:12px; color:#6b7280;">
-          <span>Plantio: ${planting}</span>
-          <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-            Local: ${farm}
-          </span>
-        </div>
-      </div>
-
-      <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
-        <button
-          class="${isSelected ? "btn-primary" : "btn-secondary"}"
-          style="font-size:13px;"
-          onclick="selectExperiment('${exp.id}')"
-        >
-          ${isSelected ? "Selecionado" : "Selecionar"}
-        </button>
-
-        <button
-          class="btn-secondary"
-          style="font-size:13px;"
-          onclick="openExperimentFormModalById('${exp.id}')"
-        >
-          Editar
-        </button>
-
-        <button
-          class="btn-secondary"
-          style="font-size:13px;"
-          onclick="openExperimentScheduleModal('${exp.id}')"
-        >
-          Cronograma
-        </button>
-
-        ${
-          typeof currentRole !== "undefined" && currentRole === "admin"
-            ? `<button class="btn-danger" style="font-size:13px;"
-                  onclick="confirmDeleteExperiment('${exp.id}', '${escapeHtml(
-                    exp.code || ""
-                  )}')">
-                 Excluir
-               </button>`
-            : ""
-        }
-      </div>
-    </div>
-  </div>
-`;
+      return `
+        <div class="card" style="margin-bottom:12px;">
+          <div style="display:flex; flex-wrap:wrap; justify-content:space-between;
+                      gap:12px; align-items:center;">
+            <div style="flex:1 1 220px; min-width:0;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div style="font-size:18px; font-weight:700; color:var(--green-dark);">
+                  ${exp.code || "(sem código)"}
+                </div>
+                <span style="
+                  display:inline-flex;
+                  align-items:center;
+                  gap:4px;
+                  padding:2px 10px;
+                  border-radius:999px;
+                  font-size:11px;
+                  font-weight:600;
+                  background:${status === "active"
+                    ? "rgba(16,185,129,0.18)"
+                    : "rgba(148,163,184,0.3)"};
+                  color:${status === "active" ? "#065f46" : "#374151"};
+                ">
+                  ● ${statusLabel}
+                </span>
+              </div>
+              <div style="font-size:14px; color:#4b5563; margin-top:2px;
+                          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${exp.name || "Experimento sem descrição"}
+              </div>
+              <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;
+                          font-size:12px; color:#6b7280;">
+                <span>Plantio: ${planting}</span>
+                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  Local: ${farm}
+                </span>
+              </div>
+            </div>
 
                         <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end;">
               <button
@@ -254,13 +214,7 @@ async function loadExperimentsIntoList() {
     .join("");
 
   listEl.innerHTML = cardsHtml;
-
-experiments.forEach((exp) => {
-  if (typeof loadScheduleSummary === "function") {
-    loadScheduleSummary(exp.id);
-  }
-});
-
+}
 async function openExperimentFormModalById(id) {
   if (!id || typeof s === "undefined") {
     return;
@@ -648,10 +602,6 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
-
-
-
-
 
 
 
