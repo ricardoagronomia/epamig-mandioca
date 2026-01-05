@@ -47,9 +47,10 @@ async function openExperimentScheduleModal(experimentId) {
           <option value="pre-plantio">Pré-plantio</option>
           <option value="plantio">Plantio</option>
           <option value="acompanhamento">Acompanhamento</option>
-          <option value="tratos">Tratos culturais</option>
+          <option value="tratos_culturais">Tratos culturais</option>
           <option value="colheita">Colheita</option>
         </select>
+
 
         <button type="button" id="btnAddSchedule"
           class="btn-secondary"
@@ -273,3 +274,4 @@ function setupScheduleUI(experiment) {
     }
   };
 }
+
