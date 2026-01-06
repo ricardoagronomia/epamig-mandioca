@@ -28,6 +28,29 @@ const DEFAULT_TREATMENTS = [
 function renderDbcMapPage(container) {
   container.innerHTML = `
     <div class="content-header">
+  <div class="content-title">Mapa DBC</div>
+  <div class="content-subtitle">
+    Configure o croqui e gere as etiquetas das parcelas.
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <button id="dbcTabMapBtn" class="btn-secondary">Croqui</button>
+    <button id="dbcTabQrBtn" class="btn-secondary">QR Codes</button>
+    <!-- demais controles existentes do mapa -->
+  </div>
+
+  <div id="dbcTabMapArea">
+    <!-- aqui fica o mapa DBC que já existe hoje -->
+  </div>
+
+  <div id="dbcTabQrArea" style="display:none;">
+    <!-- aqui entra exatamente aquele HTML da aba QR Code (selects + grid de etiquetas) -->
+  </div>
+</div>
+
+    <div class="content-header">
       <div class="content-title">Mapa DBC</div>
       <div class="content-subtitle">
         Escolha um experimento para visualizar o mapa de blocos.
