@@ -370,6 +370,26 @@ async function renderUsersPage(container) {
     `;
     return;
   }
+  
+  async function renderInvitesPage(container) {
+  if (currentRole === "visitor") {
+    container.innerHTML = `
+      <div class="content-header">
+        <div class="content-title">Convites</div>
+        <div class="content-subtitle">
+          Apenas administradores e pesquisadores podem gerenciar convites.
+        </div>
+      </div>
+      <div class="card">
+        <p style="color:#6b7280;">
+          Você não tem permissão para acessar esta página.
+        </p>
+      </div>
+    `;
+    return;
+  }
+  // ... resto da função como já está ...
+}
 
   container.innerHTML = `
     <div class="content-header">
@@ -696,6 +716,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
