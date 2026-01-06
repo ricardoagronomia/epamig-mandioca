@@ -502,6 +502,33 @@
     padding-inline: 8px;    /* afasta dos cantos da tela */
     box-sizing: border-box;
   }
+         @media (max-width: 640px) {
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .header-right {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; /* alinha texto e botão à esquerda */
+        gap: 4px;
+      }
+
+      .header-user {
+        font-size: 12px;
+        max-width: 100%;
+        white-space: normal;   /* permite quebrar em mais de uma linha */
+        word-break: break-word;
+      }
+
+      .btn-outline {
+        align-self: stretch;   /* botão ocupar a largura toda no mobile */
+        text-align: center;
+      }
+    }
 
   .sidebar-section { border-bottom: none; }
   .sidebar-section-title { display: none; }
@@ -730,6 +757,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
+
 
 
 
