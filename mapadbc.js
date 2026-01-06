@@ -238,7 +238,7 @@ function renderDbcMapPage(container) {
       treatments = res2.data || [];
     }
 
-    // 4) Montar blocos com grid baseado em plot_templates
+        // 4) Montar blocos com grid baseado em plot_templates
     const colorMap = {
       AMARELA: "#fde68a",
       AMARELINHA: "#bbf7d0",
@@ -246,7 +246,7 @@ function renderDbcMapPage(container) {
       SABARÁ: "#fecaca"
     };
 
-        const blockNumbers = [1, 2, 3];
+    const blockNumbers = [1, 2, 3];
 
     dbcMapArea.innerHTML = blockNumbers
       .map((block) => {
@@ -259,19 +259,19 @@ function renderDbcMapPage(container) {
             const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
 
             return `
-  <div class="dbc-plot-cell"
-       style="background:${bgColor};border-radius:6px;padding:6px;">
-    <div style="font-weight:700;font-size:14px;">
-      ${tpl.treatment_code} ${tpl.position}
-    </div>
-    <div style="font-size:13px;color:#111827;">
-      ${tpl.plot_code}
-    </div>
-    <div style="font-size:11px;color:#4b5563;margin-top:4px;">
-      Experimento: ${dbcState.experimentName || "—"}
-    </div>
-  </div>
-`;
+              <div class="dbc-plot-cell"
+                   style="background:${bgColor};border-radius:6px;padding:6px;">
+                <div style="font-weight:700;font-size:14px;">
+                  ${tpl.treatment_code} ${tpl.position}
+                </div>
+                <div style="font-size:13px;color:#111827;">
+                  ${tpl.plot_code}
+                </div>
+                <div style="font-size:11px;color:#4b5563;margin-top:4px;">
+                  Experimento: ${dbcState.experimentName || "—"}
+                </div>
+              </div>
+            `;
           })
           .join("");
 
@@ -288,20 +288,7 @@ function renderDbcMapPage(container) {
       })
       .join("");
 
-        return `
-          <div class="card" style="margin-bottom:12px;">
-            <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
-              Bloco ${block}
-            </div>
-            <div class="dbc-block-grid">
-              ${cellsHtml}
-            </div>
-          </div>
-        `;
-      })
-      .join("");
-
-        // 5) Ligar eventos de change nos selects para atualizar o estado em memória
+    // 5) Ligar eventos de change nos selects para atualizar o estado em memória
     
   }); // fecha change do experimento
 } // fecha renderDbcMapPage
