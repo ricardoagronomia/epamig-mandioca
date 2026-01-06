@@ -376,41 +376,27 @@ async function renderUsersPage(container) {
     `;
     return;
   }
-}
-  
-  async function renderInvitesPage(container) {
-  if (currentRole === "visitor") {
-    container.innerHTML = `
-      <div class="content-header">
-        <div class="content-title">Convites</div>
-        <div class="content-subtitle">
-          Apenas administradores e pesquisadores podem gerenciar convites.
-        </div>
-      </div>
-      <div class="card">
-        <p style="color:#6b7280;">
-          Você não tem permissão para acessar esta página.
-        </p>
-      </div>
-    `;
-    return;
-  }
-  // ... resto da função como já está ...
-}
 
+  // ===== DAQUI PRA BAIXO É O ORIGINAL =====
   container.innerHTML = `
     <div class="content-header">
       <div class="content-title">Gestão de Usuários</div>
-      <div class="content-subtitle">Gerencie perfis e permissões de acesso.</div>
+      <div class="content-subtitle">
+        Gerencie perfis e permissões de acesso.
+      </div>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:14px;color:#4b5563;">Usuários cadastrados no sistema.</div>
+        <div style="font-size:14px;color:#4b5563;">
+          Usuários cadastrados no sistema.
+        </div>
         <button class="btn-link" onclick="openInviteModal()">Convidar usuário</button>
       </div>
       <div id="usersTableWrapper"><p>Carregando...</p></div>
     </div>
   `;
+
+  const usersTableWrapper = document.getElementById("usersTableWrapper");
 
   const { data: roles } = await s
     .from("user_roles")
@@ -418,22 +404,23 @@ async function renderUsersPage(container) {
     .order("created_at", { ascending: false });
 
   if (!roles || roles.length === 0) {
-    $("usersTableWrapper").innerHTML = `<p style="color:#6b7280;">Nenhum usuário.</p>`;
+    usersTableWrapper.innerHTML = `<p style="color:#6b7280;">Nenhum usuário.</p>`;
     return;
   }
 
-  const userIds = roles.map((r) => r.user_id);
+  const userIds = roles.map(r => r.user_id);
+
   const { data: profiles } = await s
     .from("user_profiles")
     .select("id, email")
     .in("id", userIds);
 
-  const usersWithEmail = roles.map((r) => {
-    const p = profiles?.find((pp) => pp.id === r.user_id);
-    return { ...r, email: p?.email || "—" };
+  const usersWithEmail = roles.map(r => {
+    const p = profiles?.find(p => p.id === r.user_id);
+    return { ...r, email: p?.email || "" };
   });
 
-  const rows = usersWithEmail.map((u) => {
+  const rows = usersWithEmail.map(u => {
     const canManage = currentRole === "admin" && u.user_id !== currentUser.id;
     return `
       <tr>
@@ -458,7 +445,7 @@ async function renderUsersPage(container) {
     `;
   }).join("");
 
-  $("usersTableWrapper").innerHTML = `
+  usersTableWrapper.innerHTML = `
     <div style="overflow-x:auto;">
       <table>
         <thead>
@@ -479,14 +466,19 @@ async function renderUsersPage(container) {
 // INVITES PAGE
 // =====================================
 async function renderInvitesPage(container) {
-  if (currentRole !== "admin") {
+  // visitante não pode
+  if (currentRole === "visitor") {
     container.innerHTML = `
       <div class="content-header">
         <div class="content-title">Convites</div>
-        <div class="content-subtitle">Apenas administradores podem gerenciar convites.</div>
+        <div class="content-subtitle">
+          Apenas administradores e pesquisadores podem gerenciar convites.
+        </div>
       </div>
       <div class="card">
-        <p style="color:#b91c1c;">Você não tem permissão para acessar esta página.</p>
+        <p style="color:#6b7280;">
+          Você não tem permissão para acessar esta página.
+        </p>
       </div>
     `;
     return;
@@ -495,16 +487,22 @@ async function renderInvitesPage(container) {
   container.innerHTML = `
     <div class="content-header">
       <div class="content-title">Convites</div>
-      <div class="content-subtitle">Envie convites para novos usuários acessarem o sistema.</div>
+      <div class="content-subtitle">
+        Envie convites para novos usuários acessarem o sistema.
+      </div>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:14px;color:#4b5563;">Convites pendentes e históricos recentes.</div>
+        <div style="font-size:14px;color:#4b5563;">
+          Convites pendentes e históricos recentes.
+        </div>
         <button class="btn-link" onclick="openInviteModal()">Novo convite</button>
       </div>
       <div id="invitesWrapper"><p>Carregando...</p></div>
     </div>
   `;
+
+  const invitesWrapper = document.getElementById("invitesWrapper");
 
   const { data: invites } = await s
     .from("invitations")
@@ -513,12 +511,13 @@ async function renderInvitesPage(container) {
     .limit(50);
 
   if (!invites || invites.length === 0) {
-    $("invitesWrapper").innerHTML = `<p style="color:#6b7280;">Nenhum convite.</p>`;
+    invitesWrapper.innerHTML = `<p style="color:#6b7280;">Nenhum convite.</p>`;
     return;
   }
 
-  const rows = invites.map((inv) => {
-    const isPending = !inv.accepted_at && new Date(inv.expires_at) > new Date();
+  const rows = invites.map(inv => {
+    const isPending =
+      !inv.accepted_at && new Date(inv.expires_at) > new Date();
     const status = isPending
       ? "Pendente"
       : inv.accepted_at
@@ -542,7 +541,7 @@ async function renderInvitesPage(container) {
     `;
   }).join("");
 
-  $("invitesWrapper").innerHTML = `
+  invitesWrapper.innerHTML = `
     <div style="overflow-x:auto;">
       <table>
         <thead>
@@ -723,6 +722,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
