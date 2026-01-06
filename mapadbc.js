@@ -3,7 +3,8 @@
 // Estado temporário do Mapa DBC (por experimento)
 const dbcState = {
   experimentId: null,
-  plotsByKey: {} // key: `${block}-${parcelaNum}` -> { id, plot_code, block_number, treatment_id }
+  experimentName: "",   // <== novo
+  plotsByKey: {}
 };
 
 const DEFAULT_TREATMENTS = [
@@ -129,22 +130,27 @@ dbcTabQrBtn.addEventListener("click", () => {
     `;
   })();
 
-    // 2) Reagir à mudança do select: desenhar blocos 1–3 com grade 3×4
-  dbcExperimentSelect.addEventListener("change", async () => {
-    const expId = dbcExperimentSelect.value;
-    if (!expId) {
-      dbcState.experimentId = null;
-      dbcState.plotsByKey = {};
-      dbcMapArea.innerHTML = `
-        <p style="color:#6b7280;font-size:14px;">
-          Selecione um experimento para carregar o mapa DBC.
-        </p>
-      `;
-      return;
-    }
+   // 2) Reagir à mudança do select: desenhar blocos 1–3 com grade 3×4
+dbcExperimentSelect.addEventListener("change", async () => {
+  const expId = dbcExperimentSelect.value;
+  const expName =
+    dbcExperimentSelect.options[dbcExperimentSelect.selectedIndex]?.text || "";
 
-    dbcState.experimentId = expId;
+  if (!expId) {
+    dbcState.experimentId = null;
+    dbcState.experimentName = "";   // zera nome também
     dbcState.plotsByKey = {};
+    dbcMapArea.innerHTML = `
+      <p style="color:#6b7280;font-size:14px;">
+        Selecione um experimento para carregar o mapa DBC.
+      </p>
+    `;
+    return;
+  }
+
+  dbcState.experimentId = expId;
+  dbcState.experimentName = expName;  // guarda nome visível
+  dbcState.plotsByKey = {};
 
     // 1) Buscar plots existentes
     const { data: plots, error: plotsError } = await s
@@ -368,20 +374,15 @@ function initDbcQrArea() {
   const area = document.getElementById("dbcTabQrArea");
   if (!area) return;
 
+  const expName = dbcState.experimentName || "nenhum experimento selecionado";
+
   area.innerHTML = `
     <div class="content-header" style="margin-top:0;">
       <div class="content-title">QR Code das Parcelas</div>
       <div class="content-subtitle">
-        Gere etiquetas com QR Code a partir do experimento selecionado.
+        Etiquetas para o experimento: <strong>${expName}</strong>.
       </div>
     </div>
-    
-    <div class="content-header" style="margin-top:0;">
-    <div class="content-title">QR Code das Parcelas</div>
-    <div class="content-subtitle" id="qrCurrentExperimentInfo">
-      Use o experimento já selecionado no Mapa DBC.
-    </div>
-  </div>
 
     <div class="card">
       <div style="
@@ -432,10 +433,6 @@ function initDbcQrArea() {
         </div>
       </div>
 
-      <p id="qrInfoMessage" style="font-size:13px; color:#6b7280; margin:0 0 12px 0;">
-        Use o experimento já selecionado no Mapa DBC. Selecione o bloco e o formato para gerar as etiquetas.
-      </p>
-
       <div id="qrLabelsWrapper" style="
         display:grid;
         grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
@@ -445,3 +442,4 @@ function initDbcQrArea() {
     </div>
   `;
 }
+
