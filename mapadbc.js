@@ -69,6 +69,16 @@ function renderDbcMapPage(container) {
   const dbcTabMapArea = document.getElementById("dbcTabMapArea");
   const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
 
+  // Detecta se é visitante
+  const isVisitor = (typeof currentRole !== "undefined" && currentRole === "visitor");
+
+  // Opção 1: TRAVAR o botão (fica visível porém desativado)
+  if (isVisitor) {
+    dbcTabQrBtn.disabled = true;
+    dbcTabQrBtn.classList.add("disabled");
+    dbcTabQrBtn.title = "QR Codes disponíveis apenas para pesquisadores e administradores.";
+  }
+
   // Tabs
   dbcTabMapBtn.addEventListener("click", () => {
     dbcTabMapBtn.classList.add("active");
@@ -78,6 +88,8 @@ function renderDbcMapPage(container) {
   });
 
   dbcTabQrBtn.addEventListener("click", () => {
+    if (isVisitor) return; // visitante não entra na aba QR
+
     dbcTabQrBtn.classList.add("active");
     dbcTabMapBtn.classList.remove("active");
     dbcTabMapArea.style.display = "none";
