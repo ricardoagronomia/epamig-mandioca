@@ -456,26 +456,58 @@ async function initDbcQrArea() {
     return;
   }
 
+  // Monta HTML diferente para cada formato
+  if (fmt === "label-100x70") {
+    // uma etiqueta por página (térmica 100x70)
     qrLabelsWrapper.innerHTML = list
-    .map((p) => {
-      const url = buildQrUrl(expId, p.templateId);
+      .map((p) => {
+        const url = buildQrUrl(expId, p.templateId);
 
-      return `
-        <div class="card" style="padding:12px; display:flex; flex-direction:column; gap:6px;">
-          <div id="qr-${p.templateId}" style="width:96px;height:96px;margin-bottom:4px;"></div>
-          <div style="font-weight:700;font-size:15px;">
-            ${p.treatmentCode} ${p.position}
+        return `
+          <div class="qr-label-single-page qr-label-card">
+            <div id="qr-${p.templateId}" style="width:32mm;height:32mm;margin-bottom:4px;"></div>
+            <div style="font-weight:700;font-size:15px;">
+              ${p.treatmentCode} ${p.position}
+            </div>
+            <div style="font-size:14px;color:#111827;">
+              ${p.plotCode}
+            </div>
+            <div style="font-size:12px;color:#4b5563;">
+              Experimento: ${expName}
+            </div>
           </div>
-          <div style="font-size:14px;color:#111827;">
-            ${p.plotCode}
+        `;
+      })
+      .join("");
+  } else {
+    // formato A4 – 6 por página (2 x 3)
+    const cardsHtml = list
+      .map((p) => {
+        const url = buildQrUrl(expId, p.templateId);
+
+        return `
+          <div class="qr-label-card">
+            <div id="qr-${p.templateId}" style="width:32mm;height:32mm;margin-bottom:4px;"></div>
+            <div style="font-weight:700;font-size:15px;">
+              ${p.treatmentCode} ${p.position}
+            </div>
+            <div style="font-size:14px;color:#111827;">
+              ${p.plotCode}
+            </div>
+            <div style="font-size:12px;color:#4b5563;">
+              Experimento: ${expName}
+            </div>
           </div>
-          <div style="font-size:12px;color:#4b5563;">
-            Experimento: ${expName}
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+        `;
+      })
+      .join("");
+
+    qrLabelsWrapper.innerHTML = `
+      <div class="qr-label-sheet">
+        ${cardsHtml}
+      </div>
+    `;
+  }
 
   // depois do innerHTML, gerar os QRs
   list.forEach((p) => {
@@ -485,12 +517,12 @@ async function initDbcQrArea() {
       container.innerHTML = "";
       new QRCode(container, {
         text: url,
-        width: 96,
-        height: 96
+        width: 120,  // ~32mm
+        height: 120
       });
     }
   });
-} // fecha renderQrLabels
+}
 
 // eventos de preview
 qrPreviewBtn.addEventListener("click", renderQrLabels);
