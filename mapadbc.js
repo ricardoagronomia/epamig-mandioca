@@ -335,7 +335,7 @@ if (!treatments || treatments.length === 0) {
 
     const { data, error } = await s
       .from("plots")
-      .upsert(rows, { onConflict: "id" })
+      .upsert(rows, { onConflict: "plot_code" })
       .select("id, experiment_id, block_number, plot_code, treatment_id");
 
     dbcSaveBtn.disabled = false;
