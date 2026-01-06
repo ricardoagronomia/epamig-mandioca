@@ -536,7 +536,7 @@
     @media print {
   @page {
     size: A4;
-    margin: 4mm;
+    margin: 10mm 5mm; /* 10mm em cima/baixo, 5mm esquerda/direita */
   }
 
   body {
@@ -548,7 +548,7 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr); /* 2 colunas */
     grid-auto-rows: 70mm;                  /* altura de 70mm */
-    gap: 8mm;
+    gap: 0mm; /* se precisar, pode usar 1–2mm só */
     page-break-inside: avoid;
   }
 
@@ -694,5 +694,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
+
 
 
