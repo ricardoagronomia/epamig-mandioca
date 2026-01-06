@@ -154,12 +154,17 @@ function renderDbcMapPage(container) {
       }));
 
       const { data: inserted, error: insertError } = await s
-        .from("treatments")
-        .insert(rowsToInsert)
-        .select("id, code, position, description")
-        .order("code", { ascending: true });
-      console.log("rowsToInsert", rowsToInsert);
-      console.log("insertError", insertError);
+  .from("treatments")
+  .insert(rowsToInsert)
+  .select("id, code, position, description")
+  .order("code", { ascending: true });
+
+console.log("rowsToInsert", rowsToInsert);
+console.log("insertError raw", insertError);
+if (insertError) {
+  console.log("insertError message:", insertError.message);
+  console.log("insertError details:", insertError.details);
+}
 
       if (insertError) {
         dbcMapArea.innerHTML = `
