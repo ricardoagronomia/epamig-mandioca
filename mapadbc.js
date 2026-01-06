@@ -346,11 +346,37 @@ function renderDbcMapPage(container) {
 // ===============================
 // Área de QR Codes dentro do Mapa
 // ===============================
-function initDbcQrArea() {
+async function initDbcQrArea() {
   const area = document.getElementById("dbcTabQrArea");
   if (!area) return;
 
-  const expName = dbcState.experimentName || "nenhum experimento selecionado";
+  if (!dbcState.experimentId) {
+    area.innerHTML = `
+      <p style="color:#b91c1c;font-size:14px;">
+        Selecione um experimento na aba Croqui antes de gerar QR Codes.
+      </p>
+    `;
+    return;
+  }
+
+  const expId = dbcState.experimentId;
+  const expName = dbcState.experimentName || "Experimento sem nome";
+
+  // 1) Buscar croqui fixo em ordem
+  const { data: templates, error: tplError } = await s
+    .from("plot_templates")
+    .select("id, block_number, plot_code, treatment_code, position")
+    .order("block_number", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (tplError || !templates) {
+    area.innerHTML = `
+      <p style="color:#b91c1c;font-size:14px;">
+        Erro ao carregar croqui fixo (plot_templates) para gerar QR Codes.
+      </p>
+    `;
+    return;
+  }
 
   area.innerHTML = `
     <div class="content-header" style="margin-top:0;">
@@ -424,70 +450,104 @@ function initDbcQrArea() {
   const qrSinglePlotSelect = document.getElementById("qrSinglePlotSelect");
   const qrLabelsWrapper = document.getElementById("qrLabelsWrapper");
 
-  const parcels = buildQrParcelsFromState(); // ainda baseado no estado atual (ajustar depois para templates, se quiser)
+  // monta lista de parcelas para selects / filtros
+  const parcels = templates.map((tpl) => ({
+    block: tpl.block_number,
+    plotCode: tpl.plot_code,
+    treatmentCode: tpl.treatment_code,
+    position: tpl.position,
+    templateId: tpl.id
+  }));
 
+  // Preenche o select de parcela única
   if (qrSinglePlotSelect) {
     qrSinglePlotSelect.innerHTML = `
       <option value="">Selecione a parcela</option>
       ${parcels
         .map(
           (p) =>
-            `<option value="${p.key}">${p.code} · Bloco ${p.block}</option>`
+            `<option value="${p.templateId}">
+              ${p.plotCode} · ${p.treatmentCode} ${p.position}
+             </option>`
         )
         .join("")}
     `;
   }
 
+  // Alterna exibição do wrapper conforme formato
   qrFormatSelect.addEventListener("change", () => {
     const fmt = qrFormatSelect.value;
-    if (fmt === "label-100x70") {
-      qrSingleWrapper.style.display = "block";
-    } else {
-      qrSingleWrapper.style.display = "none";
+    qrSingleWrapper.style.display =
+      fmt === "label-100x70" ? "block" : "none";
+  });
+
+  // Função para montar URL do QR (ajuste a base depois)
+  function buildQrUrl(expId, templateId) {
+    // troque pela URL real da tela de coleta
+    const base = "https://seusite.app/coleta";
+    return `${base}?exp=${encodeURIComponent(expId)}&pt=${encodeURIComponent(
+      templateId
+    )}`;
+  }
+
+  // Renderização das etiquetas na visualização
+  function renderQrLabels() {
+    const blockFilter = qrBlockFilter.value;
+    const fmt = qrFormatSelect.value;
+    const singleTemplateId = qrSinglePlotSelect.value;
+
+    let list = parcels.slice();
+
+    if (blockFilter !== "all") {
+      const blockNum = Number(blockFilter);
+      list = list.filter((p) => p.block === blockNum);
     }
-  });
 
-  qrLabelsWrapper.innerHTML =
-    parcels.length === 0
-      ? `<p style="color:#6b7280;font-size:14px;">Nenhuma parcela carregada para este experimento.</p>`
-      : parcels
-          .map(
-            (p) => `
-      <div class="card" style="padding:12px;">
-        <div style="font-weight:600;color:#065f46;">${p.code}</div>
-        <div style="font-size:13px;color:#4b5563;">Bloco ${p.block}</div>
-      </div>
-    `
-          )
-          .join("");
-}
+    if (fmt === "label-100x70" && singleTemplateId) {
+      const idNum = Number(singleTemplateId);
+      list = list.filter((p) => p.templateId === idNum);
+    }
 
-// Usa temporariamente o estado antigo para QR.
-// Depois dá para migrar para usar plot_templates também.
-function buildQrParcelsFromState() {
-  const plotsByKey = {}; // placeholder, pode ser adaptado quando migrar o QR
-  const items = [];
+    if (list.length === 0) {
+      qrLabelsWrapper.innerHTML = `
+        <p style="color:#6b7280;font-size:14px;">
+          Nenhuma parcela para os filtros selecionados.
+        </p>
+      `;
+      return;
+    }
 
-  Object.keys(plotsByKey).forEach((key) => {
-    const [blockStr, parcelaStr] = key.split("-");
-    const block = Number(blockStr);
-    const parcelaNum = Number(parcelaStr);
-    if (!block || !parcelaNum) return;
+    qrLabelsWrapper.innerHTML = list
+      .map((p) => {
+        const url = buildQrUrl(expId, p.templateId);
 
-    const parcelaLabel = String(parcelaNum).padStart(2, "0");
-    const code = `B${block}T${parcelaLabel}`;
-    items.push({
-      block,
-      parcelaNum,
-      code,
-      key
-    });
-  });
+        return `
+          <div class="card" style="padding:12px; display:flex; flex-direction:column; gap:6px;">
+            <!-- aqui depois entra o canvas/img do QR -->
+            <div style="font-size:11px;color:#4b5563;word-break:break-all;">
+              ${url}
+            </div>
+            <div style="font-weight:700;font-size:15px;">
+              ${p.treatmentCode} ${p.position}
+            </div>
+            <div style="font-size:14px;color:#111827;">
+              ${p.plotCode}
+            </div>
+            <div style="font-size:12px;color:#4b5563;">
+              Experimento: ${expName}
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+  }
 
-  items.sort((a, b) => {
-    if (a.block !== b.block) return a.block - b.block;
-    return a.parcelaNum - b.parcelaNum;
-  });
+  // eventos de preview
+  qrPreviewBtn.addEventListener("click", renderQrLabels);
+  qrBlockFilter.addEventListener("change", renderQrLabels);
+  qrFormatSelect.addEventListener("change", renderQrLabels);
+  qrSinglePlotSelect.addEventListener("change", renderQrLabels);
 
-  return items;
+  // primeira renderização
+  renderQrLabels();
 }
