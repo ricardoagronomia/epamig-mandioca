@@ -1,10 +1,11 @@
 // mapadbc.js
 // Depende do cliente Supabase global "s" definido em app.js
+
 // Estado temporário do Mapa DBC (por experimento)
 const dbcState = {
   experimentId: null,
-  experimentName: "",   // <== novo
-  plotsByKey: {}
+  experimentName: "",
+  plotsByTemplateId: {} // agora indexado por plot_template_id
 };
 
 let qrInitialized = false;
@@ -63,43 +64,39 @@ function renderDbcMapPage(container) {
         </div>
       </div>
 
-      <div id="dbcTabQrArea" style="display:none;">
-        </div>
+      <div id="dbcTabQrArea" style="display:none;"></div>
     </div>
   `;
 
-const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
-const dbcMapArea = document.getElementById("dbcMapArea");
-const dbcSaveBtn = document.getElementById("dbcSaveBtn");
-const dbcTabMapBtn  = document.getElementById("dbcTabMapBtn");
-const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
-const dbcTabMapArea = document.getElementById("dbcTabMapArea");
-const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
+  const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
+  const dbcMapArea = document.getElementById("dbcMapArea");
+  const dbcSaveBtn = document.getElementById("dbcSaveBtn");
+  const dbcTabMapBtn  = document.getElementById("dbcTabMapBtn");
+  const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
+  const dbcTabMapArea = document.getElementById("dbcTabMapArea");
+  const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
 
-dbcTabMapBtn.addEventListener("click", () => {
-  dbcTabMapBtn.classList.add("active");
-  dbcTabQrBtn.classList.remove("active");
-  dbcTabMapArea.style.display = "block";
-  dbcTabQrArea.style.display = "none";
-});
+  // Tabs
+  dbcTabMapBtn.addEventListener("click", () => {
+    dbcTabMapBtn.classList.add("active");
+    dbcTabQrBtn.classList.remove("active");
+    dbcTabMapArea.style.display = "block";
+    dbcTabQrArea.style.display = "none";
+  });
 
-dbcTabQrBtn.addEventListener("click", () => {
-  dbcTabQrBtn.classList.add("active");
-  dbcTabMapBtn.classList.remove("active");
-  dbcTabMapArea.style.display = "none";
-  dbcTabQrArea.style.display = "block";
+  dbcTabQrBtn.addEventListener("click", () => {
+    dbcTabQrBtn.classList.add("active");
+    dbcTabMapBtn.classList.remove("active");
+    dbcTabMapArea.style.display = "none";
+    dbcTabQrArea.style.display = "block";
 
-  if (!qrInitialized) {
-    initDbcQrArea();
-    qrInitialized = true;
-  }
-});
+    if (!qrInitialized) {
+      initDbcQrArea();
+      qrInitialized = true;
+    }
+  });
 
-  // *** DAQUI PRA BAIXO continua exatamente o código que já existia ***
-  // buscar experimentos, listener de change, salvar etc.
-  // (não coloque mais nenhum initDbcQrArea aqui dentro)
-
-        // 1) Buscar experimentos no Supabase
+  // 1) Buscar experimentos no Supabase
   (async () => {
     const { data: experiments, error } = await s
       .from("experiments")
@@ -129,41 +126,55 @@ dbcTabQrBtn.addEventListener("click", () => {
     `;
   })();
 
-   // 2) Reagir à mudança do select: desenhar blocos 1–3 com grade 3×4
-dbcExperimentSelect.addEventListener("change", async () => {
-  const expId = dbcExperimentSelect.value;
-  const expName =
-    dbcExperimentSelect.options[dbcExperimentSelect.selectedIndex]?.text || "";
+  // 2) Reagir à mudança do select: carregar croqui fixo (plot_templates) + vínculos (plots)
+  dbcExperimentSelect.addEventListener("change", async () => {
+    const expId = dbcExperimentSelect.value;
+    const expName =
+      dbcExperimentSelect.options[dbcExperimentSelect.selectedIndex]?.text || "";
 
-  // sempre que mudar de experimento, força recriar a aba QR
-  qrInitialized = false;
-  const qrArea = document.getElementById("dbcTabQrArea");
-  if (qrArea) {
-    qrArea.innerHTML = "";  // limpa conteúdo antigo
-  }
+    // sempre que mudar de experimento, força recriar a aba QR
+    qrInitialized = false;
+    const qrArea = document.getElementById("dbcTabQrArea");
+    if (qrArea) {
+      qrArea.innerHTML = "";
+    }
 
-  if (!expId) {
-    dbcState.experimentId = null;
-    dbcState.experimentName = "";
-    dbcState.plotsByKey = {};
-    dbcMapArea.innerHTML = `
-      <p style="color:#6b7280;font-size:14px;">
-        Selecione um experimento para carregar o mapa DBC.
-      </p>
-    `;
-    return;
-  }
+    if (!expId) {
+      dbcState.experimentId = null;
+      dbcState.experimentName = "";
+      dbcState.plotsByTemplateId = {};
+      dbcMapArea.innerHTML = `
+        <p style="color:#6b7280;font-size:14px;">
+          Selecione um experimento para carregar o mapa DBC.
+        </p>
+      `;
+      return;
+    }
 
-  dbcState.experimentId = expId;
-  dbcState.experimentName = expName;
-  dbcState.plotsByKey = {};
+    dbcState.experimentId = expId;
+    dbcState.experimentName = expName;
+    dbcState.plotsByTemplateId = {};
 
-    // 1) Buscar plots existentes
+    // 1) Croqui fixo
+    const { data: templates, error: tplError } = await s
+      .from("plot_templates")
+      .select("id, block_number, plot_code, treatment_code, position")
+      .order("block_number", { ascending: true });
+
+    if (tplError || !templates) {
+      dbcMapArea.innerHTML = `
+        <p style="color:#b91c1c;font-size:14px;">
+          Erro ao carregar croqui fixo (plot_templates).
+        </p>
+      `;
+      return;
+    }
+
+    // 2) Vínculos existentes deste experimento
     const { data: plots, error: plotsError } = await s
       .from("plots")
-      .select("id, plot_code, block_number, treatment_id")
-      .eq("experiment_id", expId)
-      .order("block_number", { ascending: true });
+      .select("id, plot_template_id, treatment_id")
+      .eq("experiment_id", expId);
 
     if (plotsError) {
       dbcMapArea.innerHTML = `
@@ -174,96 +185,113 @@ dbcExperimentSelect.addEventListener("change", async () => {
       return;
     }
 
-        // 2) Buscar treatments do experimento
-let { data: treatments, error: trError } = await s
-  .from("treatments")
-  .select("id, code, position, description")
-  .eq("experiment_id", expId)
-  .order("code", { ascending: true });
-
-if (trError) {
-  // ... mensagem de erro como já está
-  return;
-}
-
-// Se não houver tratamentos, cria a partir da tabela default_treatments
-if (!treatments || treatments.length === 0) {
-  const { error: rpcError } = await s.rpc(
-    "create_treatments_from_default",
-    { p_experiment_id: expId }
-  );
-
-  if (rpcError) {
-    dbcMapArea.innerHTML = `
-      <p style="color:#b91c1c;font-size:14px;">
-        Erro ao criar tratamentos padrão para este experimento.
-      </p>
-    `;
-    return;
-  }
-
-  // recarrega os treatments já criados
-  const res2 = await s
-    .from("treatments")
-    .select("id, code, position, description")
-    .eq("experiment_id", expId)
-    .order("code", { ascending: true });
-
-  treatments = res2.data || [];
-}
-
-    // Indexar plots por chave `${block}-${parcelaNum}`
+    const plotsByTemplateId = {};
     (plots || []).forEach((p) => {
-      const parcelaNum = extractParcelaFromCode(p.plot_code);
-      if (!parcelaNum) return;
-      const key = `${p.block_number}-${parcelaNum}`;
-      dbcState.plotsByKey[key] = {
+      plotsByTemplateId[p.plot_template_id] = p;
+      dbcState.plotsByTemplateId[p.plot_template_id] = {
         id: p.id,
-        plot_code: p.plot_code,
-        block_number: p.block_number,
+        experiment_id: expId,
+        plot_template_id: p.plot_template_id,
         treatment_id: p.treatment_id
       };
     });
 
-    // 3) Montar blocos e grade 3×4 com selects de tratamento
+    // 3) Treatments do experimento
+    let { data: treatments, error: trError } = await s
+      .from("treatments")
+      .select("id, code, position, description")
+      .eq("experiment_id", expId)
+      .order("code", { ascending: true });
+
+    if (trError) {
+      return;
+    }
+
+    // Se não houver treatments, cria a partir da tabela default_treatments
+    if (!treatments || treatments.length === 0) {
+      const { error: rpcError } = await s.rpc(
+        "create_treatments_from_default",
+        { p_experiment_id: expId }
+      );
+
+      if (rpcError) {
+        dbcMapArea.innerHTML = `
+          <p style="color:#b91c1c;font-size:14px;">
+            Erro ao criar tratamentos padrão para este experimento.
+          </p>
+        `;
+        return;
+      }
+
+      const res2 = await s
+        .from("treatments")
+        .select("id, code, position, description")
+        .eq("experiment_id", expId)
+        .order("code", { ascending: true });
+
+      treatments = res2.data || [];
+    }
+
+    // 4) Montar blocos com grid baseado em plot_templates
+    const colorMap = {
+      AMARELA: "#fde68a",
+      AMARELINHA: "#bbf7d0",
+      CACAU: "#bfdbfe",
+      SABARÁ: "#fecaca"
+    };
+
     const blockNumbers = [1, 2, 3];
 
     dbcMapArea.innerHTML = blockNumbers
       .map((block) => {
-        const cellsHtml = Array.from({ length: 12 }, (_, i) => {
-          const parcelaNum = i + 1; // 1..12
-          const parcelaLabel = String(parcelaNum).padStart(2, "0");
-          const key = `${block}-${parcelaNum}`;
-          const existing = dbcState.plotsByKey[key];
+        const templatesDoBloco = templates.filter(
+          (t) => t.block_number === block
+        );
 
-          const statusText = existing
-            ? `Plot salvo (id: ${existing.id.slice(0, 8)}...)`
-            : `Sem plot cadastrado`;
+        const cellsHtml = templatesDoBloco
+          .map((tpl) => {
+            const existing = plotsByTemplateId[tpl.id] || null;
+            const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
 
-          const selectId = `dbc-select-${block}-${parcelaNum}`;
+            const statusText = existing ? "Vínculo salvo" : "Sem vínculo";
 
-          return `
-            <div class="dbc-plot-cell">
-              <div class="dbc-plot-label-main">Parcela ${parcelaLabel}</div>
-              <div class="dbc-plot-label-sub">Bloco ${block}</div>
-              <div class="dbc-plot-label-sub" style="margin-top:4px;color:#6b7280;">
-                ${statusText}
+            return `
+              <div class="dbc-plot-cell"
+                   style="background:${bgColor};border-radius:6px;padding:6px;">
+                <div style="font-weight:700;font-size:14px;">
+                  ${tpl.treatment_code} ${tpl.position}
+                </div>
+                <div style="font-size:13px;color:#111827;">
+                  ${tpl.plot_code}
+                </div>
+                <div style="font-size:11px;color:#4b5563;margin-top:4px;">
+                  ${statusText}
+                </div>
+                <div style="margin-top:6px;">
+                  <select
+                    data-template-id="${tpl.id}"
+                    class="dbc-plot-select">
+                    <option value="">Selecione tratamento...</option>
+                    ${treatments
+                      .map((t) => {
+                        const label = `${(t.code || "").toUpperCase()} ${
+                          t.position
+                            ? "· " + t.position.toUpperCase()
+                            : ""
+                        }`;
+                        const selected =
+                          existing && existing.treatment_id === t.id
+                            ? "selected"
+                            : "";
+                        return `<option value="${t.id}" ${selected}>${label}</option>`;
+                      })
+                      .join("")}
+                  </select>
+                </div>
               </div>
-              <div style="margin-top:6px;">
-                <select id="${selectId}" data-block="${block}" data-parcela="${parcelaNum}" class="dbc-plot-select">
-                  <option value="">Selecione tratamento...</option>
-                  ${treatments
-                    .map((t) => {
-                      const label = `${(t.code || '').toUpperCase()} ${t.position ? '· ' + t.position.toUpperCase() : ''}`;
-                      const selected = existing && existing.treatment_id === t.id ? 'selected' : '';
-                      return `<option value="${t.id}" ${selected}>${label}</option>`;
-                    })
-                    .join("")}
-                </select>
-              </div>
-            </div>
-          `;
-        }).join("");
+            `;
+          })
+          .join("");
 
         return `
           <div class="card" style="margin-bottom:12px;">
@@ -278,50 +306,45 @@ if (!treatments || treatments.length === 0) {
       })
       .join("");
 
-    // 4) Ligar eventos de change nos selects para atualizar o estado em memória
+    // 5) Ligar eventos de change nos selects para atualizar o estado em memória
     dbcMapArea.querySelectorAll(".dbc-plot-select").forEach((sel) => {
       sel.addEventListener("change", () => {
-        const block = Number(sel.dataset.block);
-        const parcelaNum = Number(sel.dataset.parcela);
-        const key = `${block}-${parcelaNum}`;
+        const templateId = Number(sel.dataset.templateId);
         const treatmentId = sel.value || null;
 
-        // garante que há um objeto no estado
-        if (!dbcState.plotsByKey[key]) {
-          const parcelaLabel = String(parcelaNum).padStart(2, "0");
-          dbcState.plotsByKey[key] = {
+        if (!dbcState.plotsByTemplateId) {
+          dbcState.plotsByTemplateId = {};
+        }
+        if (!dbcState.plotsByTemplateId[templateId]) {
+          dbcState.plotsByTemplateId[templateId] = {
             id: null,
-            plot_code: `B${block}P${parcelaLabel}`,
-            block_number: block,
+            experiment_id: dbcState.experimentId,
+            plot_template_id: templateId,
             treatment_id: null
           };
         }
 
-        dbcState.plotsByKey[key].treatment_id = treatmentId;
+        dbcState.plotsByTemplateId[templateId].treatment_id = treatmentId;
       });
     });
-  }); // fecha o addEventListener de change do experimento
-  
-      dbcSaveBtn.addEventListener("click", async () => {
+  }); // fecha change do experimento
+
+  // Botão salvar
+  dbcSaveBtn.addEventListener("click", async () => {
     if (!dbcState.experimentId) {
       alert("Selecione um experimento antes de salvar o mapa.");
       return;
     }
 
-    const rows = Object.values(dbcState.plotsByKey)
+    const rows = Object.values(dbcState.plotsByTemplateId || {})
       .filter((p) => p.treatment_id)
       .map((p) => {
         const base = {
           experiment_id: dbcState.experimentId,
-          block_number: p.block_number,
-          plot_code: p.plot_code,
+          plot_template_id: p.plot_template_id,
           treatment_id: p.treatment_id
         };
-
-        if (p.id) {
-          base.id = p.id;
-        }
-
+        if (p.id) base.id = p.id;
         return base;
       });
 
@@ -335,43 +358,41 @@ if (!treatments || treatments.length === 0) {
 
     const { data, error } = await s
       .from("plots")
-      .upsert(rows, { onConflict: "plot_code" })
-      .select("id, experiment_id, block_number, plot_code, treatment_id");
+      .upsert(rows, { onConflict: "experiment_id,plot_template_id" })
+      .select("id, experiment_id, plot_template_id, treatment_id");
 
     dbcSaveBtn.disabled = false;
     dbcSaveBtn.textContent = "Salvar mapa";
 
     if (error) {
-  console.log("UPSERT plots error (string):", JSON.stringify(error, null, 2));
-  alert("Erro ao salvar mapa de parcelas. Veja o console.");
-  return;
-}
+      console.log(
+        "UPSERT plots error (string):",
+        JSON.stringify(error, null, 2)
+      );
+      alert("Erro ao salvar mapa de parcelas. Veja o console.");
+      return;
+    }
 
     (data || []).forEach((row) => {
-      const parcelaNum = extractParcelaFromCode(row.plot_code);
-      if (!parcelaNum) return;
-      const key = `${row.block_number}-${parcelaNum}`;
-      if (!dbcState.plotsByKey[key]) return;
-      dbcState.plotsByKey[key].id = row.id;
+      if (!dbcState.plotsByTemplateId[row.plot_template_id]) {
+        dbcState.plotsByTemplateId[row.plot_template_id] = {
+          id: row.id,
+          experiment_id: row.experiment_id,
+          plot_template_id: row.plot_template_id,
+          treatment_id: row.treatment_id
+        };
+      } else {
+        dbcState.plotsByTemplateId[row.plot_template_id].id = row.id;
+      }
     });
 
     alert("Mapa salvo com sucesso.");
-   
   });
 } // fecha renderDbcMapPage
-
-// helper fora da função
-function extractParcelaFromCode(plotCode) {
-  if (!plotCode) return null;
-  const match = String(plotCode).match(/P(\d+)/i);
-  if (!match) return null;
-  return Number(match[1]);
-}
 
 // ===============================
 // Área de QR Codes dentro do Mapa
 // ===============================
-
 function initDbcQrArea() {
   const area = document.getElementById("dbcTabQrArea");
   if (!area) return;
@@ -450,9 +471,8 @@ function initDbcQrArea() {
   const qrSinglePlotSelect = document.getElementById("qrSinglePlotSelect");
   const qrLabelsWrapper = document.getElementById("qrLabelsWrapper");
 
-  const parcels = buildQrParcelsFromState();
+  const parcels = buildQrParcelsFromState(); // ainda baseado no estado atual (ajustar depois para templates, se quiser)
 
-  // Preenche o select de parcela única
   if (qrSinglePlotSelect) {
     qrSinglePlotSelect.innerHTML = `
       <option value="">Selecione a parcela</option>
@@ -465,7 +485,6 @@ function initDbcQrArea() {
     `;
   }
 
-  // Alterna exibição do wrapper conforme formato
   qrFormatSelect.addEventListener("change", () => {
     const fmt = qrFormatSelect.value;
     if (fmt === "label-100x70") {
@@ -475,7 +494,6 @@ function initDbcQrArea() {
     }
   });
 
-  // Por enquanto, só uma pré-visualização textual das parcelas
   qrLabelsWrapper.innerHTML =
     parcels.length === 0
       ? `<p style="color:#6b7280;font-size:14px;">Nenhuma parcela carregada para este experimento.</p>`
@@ -489,20 +507,22 @@ function initDbcQrArea() {
     `
           )
           .join("");
-  }
+}
 
+// Usa temporariamente o estado antigo para QR.
+// Depois dá para migrar para usar plot_templates também.
 function buildQrParcelsFromState() {
-  const plots = dbcState.plotsByKey || {};
+  const plotsByKey = {}; // placeholder, pode ser adaptado quando migrar o QR
   const items = [];
 
-  Object.keys(plots).forEach((key) => {
+  Object.keys(plotsByKey).forEach((key) => {
     const [blockStr, parcelaStr] = key.split("-");
     const block = Number(blockStr);
     const parcelaNum = Number(parcelaStr);
     if (!block || !parcelaNum) return;
 
     const parcelaLabel = String(parcelaNum).padStart(2, "0");
-    const code = `B${block}T${parcelaLabel}`; // ex.: B1T01, B1T12 etc.
+    const code = `B${block}T${parcelaLabel}`;
     items.push({
       block,
       parcelaNum,
@@ -511,7 +531,6 @@ function buildQrParcelsFromState() {
     });
   });
 
-  // ordena por bloco e parcela
   items.sort((a, b) => {
     if (a.block !== b.block) return a.block - b.block;
     return a.parcelaNum - b.parcelaNum;
@@ -519,4 +538,3 @@ function buildQrParcelsFromState() {
 
   return items;
 }
-
