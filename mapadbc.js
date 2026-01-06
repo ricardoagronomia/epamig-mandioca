@@ -256,44 +256,41 @@ if (!treatments || treatments.length === 0) {
     });
   }); // fecha o addEventListener de change do experimento
   
-    dbcSaveBtn.addEventListener("click", async () => {
+      dbcSaveBtn.addEventListener("click", async () => {
     if (!dbcState.experimentId) {
       alert("Selecione um experimento antes de salvar o mapa.");
       return;
     }
 
-   const rows = Object.values(dbcState.plotsByKey)
-  .filter((p) => p.treatment_id)
-  .map((p) => {
-    const base = {
-      experiment_id: dbcState.experimentId,
-      block_number: p.block_number,
-      plot_code: p.plot_code,
-      treatment_id: p.treatment_id
-    };
+    const rows = Object.values(dbcState.plotsByKey)
+      .filter((p) => p.treatment_id)
+      .map((p) => {
+        const base = {
+          experiment_id: dbcState.experimentId,
+          block_number: p.block_number,
+          plot_code: p.plot_code,
+          treatment_id: p.treatment_id
+        };
 
-    // se já existe id, manda para atualizar; se não existe, não inclui id
-    if (p.id) {
-      base.id = p.id;
+        if (p.id) {
+          base.id = p.id;
+        }
+
+        return base;
+      });
+
+    if (rows.length === 0) {
+      alert("Nenhuma parcela com tratamento selecionado para salvar.");
+      return;
     }
-
-    return base;
-  });
 
     dbcSaveBtn.disabled = true;
     dbcSaveBtn.textContent = "Salvando...";
 
     const { data, error } = await s
-  .from("plots")
-  .upsert(rows, { onConflict: "id" })
-  .select("id, experiment_id, block_number, plot_code, treatment_id");
-
-      console.log("rows", rows);
-      console.log("upsert error", error);
-      if (error) {
-      console.log("upsert message:", error.message);
-      console.log("upsert details:", error.details);
-    }
+      .from("plots")
+      .upsert(rows, { onConflict: "id" })
+      .select("id, experiment_id, block_number, plot_code, treatment_id");
 
     dbcSaveBtn.disabled = false;
     dbcSaveBtn.textContent = "Salvar mapa";
@@ -313,13 +310,14 @@ if (!treatments || treatments.length === 0) {
     });
 
     alert("Mapa salvo com sucesso.");
-      
-      // aqui vamos voltar para a tela de experimentos
+
+    // volta para a tela de Experimentos
     const experimentsItem = document.querySelector('[data-page="experiments"]');
     if (experimentsItem) {
-      experimentsItem.click(); // usa a mesma navegação lateral já existente
+      experimentsItem.click();
     }
   });
+} // fecha renderDbcMapPage
 
 // helper fora da função
 function extractParcelaFromCode(plotCode) {
@@ -328,4 +326,5 @@ function extractParcelaFromCode(plotCode) {
   if (!match) return null;
   return Number(match[1]);
 }
+
 
