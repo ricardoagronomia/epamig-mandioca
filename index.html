@@ -5,6 +5,7 @@
   <title>MandiocaTrack - Pesquisa de Campo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Reset básico e ajustes de header -->
   <style>
     body {
       margin: 0;
@@ -32,6 +33,7 @@
     */
   </style>
 
+  <!-- Estilos gerais da aplicação -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -527,45 +529,49 @@
       color: #374151;
     }
   </style>
-  /* Layout de impressão das etiquetas */
-@media print {
-  @page {
-    size: A4;
-    margin: 10mm;
-  }
 
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+  <!-- Estilos específicos de impressão das etiquetas -->
+  <style>
+    /* Layout de impressão das etiquetas */
+    @media print {
+      @page {
+        size: A4;
+        margin: 10mm;
+      }
 
-  /* grade para A4 – 6 etiquetas (2 x 3) */
-  .qr-label-sheet {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 90mm; /* altura aproximada de cada etiqueta */
-    gap: 8mm;
-    page-break-inside: avoid;
-  }
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
 
-  .qr-label-card {
-    border-radius: 6px;
-    border: 1px solid #e5e7eb;
-    padding: 6mm;
-    box-sizing: border-box;
-    page-break-inside: avoid;
-  }
+      /* grade para A4 – 6 etiquetas (2 x 3) */
+      .qr-label-sheet {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: 90mm;
+        gap: 8mm;
+        page-break-inside: avoid;
+      }
 
-  /* etiqueta única 100 x 70 mm */
-  .qr-label-single-page {
-    width: 100mm;
-    height: 70mm;
-    margin: 0;
-    padding: 4mm;
-    box-sizing: border-box;
-    page-break-inside: avoid;
-  }
-}
+      .qr-label-card {
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        padding: 6mm;
+        box-sizing: border-box;
+        page-break-inside: avoid;
+      }
+
+      /* etiqueta única 100 x 70 mm */
+      .qr-label-single-page {
+        width: 100mm;
+        height: 70mm;
+        margin: 0;
+        padding: 4mm;
+        box-sizing: border-box;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
 </head>
 <body>
   <!-- AUTH -->
@@ -688,8 +694,3 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
-
-
-
-
-
