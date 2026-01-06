@@ -238,7 +238,7 @@ function renderDbcMapPage(container) {
       treatments = res2.data || [];
     }
 
-        // 4) Montar blocos com grid baseado em plot_templates
+    // 4) Montar blocos com grid baseado em plot_templates
     const colorMap = {
       AMARELA: "#fde68a",
       AMARELINHA: "#bbf7d0",
