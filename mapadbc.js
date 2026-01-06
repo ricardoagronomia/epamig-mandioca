@@ -29,10 +29,22 @@ function renderDbcMapPage(container) {
         </p>
       </div>
     </div>
+        <div id="dbcMapArea">  
+      <p style="color:#6b7280;font-size:14px;">
+        Selecione um experimento para carregar o mapa DBC.
+      </p>
+    </div>
+
+    <div style="margin-top:12px; text-align:right;">
+      <button id="dbcSaveBtn" class="btn-primary" style="width:auto;">
+        Salvar mapa
+      </button>
+    </div>
   `;
 
   const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
   const dbcMapArea = document.getElementById("dbcMapArea");
+  const dbcSaveBtn = document.getElementById("dbcSaveBtn");
 
   // 1) Buscar experimentos no Supabase
   (async () => {
@@ -202,6 +214,54 @@ function renderDbcMapPage(container) {
       });
     });
   }); // fecha o addEventListener de change do experimento
+  
+    dbcSaveBtn.addEventListener("click", async () => {
+    if (!dbcState.experimentId) {
+      alert("Selecione um experimento antes de salvar o mapa.");
+      return;
+    }
+
+    const rows = Object.values(dbcState.plotsByKey)
+      .filter((p) => p.treatment_id)
+      .map((p) => ({
+        id: p.id || undefined,
+        experiment_id: dbcState.experimentId,
+        block_number: p.block_number,
+        plot_code: p.plot_code,
+        treatment_id: p.treatment_id
+      }));
+
+    if (rows.length === 0) {
+      alert("Nenhuma parcela com tratamento selecionado para salvar.");
+      return;
+    }
+
+    dbcSaveBtn.disabled = true;
+    dbcSaveBtn.textContent = "Salvando...";
+
+    const { data, error } = await s
+      .from("plots")
+      .upsert(rows, { onConflict: "id" }); // upsert em lote [web:643]
+
+    dbcSaveBtn.disabled = false;
+    dbcSaveBtn.textContent = "Salvar mapa";
+
+    if (error) {
+      console.error(error);
+      alert("Erro ao salvar mapa de parcelas.");
+      return;
+    }
+
+    (data || []).forEach((row) => {
+      const parcelaNum = extractParcelaFromCode(row.plot_code);
+      if (!parcelaNum) return;
+      const key = `${row.block_number}-${parcelaNum}`;
+      if (!dbcState.plotsByKey[key]) return;
+      dbcState.plotsByKey[key].id = row.id;
+    });
+
+    alert("Mapa salvo com sucesso.");
+  });
 }
 
 // helper fora da função
