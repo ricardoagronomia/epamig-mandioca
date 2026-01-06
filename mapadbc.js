@@ -68,25 +68,28 @@ function renderDbcMapPage(container) {
   `;
 
   const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
-  const dbcMapArea = document.getElementById("dbcMapArea");
-  const dbcSaveBtn = document.getElementById("dbcSaveBtn");
-  const dbcTabMapBtn  = document.getElementById("dbcTabMapBtn");
-  const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
-  const dbcTabMapArea = document.getElementById("dbcTabMapArea");
-  const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
+const dbcMapArea = document.getElementById("dbcMapArea");
+const dbcSaveBtn = document.getElementById("dbcSaveBtn");
+const dbcTabMapBtn  = document.getElementById("dbcTabMapBtn");
+const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
+const dbcTabMapArea = document.getElementById("dbcTabMapArea");
+const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
 
-  dbcTabMapBtn.addEventListener("click", () => {
-    dbcTabMapBtn.classList.add("active");
-    dbcTabQrBtn.classList.remove("active");
-    dbcTabMapArea.style.display = "block";
-    dbcTabQrArea.style.display = "none";
-  });
+dbcTabMapBtn.addEventListener("click", () => {
+  dbcTabMapBtn.classList.add("active");
+  dbcTabQrBtn.classList.remove("active");
+  dbcTabMapArea.style.display = "block";
+  dbcTabQrArea.style.display = "none";
+});
 
-  dbcTabQrBtn.addEventListener("click", () => {
-    dbcTabQrBtn.classList.add("active");
-    dbcTabMapBtn.classList.remove("active");
-    dbcTabMapArea.style.display = "none";
-    dbcTabQrArea.style.display = "block";
+dbcTabQrBtn.addEventListener("click", () => {
+  dbcTabQrBtn.classList.add("active");
+  dbcTabMapBtn.classList.remove("active");
+  dbcTabMapArea.style.display = "none";
+  dbcTabQrArea.style.display = "block";
+
+  initDbcQrArea(); // <== monta os filtros e a grade de QR
+});
 
     function initDbcQrArea() {
   const area = document.getElementById("dbcTabQrArea");
@@ -425,15 +428,14 @@ function extractParcelaFromCode(plotCode) {
   if (!match) return null;
   return Number(match[1]);
 }
+
 function initDbcQrArea() {
   const area = document.getElementById("dbcTabQrArea");
   if (!area) return;
 
-  // por enquanto, só um placeholder
   area.innerHTML = `
-    <p style="color:#6b7280;font-size:14px;">
-      Aqui vamos carregar os filtros e as etiquetas de QR Code usando as parcelas do experimento selecionado.
-    </p>
+    <!-- HTML dos filtros e da área de etiquetas que enviamos antes -->
   `;
 }
+
 
