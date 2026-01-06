@@ -321,13 +321,13 @@ function renderPage(page) {
         </div>
       `;
     }
-  } else if (page === "qr-codes") {
-    if (typeof renderQrCodesPage === "function") {
-      renderQrCodesPage(container);
+  } else if (page === "dbc-map") {
+    if (typeof renderDbcMapPage === "function") {
+      renderDbcMapPage(container);
     } else {
       container.innerHTML = `
         <div class="card">
-          <p> Módulo de QR Code não carregado. </p>
+          <p>Módulo de Mapa DBC não carregado.</p>
         </div>
       `;
     }
@@ -712,6 +712,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
