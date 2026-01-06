@@ -64,6 +64,17 @@ function renderDbcMapPage(container) {
   const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
   const dbcMapArea = document.getElementById("dbcMapArea");
   const dbcSaveBtn = document.getElementById("dbcSaveBtn");
+  
+  if (window.currentRole === "visitor") {
+  dbcSaveBtn.disabled = true;
+  dbcSaveBtn.title = "Somente pesquisadores podem editar o mapa.";
+    }
+  
+  dbcSaveBtn.addEventListener("click", async () => {
+  if (window.currentRole === "visitor") {
+    alert("Você não tem permissão para salvar o mapa DBC.");
+    return;
+  }
 
   // 1) Buscar experimentos no Supabase
   (async () => {
