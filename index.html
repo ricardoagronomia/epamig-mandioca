@@ -533,7 +533,7 @@
   <!-- Estilos específicos de impressão das etiquetas -->
   <style>
     /* Layout de impressão das etiquetas */
-    @media print {
+   @media print {
   @page {
     size: A4;
     margin: 10mm 5mm;
@@ -545,7 +545,7 @@
     background: #ffffff;
   }
 
-  /* Esconde toda a interface do app */
+  /* Esconde interface do app */
   .header,
   .sidebar,
   .content-header,
@@ -557,7 +557,7 @@
     display: none !important;
   }
 
-  /* Mantém só a área de etiquetas visível */
+  /* Área de etiquetas */
   #dbcTabQrArea,
   #qrLabelsWrapper,
   .qr-label-sheet,
@@ -574,12 +574,14 @@
     page-break-inside: avoid;
   }
 
+  /* aqui tiramos borda e sombra */
   .qr-label-card,
   .qr-label-single-page {
     width: 100mm;
     height: 70mm;
-    border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
     padding: 4mm;
     box-sizing: border-box;
     page-break-inside: avoid;
@@ -709,6 +711,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
+
 
 
 
