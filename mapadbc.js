@@ -62,8 +62,7 @@ function renderDbcMapPage(container) {
       </div>
 
       <div id="dbcTabQrArea" style="display:none;">
-        <!-- aqui depois entra o HTML dos filtros de QR e da grade de etiquetas -->
-      </div>
+        </div>
     </div>
   `;
 
@@ -434,5 +433,3 @@ function initDbcQrArea() {
     </div>
   `;
 }
-
-
