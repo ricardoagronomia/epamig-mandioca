@@ -266,6 +266,10 @@ function showApp() {
 
   const elInvites = document.querySelector('[data-page="invites"]');
   if (elInvites) elInvites.classList.remove("disabled");
+  
+    const elDbc = document.querySelector('[data-page="dbc-map"]');
+  if (elDbc) elDbc.classList.remove("disabled");
+
 }
 
   // navegação
@@ -688,6 +692,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
