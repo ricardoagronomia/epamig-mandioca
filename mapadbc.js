@@ -267,27 +267,9 @@ function renderDbcMapPage(container) {
                 <div style="font-size:11px;color:#4b5563;margin-top:4px;">
                   ${statusText}
                 </div>
-                <div style="margin-top:6px;">
-                  <select
-                    data-template-id="${tpl.id}"
-                    class="dbc-plot-select">
-                    <option value="">Selecione tratamento...</option>
-                    ${treatments
-                      .map((t) => {
-                        const label = `${(t.code || "").toUpperCase()} ${
-                          t.position
-                            ? "· " + t.position.toUpperCase()
-                            : ""
-                        }`;
-                        const selected =
-                          existing && existing.treatment_id === t.id
-                            ? "selected"
-                            : "";
-                        return `<option value="${t.id}" ${selected}>${label}</option>`;
-                      })
-                      .join("")}
-                  </select>
-                </div>
+                <div style="margin-top:6px;font-size:11px;color:#4b5563;">
+  Tratamento fixo
+</div>
               </div>
             `;
           })
@@ -307,26 +289,7 @@ function renderDbcMapPage(container) {
       .join("");
 
     // 5) Ligar eventos de change nos selects para atualizar o estado em memória
-    dbcMapArea.querySelectorAll(".dbc-plot-select").forEach((sel) => {
-      sel.addEventListener("change", () => {
-        const templateId = Number(sel.dataset.templateId);
-        const treatmentId = sel.value || null;
-
-        if (!dbcState.plotsByTemplateId) {
-          dbcState.plotsByTemplateId = {};
-        }
-        if (!dbcState.plotsByTemplateId[templateId]) {
-          dbcState.plotsByTemplateId[templateId] = {
-            id: null,
-            experiment_id: dbcState.experimentId,
-            plot_template_id: templateId,
-            treatment_id: null
-          };
-        }
-
-        dbcState.plotsByTemplateId[templateId].treatment_id = treatmentId;
-      });
-    });
+    
   }); // fecha change do experimento
 
   // Botão salvar
