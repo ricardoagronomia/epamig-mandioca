@@ -129,54 +129,42 @@ function renderDbcMapPage(container) {
     }
 
         // 2) Buscar treatments do experimento
-    let { data: treatments, error: trError } = await s
-      .from("treatments")
-      .select("id, code, position, description")
-      .eq("experiment_id", expId)
-      .order("code", { ascending: true });
-
-    if (trError) {
-      dbcMapArea.innerHTML = `
-        <p style="color:#b91c1c;font-size:14px;">
-          Erro ao carregar tratamentos deste experimento.
-        </p>
-      `;
-      return;
-    }
-
-    // Se não houver tratamentos, cria os padrões para este experimento
-    if (!treatments || treatments.length === 0) {
-      const rowsToInsert = DEFAULT_TREATMENTS.map((t, index) => ({
-        experiment_id: expId,
-        code: t.code,
-        position: t.position,
-        description: null
-      }));
-
-      const { data: inserted, error: insertError } = await s
+let { data: treatments, error: trError } = await s
   .from("treatments")
-  .insert(rowsToInsert)
   .select("id, code, position, description")
+  .eq("experiment_id", expId)
   .order("code", { ascending: true });
 
-console.log("rowsToInsert", rowsToInsert);
-console.log("insertError raw", insertError);
-if (insertError) {
-  console.log("insertError message:", insertError.message);
-  console.log("insertError details:", insertError.details);
+if (trError) {
+  // ... mensagem de erro como já está
+  return;
 }
 
-      if (insertError) {
-        dbcMapArea.innerHTML = `
-          <p style="color:#b91c1c;font-size:14px;">
-            Erro ao criar tratamentos padrão para este experimento.
-          </p>
-        `;
-        return;
-      }
-      treatments = inserted;
-    }
+// Se não houver tratamentos, cria a partir da tabela default_treatments
+if (!treatments || treatments.length === 0) {
+  const { error: rpcError } = await s.rpc(
+    "create_treatments_from_default",
+    { p_experiment_id: expId }
+  );
 
+  if (rpcError) {
+    dbcMapArea.innerHTML = `
+      <p style="color:#b91c1c;font-size:14px;">
+        Erro ao criar tratamentos padrão para este experimento.
+      </p>
+    `;
+    return;
+  }
+
+  // recarrega os treatments já criados
+  const res2 = await s
+    .from("treatments")
+    .select("id, code, position, description")
+    .eq("experiment_id", expId)
+    .order("code", { ascending: true });
+
+  treatments = res2.data || [];
+}
 
     // Indexar plots por chave `${block}-${parcelaNum}`
     (plots || []).forEach((p) => {
