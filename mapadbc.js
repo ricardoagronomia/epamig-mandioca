@@ -6,6 +6,25 @@ const dbcState = {
   plotsByKey: {} // key: `${block}-${parcelaNum}` -> { id, plot_code, block_number, treatment_id }
 };
 
+const DEFAULT_TREATMENTS = [
+  { code: "AMARELA",    position: "VERTICAL"   },
+  { code: "AMARELA",    position: "INCLINADA" },
+  { code: "AMARELA",    position: "HORIZONTAL" },
+
+  { code: "AMARELINHA", position: "VERTICAL"   },
+  { code: "AMARELINHA", position: "INCLINADA" },
+  { code: "AMARELINHA", position: "HORIZONTAL" },
+
+  { code: "CACAU",      position: "VERTICAL"   },
+  { code: "CACAU",      position: "INCLINADA" },
+  { code: "CACAU",      position: "HORIZONTAL" },
+
+  { code: "SABARÁ",     position: "VERTICAL"   },
+  { code: "SABARÁ",     position: "INCLINADA" },
+  { code: "SABARÁ",     position: "HORIZONTAL" }
+];
+
+
 function renderDbcMapPage(container) {
   container.innerHTML = `
     <div class="content-header">
@@ -109,8 +128,8 @@ function renderDbcMapPage(container) {
       return;
     }
 
-    // 2) Buscar treatments do experimento
-    const { data: treatments, error: trError } = await s
+        // 2) Buscar treatments do experimento
+    let { data: treatments, error: trError } = await s
       .from("treatments")
       .select("id, code, position, description")
       .eq("experiment_id", expId)
@@ -124,6 +143,33 @@ function renderDbcMapPage(container) {
       `;
       return;
     }
+
+    // Se não houver tratamentos, cria os padrões para este experimento
+    if (!treatments || treatments.length === 0) {
+      const rowsToInsert = DEFAULT_TREATMENTS.map((t, index) => ({
+        experiment_id: expId,
+        code: t.code,
+        position: t.position,
+        description: null
+      }));
+
+      const { data: inserted, error: insertError } = await s
+        .from("treatments")
+        .insert(rowsToInsert)
+        .select("id, code, position, description")
+        .order("code", { ascending: true });
+
+      if (insertError) {
+        dbcMapArea.innerHTML = `
+          <p style="color:#b91c1c;font-size:14px;">
+            Erro ao criar tratamentos padrão para este experimento.
+          </p>
+        `;
+        return;
+      }
+      treatments = inserted;
+    }
+
 
     // Indexar plots por chave `${block}-${parcelaNum}`
     (plots || []).forEach((p) => {
