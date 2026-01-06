@@ -430,7 +430,7 @@ async function initDbcQrArea() {
   }
 
   // Renderização das etiquetas na visualização
-  function renderQrLabels() {
+function renderQrLabels() {
   const blockFilter = qrBlockFilter.value;
   const fmt = qrFormatSelect.value;          // "a4-6" ou "label-100x70"
   const singleTemplateId = qrSinglePlotSelect.value;
@@ -541,6 +541,25 @@ async function initDbcQrArea() {
         height: 120,
       });
     }
+  });
+}
+
+// ===================================================================
+// LIGAÇÃO DOS BOTÕES "ATUALIZAR VISUALIZAÇÃO" E "IMPRIMIR / BAIXAR"
+// ===================================================================
+
+const btnRefreshQr = document.getElementById("btnRefreshQr");
+const btnPrintQr   = document.getElementById("btnPrintQr");
+
+if (btnRefreshQr) {
+  btnRefreshQr.addEventListener("click", () => {
+    renderQrLabels();
+  });
+}
+
+if (btnPrintQr) {
+  btnPrintQr.addEventListener("click", () => {
+    window.print();
   });
 }
 
