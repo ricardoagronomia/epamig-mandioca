@@ -187,7 +187,7 @@ function renderDbcMapPage(container) {
       const key = `${block}-${parcelaNum}`;
       const treatmentId = sel.value || null;
 
-      // garante que há um objeto no estado
+            // garante que há um objeto no estado
       if (!dbcState.plotsByKey[key]) {
         const parcelaLabel = String(parcelaNum).padStart(2, "0");
         dbcState.plotsByKey[key] = {
@@ -198,16 +198,14 @@ function renderDbcMapPage(container) {
         };
       }
 
-            dbcState.plotsByKey[key].treatment_id = treatmentId;
+      dbcState.plotsByKey[key].treatment_id = treatmentId;
     });
   });
-}); // fecha o addEventListener
+}); // fecha o addEventListener de change do experimento
 
-  function extractParcelaFromCode(plotCode) {
+function extractParcelaFromCode(plotCode) {
   if (!plotCode) return null;
   const match = String(plotCode).match(/P(\d+)/i);
   if (!match) return null;
   return Number(match[1]);
 }
-
-
