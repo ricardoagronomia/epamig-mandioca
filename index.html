@@ -326,6 +326,18 @@
       box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
       margin-bottom: 16px;
     }
+        @media (max-width: 640px) {
+      /* deixa o card poder rolar na horizontal se o conteúdo ficar maior */
+      .card {
+        overflow-x: auto;
+        padding: 18px 14px;  /* um pouco mais de respiro lateral */
+      }
+
+      /* garante que o croqui de 4 colunas caiba dentro do card */
+      .dbc-block-grid {
+        min-width: 480px;    /* ajuste fino se precisar */
+      }
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -718,6 +730,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
+
 
 
 
