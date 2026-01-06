@@ -307,11 +307,11 @@ function navigateTo(page) {
 function renderPage(page) {
   const container = $("contentArea");
 
-  if (currentPage === "users") {
+  if (page === "users") {
     renderUsersPage(container);
-  } else if (currentPage === "invites") {
+  } else if (page === "invites") {
     renderInvitesPage(container);
-  } else if (currentPage === "experiments") {
+  } else if (page === "experiments") {
     if (typeof renderExperimentsPage === "function") {
       renderExperimentsPage(container);
     } else {
@@ -321,23 +321,13 @@ function renderPage(page) {
         </div>
       `;
     }
-  } else if (currentPage === "new-experiment") {
-    if (typeof renderNewExperimentPage === "function") {
-      renderNewExperimentPage(container);
+  } else if (page === "qr-codes") {
+    if (typeof renderQrCodesPage === "function") {
+      renderQrCodesPage(container);
     } else {
       container.innerHTML = `
         <div class="card">
-          <p>Módulo de novo experimento não carregado.</p>
-        </div>
-      `;
-    }
-  } else if (currentPage === "dbc-map") {
-    if (typeof renderDbcMapPage === "function") {
-      renderDbcMapPage(container);
-    } else {
-      container.innerHTML = `
-        <div class="card">
-          <p>Módulo Mapa DBC não carregado.</p>
+          <p> Módulo de QR Code não carregado. </p>
         </div>
       `;
     }
@@ -722,6 +712,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
