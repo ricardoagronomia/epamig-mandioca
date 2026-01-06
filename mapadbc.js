@@ -284,6 +284,13 @@ if (!treatments || treatments.length === 0) {
       .from("plots")
       .upsert(rows, { onConflict: "id" }); // upsert em lote [web:643]
 
+      console.log("rows", rows);
+      console.log("upsert error", error);
+      if (error) {
+      console.log("upsert message:", error.message);
+      console.log("upsert details:", error.details);
+    }
+
     dbcSaveBtn.disabled = false;
     dbcSaveBtn.textContent = "Salvar mapa";
 
