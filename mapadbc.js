@@ -7,6 +7,8 @@ const dbcState = {
   plotsByKey: {}
 };
 
+let qrInitialized = false;
+
 const DEFAULT_TREATMENTS = [
   { code: "AMARELA",    position: "VERTICAL"   },
   { code: "AMARELA",    position: "INCLINADA" },
@@ -75,8 +77,6 @@ const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
 const dbcTabMapArea = document.getElementById("dbcTabMapArea");
 const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
 
-let qrInitialized = false;
-
 dbcTabMapBtn.addEventListener("click", () => {
   dbcTabMapBtn.classList.add("active");
   dbcTabQrBtn.classList.remove("active");
@@ -136,9 +136,16 @@ dbcExperimentSelect.addEventListener("change", async () => {
   const expName =
     dbcExperimentSelect.options[dbcExperimentSelect.selectedIndex]?.text || "";
 
+  // sempre que mudar de experimento, força recriar a aba QR
+  qrInitialized = false;
+  const qrArea = document.getElementById("dbcTabQrArea");
+  if (qrArea) {
+    qrArea.innerHTML = "";  // limpa conteúdo antigo
+  }
+
   if (!expId) {
     dbcState.experimentId = null;
-    dbcState.experimentName = "";   // zera nome também
+    dbcState.experimentName = "";
     dbcState.plotsByKey = {};
     dbcMapArea.innerHTML = `
       <p style="color:#6b7280;font-size:14px;">
@@ -149,7 +156,7 @@ dbcExperimentSelect.addEventListener("change", async () => {
   }
 
   dbcState.experimentId = expId;
-  dbcState.experimentName = expName;  // guarda nome visível
+  dbcState.experimentName = expName;
   dbcState.plotsByKey = {};
 
     // 1) Buscar plots existentes
