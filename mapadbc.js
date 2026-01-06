@@ -455,7 +455,7 @@ async function initDbcQrArea() {
     return;
   }
 
-  qrLabelsWrapper.innerHTML = list
+    qrLabelsWrapper.innerHTML = list
     .map((p) => {
       const url = buildQrUrl(expId, p.templateId);
 
@@ -488,16 +488,15 @@ async function initDbcQrArea() {
         height: 96
       });
     }
-   }); // fecha change do experimento
-} // fecha renderDbcMapPage
+  });
+} // fecha renderQrLabels
 
+// eventos de preview
+qrPreviewBtn.addEventListener("click", renderQrLabels);
+qrBlockFilter.addEventListener("change", renderQrLabels);
+qrFormatSelect.addEventListener("change", renderQrLabels);
+qrSinglePlotSelect.addEventListener("change", renderQrLabels);
 
-  // eventos de preview
-  qrPreviewBtn.addEventListener("click", renderQrLabels);
-  qrBlockFilter.addEventListener("change", renderQrLabels);
-  qrFormatSelect.addEventListener("change", renderQrLabels);
-  qrSinglePlotSelect.addEventListener("change", renderQrLabels);
-
-  // primeira renderização
-  renderQrLabels();
-}
+// primeira renderização
+renderQrLabels();
+} // fecha initDbcQrArea
