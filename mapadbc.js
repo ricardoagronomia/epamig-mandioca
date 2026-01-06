@@ -313,8 +313,13 @@ if (!treatments || treatments.length === 0) {
     });
 
     alert("Mapa salvo com sucesso.");
+      
+      // aqui vamos voltar para a tela de experimentos
+    const experimentsItem = document.querySelector('[data-page="experiments"]');
+    if (experimentsItem) {
+      experimentsItem.click(); // usa a mesma navegação lateral já existente
+    }
   });
-}
 
 // helper fora da função
 function extractParcelaFromCode(plotCode) {
