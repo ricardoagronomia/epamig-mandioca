@@ -474,30 +474,37 @@
       color: var(--gray-400);
     }
 
-    @media (max-width: 768px) {
-      .sidebar {
-        position: fixed;
-        top: 100px;
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        overflow-y: hidden;
-        border-right: none;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-      }
-      .sidebar-section { border-bottom: none; }
-      .sidebar-section-title { display: none; }
-      .sidebar-item {
-        padding: 10px 14px;
-        white-space: nowrap;
-      }
-      .content-area {
-        padding: 16px;
-        margin-top: 120px;
-      }
-    }
+   @media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 100px;
+    left: 0;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;       /* permite rolar na horizontal */
+    overflow-y: hidden;
+    border-right: none;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    padding-inline: 8px;    /* afasta dos cantos da tela */
+    box-sizing: border-box;
+  }
+
+  .sidebar-section { border-bottom: none; }
+  .sidebar-section-title { display: none; }
+
+  .sidebar-item {
+    padding: 10px 14px;
+    white-space: nowrap;
+    flex: 0 0 auto;         /* cada item só ocupa o próprio tamanho */
+  }
+
+  .content-area {
+    padding: 16px;
+    margin-top: 120px;
+  }
+}
 
     /* === Mapa DBC: grade 3×4 === */
     .dbc-block-grid {
@@ -711,6 +718,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
+
 
 
 
