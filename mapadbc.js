@@ -246,19 +246,19 @@ function renderDbcMapPage(container) {
       SABARÁ: "#fecaca"
     };
 
-    const blockNumbers = [1, 2, 3];
+        const blockNumbers = [1, 2, 3];
 
     dbcMapArea.innerHTML = blockNumbers
-  .map((block) => {
-    const templatesDoBloco = templates.filter(
-      (t) => t.block_number === block
-    );
+      .map((block) => {
+        const templatesDoBloco = templates.filter(
+          (t) => t.block_number === block
+        );
 
-    const cellsHtml = templatesDoBloco
-      .map((tpl) => {
-        const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
+        const cellsHtml = templatesDoBloco
+          .map((tpl) => {
+            const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
 
-        return `
+            return `
   <div class="dbc-plot-cell"
        style="background:${bgColor};border-radius:6px;padding:6px;">
     <div style="font-weight:700;font-size:14px;">
@@ -272,22 +272,21 @@ function renderDbcMapPage(container) {
     </div>
   </div>
 `;
+          })
+          .join("");
+
+        return `
+          <div class="card" style="margin-bottom:12px;">
+            <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
+              Bloco ${block}
+            </div>
+            <div class="dbc-block-grid">
+              ${cellsHtml}
+            </div>
+          </div>
+        `;
       })
       .join("");
-
-    return `
-      <div class="card" style="margin-bottom:12px;">
-        <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
-          Bloco ${block}
-        </div>
-        <div class="dbc-block-grid">
-          ${cellsHtml}
-        </div>
-      </div>
-    `;
-  })
-  .join("");
-
 
         return `
           <div class="card" style="margin-bottom:12px;">
