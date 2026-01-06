@@ -66,29 +66,34 @@ function renderDbcMapPage(container) {
     </div>
   `;
 
-  const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
-  const dbcMapArea = document.getElementById("dbcMapArea");
-  const dbcSaveBtn = document.getElementById("dbcSaveBtn");
-  const dbcTabMapBtn  = document.getElementById("dbcTabMapBtn");
-  const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
-  const dbcTabMapArea = document.getElementById("dbcTabMapArea");
-  const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
+const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
+const dbcMapArea = document.getElementById("dbcMapArea");
+const dbcSaveBtn = document.getElementById("dbcSaveBtn");
+const dbcTabMapBtn  = document.getElementById("dbcTabMapBtn");
+const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
+const dbcTabMapArea = document.getElementById("dbcTabMapArea");
+const dbcTabQrArea  = document.getElementById("dbcTabQrArea");
 
-  dbcTabMapBtn.addEventListener("click", () => {
-    dbcTabMapBtn.classList.add("active");
-    dbcTabQrBtn.classList.remove("active");
-    dbcTabMapArea.style.display = "block";
-    dbcTabQrArea.style.display = "none";
-  });
+let qrInitialized = false;
 
-  dbcTabQrBtn.addEventListener("click", () => {
-    dbcTabQrBtn.classList.add("active");
-    dbcTabMapBtn.classList.remove("active");
-    dbcTabMapArea.style.display = "none";
-    dbcTabQrArea.style.display = "block";
+dbcTabMapBtn.addEventListener("click", () => {
+  dbcTabMapBtn.classList.add("active");
+  dbcTabQrBtn.classList.remove("active");
+  dbcTabMapArea.style.display = "block";
+  dbcTabQrArea.style.display = "none";
+});
 
-    initDbcQrArea(); // só chama
-  });
+dbcTabQrBtn.addEventListener("click", () => {
+  dbcTabQrBtn.classList.add("active");
+  dbcTabMapBtn.classList.remove("active");
+  dbcTabMapArea.style.display = "none";
+  dbcTabQrArea.style.display = "block";
+
+  if (!qrInitialized) {
+    initDbcQrArea();
+    qrInitialized = true;
+  }
+});
 
   // *** DAQUI PRA BAIXO continua exatamente o código que já existia ***
   // buscar experimentos, listener de change, salvar etc.
