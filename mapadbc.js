@@ -55,13 +55,7 @@ function renderDbcMapPage(container) {
           <p style="color:#6b7280;font-size:14px;">
             Selecione um experimento para carregar o mapa DBC.
           </p>
-        </div>
-
-        <div style="margin-top:12px; text-align:right;">
-          <button id="dbcSaveBtn" class="btn-primary" style="width:auto;">
-            Salvar mapa
-          </button>
-        </div>
+        </div>       
       </div>
 
       <div id="dbcTabQrArea" style="display:none;"></div>
@@ -253,25 +247,20 @@ function renderDbcMapPage(container) {
             const existing = plotsByTemplateId[tpl.id] || null;
             const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
 
-            const statusText = existing ? "Vínculo salvo" : "Sem vínculo";
-
             return `
-              <div class="dbc-plot-cell"
-                   style="background:${bgColor};border-radius:6px;padding:6px;">
-                <div style="font-weight:700;font-size:14px;">
-                  ${tpl.treatment_code} ${tpl.position}
-                </div>
-                <div style="font-size:13px;color:#111827;">
-                  ${tpl.plot_code}
-                </div>
-                <div style="font-size:11px;color:#4b5563;margin-top:4px;">
-                  ${statusText}
-                </div>
-                <div style="margin-top:6px;font-size:11px;color:#4b5563;">
-  Tratamento fixo
-</div>
-              </div>
-            `;
+  <div class="dbc-plot-cell"
+       style="background:${bgColor};border-radius:6px;padding:6px;">
+    <div style="font-weight:700;font-size:14px;">
+      ${tpl.treatment_code} ${tpl.position}
+    </div>
+    <div style="font-size:13px;color:#111827;">
+      ${tpl.plot_code}
+    </div>
+    <div style="font-size:11px;color:#4b5563;margin-top:4px;">
+      Experimento: ${dbcState.experimentName || "—"}
+    </div>
+  </div>
+`;
           })
           .join("");
 
