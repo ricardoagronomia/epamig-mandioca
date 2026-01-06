@@ -1,5 +1,10 @@
 // mapadbc.js
 // Depende do cliente Supabase global "s" definido em app.js
+// Estado temporário do Mapa DBC (por experimento)
+const dbcState = {
+  experimentId: null,
+  plotsByKey: {} // key: `${block}-${parcelaNum}` -> { id, plot_code, block_number, treatment_id }
+};
 
 function renderDbcMapPage(container) {
   container.innerHTML = `
@@ -60,42 +65,94 @@ function renderDbcMapPage(container) {
   })();
 
   // 2) Reagir à mudança do select: desenhar blocos 1–3 com grade 3×4
-  dbcExperimentSelect.addEventListener("change", () => {
-    const expId = dbcExperimentSelect.value;
-    if (!expId) {
-      dbcMapArea.innerHTML = `
-        <p style="color:#6b7280;font-size:14px;">
-          Selecione um experimento para carregar o mapa DBC.
-        </p>
-      `;
-      return;
-    }
+  dbcExperimentSelect.addEventListener("change", async () => {
+  const expId = dbcExperimentSelect.value;
+  if (!expId) {
+    dbcState.experimentId = null;
+    dbcState.plotsByKey = {};
+    dbcMapArea.innerHTML = `
+      <p style="color:#6b7280;font-size:14px;">
+        Selecione um experimento para carregar o mapa DBC.
+      </p>
+    `;
+    return;
+  }
 
-    const blockNumbers = [1, 2, 3];
+  dbcState.experimentId = expId;
+  dbcState.plotsByKey = {};
 
-    dbcMapArea.innerHTML = blockNumbers
-      .map((block) => {
-        const cellsHtml = Array.from({ length: 12 }, (_, i) => {
-          const parcelaNum = String(i + 1).padStart(2, "0");
-          return `
-            <div class="dbc-plot-cell">
-              <div class="dbc-plot-label-main">Parcela ${parcelaNum}</div>
-              <div class="dbc-plot-label-sub">Bloco ${block}</div>
-            </div>
-          `;
-        }).join("");
+  // 1) Buscar plots existentes para este experimento
+  const { data: plots, error } = await s
+    .from("plots")
+    .select("id, plot_code, block_number, treatment_id")
+    .eq("experiment_id", expId)
+    .order("block_number", { ascending: true });
+
+  if (error) {
+    dbcMapArea.innerHTML = `
+      <p style="color:#b91c1c;font-size:14px;">
+        Erro ao carregar parcelas (plots) deste experimento.
+      </p>
+    `;
+    return;
+  }
+
+  // 2) Indexar plots por chave `${block}-${parcelaNum}`
+  (plots || []).forEach((p) => {
+    const parcelaNum = extractParcelaFromCode(p.plot_code);
+    if (!parcelaNum) return;
+    const key = `${p.block_number}-${parcelaNum}`;
+    dbcState.plotsByKey[key] = {
+      id: p.id,
+      plot_code: p.plot_code,
+      block_number: p.block_number,
+      treatment_id: p.treatment_id
+    };
+  });
+
+  // 3) Montar blocos e grade 3×4
+  const blockNumbers = [1, 2, 3];
+
+  dbcMapArea.innerHTML = blockNumbers
+    .map((block) => {
+      const cellsHtml = Array.from({ length: 12 }, (_, i) => {
+        const parcelaNum = i + 1; // 1..12
+        const parcelaLabel = String(parcelaNum).padStart(2, "0");
+        const key = `${block}-${parcelaNum}`;
+        const existing = dbcState.plotsByKey[key];
+
+        const statusText = existing
+          ? `Plot salvo (id: ${existing.id.slice(0, 8)}...)`
+          : `Sem plot cadastrado`;
 
         return `
-          <div class="card" style="margin-bottom:12px;">
-            <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
-              Bloco ${block}
-            </div>
-            <div class="dbc-block-grid">
-              ${cellsHtml}
+          <div class="dbc-plot-cell">
+            <div class="dbc-plot-label-main">Parcela ${parcelaLabel}</div>
+            <div class="dbc-plot-label-sub">Bloco ${block}</div>
+            <div class="dbc-plot-label-sub" style="margin-top:4px;color:#6b7280;">
+              ${statusText}
             </div>
           </div>
         `;
-      })
-      .join("");
-  });
+      }).join("");
+
+      return `
+        <div class="card" style="margin-bottom:12px;">
+          <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
+            Bloco ${block}
+          </div>
+          <div class="dbc-block-grid">
+            ${cellsHtml}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+});
+function extractParcelaFromCode(plotCode) {
+  if (!plotCode) return null;
+  const match = String(plotCode).match(/P(\d+)/i);
+  if (!match) return null;
+  return Number(match[1]);
+}
 }
