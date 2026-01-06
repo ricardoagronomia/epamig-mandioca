@@ -301,9 +301,9 @@ function renderDbcMapPage(container) {
       })
       .join("");
 
-    // 5) Ligar eventos de change nos selects para atualizar o estado em memória
+        // 5) Ligar eventos de change nos selects para atualizar o estado em memória
     
-   }); // fecha change do experimento
+  }); // fecha change do experimento
 } // fecha renderDbcMapPage
 
 // ===============================
