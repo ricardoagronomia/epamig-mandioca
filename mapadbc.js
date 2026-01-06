@@ -342,10 +342,10 @@ if (!treatments || treatments.length === 0) {
     dbcSaveBtn.textContent = "Salvar mapa";
 
     if (error) {
-      console.error(error);
-      alert("Erro ao salvar mapa de parcelas.");
-      return;
-    }
+  console.error("UPSERT plots error:", error);
+  alert("Erro ao salvar mapa de parcelas. Veja o console.");
+  return;
+}
 
     (data || []).forEach((row) => {
       const parcelaNum = extractParcelaFromCode(row.plot_code);
