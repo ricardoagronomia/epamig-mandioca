@@ -279,7 +279,8 @@ function renderDbcMapPage(container) {
 
     // 5) Ligar eventos de change nos selects para atualizar o estado em memória
     
-  }); // fecha change do experimento
+   }); // fecha change do experimento
+} // fecha renderDbcMapPage
 
 // ===============================
 // Área de QR Codes dentro do Mapa
