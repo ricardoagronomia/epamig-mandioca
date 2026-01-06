@@ -158,6 +158,8 @@ function renderDbcMapPage(container) {
         .insert(rowsToInsert)
         .select("id, code, position, description")
         .order("code", { ascending: true });
+      console.log("rowsToInsert", rowsToInsert);
+      console.log("insertError", insertError);
 
       if (insertError) {
         dbcMapArea.innerHTML = `
