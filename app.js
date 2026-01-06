@@ -354,14 +354,18 @@ function roleLabel(role) {
 }
 
 async function renderUsersPage(container) {
-  if (currentRole !== "admin") {
+  if (currentRole === "visitor") {
     container.innerHTML = `
       <div class="content-header">
         <div class="content-title">Gestão de Usuários</div>
-        <div class="content-subtitle">Apenas administradores podem gerenciar usuários.</div>
+        <div class="content-subtitle">
+          Apenas administradores e pesquisadores podem gerenciar usuários.
+        </div>
       </div>
       <div class="card">
-        <p style="color:#b91c1c;">Você não tem permissão para acessar esta página.</p>
+        <p style="color:#6b7280;">
+          Você não tem permissão para acessar esta página.
+        </p>
       </div>
     `;
     return;
@@ -692,6 +696,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
