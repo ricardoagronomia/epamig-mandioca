@@ -575,7 +575,7 @@ function closeModal() {
 
 // Invite modal
 window.openInviteModal = function () {
-  if (currentRole !== "admin") return;
+  if (currentRole !== "admin" && currentRole !== "collaborator") return;
   openModal(
     "Convidar usuário",
     `
@@ -593,17 +593,17 @@ window.openInviteModal = function () {
 };
 
 window.sendInvite = async function () {
-  const email = inviteEmail.value.trim();
-  const role = inviteRole.value;
+  // apenas admin e colaborador podem enviar convites
+if (currentRole !== "admin" && currentRole !== "collaborator") {
+  alert("Apenas administradores e pesquisadores podem enviar convites.");
+  return;
+}
 
-  if (!email) {
-    alert("Digite um e-mail.");
-    return;
-  }
-  if (currentRole !== "admin" && role === "admin") {
-    alert("Apenas administradores podem convidar administradores.");
-    return;
-  }
+// colaborador NÃO pode criar admin
+if (currentRole !== "admin" && role === "admin") {
+  alert("Apenas administradores podem convidar administradores.");
+  return;
+}
 
   try {
     const expiresAt = new Date();
@@ -722,6 +722,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
