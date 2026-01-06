@@ -160,12 +160,12 @@ function renderDbcMapPage(container) {
     dbcState.experimentName = expName;
     dbcState.plotsByTemplateId = {};
 
-    // 1) Croqui fixo
+       // 1) Croqui fixo
     const { data: templates, error: tplError } = await s
-  .from("plot_templates")
-  .select("id, block_number, plot_code, treatment_code, position")
-  .order("block_number", { ascending: true })
-  .order("id", { ascending: true });
+      .from("plot_templates")
+      .select("id, block_number, plot_code, treatment_code, position")
+      .order("block_number", { ascending: true })
+      .order("id", { ascending: true });
 
     if (tplError || !templates) {
       dbcMapArea.innerHTML = `
