@@ -64,7 +64,6 @@ function renderDbcMapPage(container) {
 
   const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
   const dbcMapArea = document.getElementById("dbcMapArea");
-  const dbcSaveBtn = document.getElementById("dbcSaveBtn");
   const dbcTabMapBtn  = document.getElementById("dbcTabMapBtn");
   const dbcTabQrBtn   = document.getElementById("dbcTabQrBtn");
   const dbcTabMapArea = document.getElementById("dbcTabMapArea");
@@ -282,67 +281,6 @@ function renderDbcMapPage(container) {
     
   }); // fecha change do experimento
 
-  // Botão salvar
-  dbcSaveBtn.addEventListener("click", async () => {
-    if (!dbcState.experimentId) {
-      alert("Selecione um experimento antes de salvar o mapa.");
-      return;
-    }
-
-    const rows = Object.values(dbcState.plotsByTemplateId || {})
-      .filter((p) => p.treatment_id)
-      .map((p) => {
-        const base = {
-          experiment_id: dbcState.experimentId,
-          plot_template_id: p.plot_template_id,
-          treatment_id: p.treatment_id
-        };
-        if (p.id) base.id = p.id;
-        return base;
-      });
-
-    if (rows.length === 0) {
-      alert("Nenhuma parcela com tratamento selecionado para salvar.");
-      return;
-    }
-
-    dbcSaveBtn.disabled = true;
-    dbcSaveBtn.textContent = "Salvando...";
-
-    const { data, error } = await s
-      .from("plots")
-      .upsert(rows, { onConflict: "experiment_id,plot_template_id" })
-      .select("id, experiment_id, plot_template_id, treatment_id");
-
-    dbcSaveBtn.disabled = false;
-    dbcSaveBtn.textContent = "Salvar mapa";
-
-    if (error) {
-      console.log(
-        "UPSERT plots error (string):",
-        JSON.stringify(error, null, 2)
-      );
-      alert("Erro ao salvar mapa de parcelas. Veja o console.");
-      return;
-    }
-
-    (data || []).forEach((row) => {
-      if (!dbcState.plotsByTemplateId[row.plot_template_id]) {
-        dbcState.plotsByTemplateId[row.plot_template_id] = {
-          id: row.id,
-          experiment_id: row.experiment_id,
-          plot_template_id: row.plot_template_id,
-          treatment_id: row.treatment_id
-        };
-      } else {
-        dbcState.plotsByTemplateId[row.plot_template_id].id = row.id;
-      }
-    });
-
-    alert("Mapa salvo com sucesso.");
-  });
-} // fecha renderDbcMapPage
-
 // ===============================
 // Área de QR Codes dentro do Mapa
 // ===============================
@@ -492,55 +430,66 @@ async function initDbcQrArea() {
 
   // Renderização das etiquetas na visualização
   function renderQrLabels() {
-    const blockFilter = qrBlockFilter.value;
-    const fmt = qrFormatSelect.value;
-    const singleTemplateId = qrSinglePlotSelect.value;
+  const blockFilter = qrBlockFilter.value;
+  const fmt = qrFormatSelect.value;
+  const singleTemplateId = qrSinglePlotSelect.value;
 
-    let list = parcels.slice();
+  let list = parcels.slice();
 
-    if (blockFilter !== "all") {
-      const blockNum = Number(blockFilter);
-      list = list.filter((p) => p.block === blockNum);
-    }
-
-    if (fmt === "label-100x70" && singleTemplateId) {
-      const idNum = Number(singleTemplateId);
-      list = list.filter((p) => p.templateId === idNum);
-    }
-
-    if (list.length === 0) {
-      qrLabelsWrapper.innerHTML = `
-        <p style="color:#6b7280;font-size:14px;">
-          Nenhuma parcela para os filtros selecionados.
-        </p>
-      `;
-      return;
-    }
-
-    qrLabelsWrapper.innerHTML = list
-      .map((p) => {
-        const url = buildQrUrl(expId, p.templateId);
-
-        return `
-          <div class="card" style="padding:12px; display:flex; flex-direction:column; gap:6px;">
-            <!-- aqui depois entra o canvas/img do QR -->
-            <div style="font-size:11px;color:#4b5563;word-break:break-all;">
-              ${url}
-            </div>
-            <div style="font-weight:700;font-size:15px;">
-              ${p.treatmentCode} ${p.position}
-            </div>
-            <div style="font-size:14px;color:#111827;">
-              ${p.plotCode}
-            </div>
-            <div style="font-size:12px;color:#4b5563;">
-              Experimento: ${expName}
-            </div>
-          </div>
-        `;
-      })
-      .join("");
+  if (blockFilter !== "all") {
+    const blockNum = Number(blockFilter);
+    list = list.filter((p) => p.block === blockNum);
   }
+
+  if (fmt === "label-100x70" && singleTemplateId) {
+    const idNum = Number(singleTemplateId);
+    list = list.filter((p) => p.templateId === idNum);
+  }
+
+  if (list.length === 0) {
+    qrLabelsWrapper.innerHTML = `
+      <p style="color:#6b7280;font-size:14px;">
+        Nenhuma parcela para os filtros selecionados.
+      </p>
+    `;
+    return;
+  }
+
+  qrLabelsWrapper.innerHTML = list
+    .map((p) => {
+      const url = buildQrUrl(expId, p.templateId);
+
+      return `
+        <div class="card" style="padding:12px; display:flex; flex-direction:column; gap:6px;">
+          <div id="qr-${p.templateId}" style="width:96px;height:96px;margin-bottom:4px;"></div>
+          <div style="font-weight:700;font-size:15px;">
+            ${p.treatmentCode} ${p.position}
+          </div>
+          <div style="font-size:14px;color:#111827;">
+            ${p.plotCode}
+          </div>
+          <div style="font-size:12px;color:#4b5563;">
+            Experimento: ${expName}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  // depois do innerHTML, gerar os QRs
+  list.forEach((p) => {
+    const url = buildQrUrl(expId, p.templateId);
+    const container = document.getElementById(`qr-${p.templateId}`);
+    if (container) {
+      container.innerHTML = "";
+      new QRCode(container, {
+        text: url,
+        width: 96,
+        height: 96
+      });
+    }
+  });
+} // <-- esta chave fecha renderQrLabels
 
   // eventos de preview
   qrPreviewBtn.addEventListener("click", renderQrLabels);
