@@ -383,11 +383,13 @@ async function initDbcQrArea() {
     </div>
   `;
 
-  const qrBlockFilter = document.getElementById("qrBlockFilter");
+    const qrBlockFilter = document.getElementById("qrBlockFilter");
   const qrFormatSelect = document.getElementById("qrFormatSelect");
   const qrSingleWrapper = document.getElementById("qrSingleLabelWrapper");
   const qrSinglePlotSelect = document.getElementById("qrSinglePlotSelect");
   const qrLabelsWrapper = document.getElementById("qrLabelsWrapper");
+  const qrPreviewBtn = document.getElementById("qrPreviewBtn");
+  const qrPrintBtn = document.getElementById("qrPrintBtn");
 
   // monta lista de parcelas para selects / filtros
   const parcels = templates.map((tpl) => ({
@@ -422,7 +424,6 @@ async function initDbcQrArea() {
 
   // Função para montar URL do QR (ajuste a base depois)
   function buildQrUrl(expId, templateId) {
-    // troque pela URL real da tela de coleta
     const base = "https://seusite.app/coleta";
     return `${base}?exp=${encodeURIComponent(expId)}&pt=${encodeURIComponent(
       templateId
@@ -430,145 +431,136 @@ async function initDbcQrArea() {
   }
 
   // Renderização das etiquetas na visualização
-function renderQrLabels() {
-  const blockFilter = qrBlockFilter.value;
-  const fmt = qrFormatSelect.value;          // "a4-6" ou "label-100x70"
-  const singleTemplateId = qrSinglePlotSelect.value;
+  function renderQrLabels() {
+    const blockFilter = qrBlockFilter.value;
+    const fmt = qrFormatSelect.value;          // "a4-6" ou "label-100x70"
+    const singleTemplateId = qrSinglePlotSelect.value;
 
-  let list = parcels.slice();
+    let list = parcels.slice();
 
-  // filtro por bloco
-  if (blockFilter !== "all") {
-    const blockNum = Number(blockFilter);
-    list = list.filter((p) => p.block === blockNum);
-  }
+    // filtro por bloco
+    if (blockFilter !== "all") {
+      const blockNum = Number(blockFilter);
+      list = list.filter((p) => p.block === blockNum);
+    }
 
-  // etiqueta térmica: apenas a parcela escolhida
-  if (fmt === "label-100x70") {
-    if (!singleTemplateId) {
+    // etiqueta térmica: apenas a parcela escolhida
+    if (fmt === "label-100x70") {
+      if (!singleTemplateId) {
+        qrLabelsWrapper.innerHTML = `
+          <p style="color:#6b7280;font-size:14px;">
+            Selecione a parcela para gerar a etiqueta térmica 100×70 mm.
+          </p>
+        `;
+        return;
+      }
+      const idNum = Number(singleTemplateId);
+      list = list.filter((p) => p.templateId === idNum);
+    }
+
+    if (list.length === 0) {
       qrLabelsWrapper.innerHTML = `
         <p style="color:#6b7280;font-size:14px;">
-          Selecione a parcela para gerar a etiqueta térmica 100×70 mm.
+          Nenhuma parcela para os filtros selecionados.
         </p>
       `;
       return;
     }
-    const idNum = Number(singleTemplateId);
-    list = list.filter((p) => p.templateId === idNum);
-  }
 
-  if (list.length === 0) {
-    qrLabelsWrapper.innerHTML = `
-      <p style="color:#6b7280;font-size:14px;">
-        Nenhuma parcela para os filtros selecionados.
-      </p>
-    `;
-    return;
-  }
-
-  // MONTA HTML
-  if (fmt === "label-100x70") {
-    // etiqueta ÚNICA por página, 100×70, QR à esquerda e textos à direita
-    qrLabelsWrapper.innerHTML = list
-      .map((p) => {
-        return `
-          <div class="qr-label-single-page qr-label-card" style="
-            display:flex;
-            flex-direction:row;
-            align-items:center;
-            gap:6mm;
-          ">
-            <div id="qr-${p.templateId}" style="width:32mm;height:32mm;"></div>
-            <div style="display:flex;flex-direction:column;gap:2mm;">
-              <div style="font-weight:700;font-size:15px;">
-                ${p.treatmentCode} ${p.position}
-              </div>
-              <div style="font-size:14px;color:#111827;">
-                ${p.plotCode}
-              </div>
-              <div style="font-size:12px;color:#4b5563;">
-                Experimento: ${expName}
+    // MONTA HTML
+    if (fmt === "label-100x70") {
+      // etiqueta ÚNICA por página, 100×70, QR à esquerda e textos à direita
+      qrLabelsWrapper.innerHTML = list
+        .map((p) => {
+          return `
+            <div class="qr-label-single-page qr-label-card" style="
+              display:flex;
+              flex-direction:row;
+              align-items:center;
+              gap:6mm;
+            ">
+              <div id="qr-${p.templateId}" style="width:32mm;height:32mm;"></div>
+              <div style="display:flex;flex-direction:column;gap:2mm;">
+                <div style="font-weight:700;font-size:15px;">
+                  ${p.treatmentCode} ${p.position}
+                </div>
+                <div style="font-size:14px;color:#111827;">
+                  ${p.plotCode}
+                </div>
+                <div style="font-size:12px;color:#4b5563;">
+                  Experimento: ${expName}
+                </div>
               </div>
             </div>
-          </div>
-        `;
-      })
-      .join("");
-  } else {
-    // A4 – 6 por página (2 x 3)
-    const cardsHtml = list
-      .map((p) => {
-        return `
-          <div class="qr-label-card" style="
-            display:flex;
-            flex-direction:row;
-            align-items:center;
-            gap:6mm;
-          ">
-            <div id="qr-${p.templateId}" style="width:32mm;height:32mm;"></div>
-            <div style="display:flex;flex-direction:column;gap:2mm;">
-              <div style="font-weight:700;font-size:15px;">
-                ${p.treatmentCode} ${p.position}
-              </div>
-              <div style="font-size:14px;color:#111827;">
-                ${p.plotCode}
-              </div>
-              <div style="font-size:12px;color:#4b5563;">
-                Experimento: ${expName}
+          `;
+        })
+        .join("");
+    } else {
+      // A4 – 6 por página (2 x 3)
+      const cardsHtml = list
+        .map((p) => {
+          return `
+            <div class="qr-label-card" style="
+              display:flex;
+              flex-direction:row;
+              align-items:center;
+              gap:6mm;
+            ">
+              <div id="qr-${p.templateId}" style="width:32mm;height:32mm;"></div>
+              <div style="display:flex;flex-direction:column;gap:2mm;">
+                <div style="font-weight:700;font-size:15px;">
+                  ${p.treatmentCode} ${p.position}
+                </div>
+                <div style="font-size:14px;color:#111827;">
+                  ${p.plotCode}
+                </div>
+                <div style="font-size:12px;color:#4b5563;">
+                  Experimento: ${expName}
+                </div>
               </div>
             </div>
-          </div>
-        `;
-      })
-      .join("");
+          `;
+        })
+        .join("");
 
-    qrLabelsWrapper.innerHTML = `
-      <div class="qr-label-sheet">
-        ${cardsHtml}
-      </div>
-    `;
-  }
-
-  // GERAR QRCODES DEPOIS DO innerHTML
-  list.forEach((p) => {
-    const url = buildQrUrl(expId, p.templateId);
-    const container = document.getElementById(`qr-${p.templateId}`);
-    if (container) {
-      container.innerHTML = "";
-      new QRCode(container, {
-        text: url,
-        width: 120,   // ~32mm
-        height: 120,
-      });
+      qrLabelsWrapper.innerHTML = `
+        <div class="qr-label-sheet">
+          ${cardsHtml}
+        </div>
+      `;
     }
-  });
-}
 
-// ===================================================================
-// LIGAÇÃO DOS BOTÕES "ATUALIZAR VISUALIZAÇÃO" E "IMPRIMIR / BAIXAR"
-// ===================================================================
+    // GERAR QRCODES DEPOIS DO innerHTML
+    list.forEach((p) => {
+      const url = buildQrUrl(expId, p.templateId);
+      const container = document.getElementById(`qr-${p.templateId}`);
+      if (container) {
+        container.innerHTML = "";
+        new QRCode(container, {
+          text: url,
+          width: 120,   // ~32mm
+          height: 120,
+        });
+      }
+    });
+  }
 
-const btnRefreshQr = document.getElementById("btnRefreshQr");
-const btnPrintQr   = document.getElementById("btnPrintQr");
+  // eventos de preview
+  if (qrPreviewBtn) {
+    qrPreviewBtn.addEventListener("click", renderQrLabels);
+  }
+  qrBlockFilter.addEventListener("change", renderQrLabels);
+  qrFormatSelect.addEventListener("change", renderQrLabels);
+  qrSinglePlotSelect.addEventListener("change", renderQrLabels);
 
-if (btnRefreshQr) {
-  btnRefreshQr.addEventListener("click", () => {
-    renderQrLabels();
-  });
-}
+  // botão imprimir
+  if (qrPrintBtn) {
+    qrPrintBtn.addEventListener("click", () => {
+      window.print();
+    });
+  }
 
-if (btnPrintQr) {
-  btnPrintQr.addEventListener("click", () => {
-    window.print();
-  });
-}
-
-// eventos de preview
-qrPreviewBtn.addEventListener("click", renderQrLabels);
-qrBlockFilter.addEventListener("change", renderQrLabels);
-qrFormatSelect.addEventListener("change", renderQrLabels);
-qrSinglePlotSelect.addEventListener("change", renderQrLabels);
-
-// primeira renderização
-renderQrLabels();
+  // primeira renderização
+  renderQrLabels();
 } // fecha initDbcQrArea
+
