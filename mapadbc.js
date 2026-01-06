@@ -198,8 +198,16 @@ function renderDbcMapPage(container) {
         };
       }
 
-      dbcState.plotsByKey[key].treatment_id = treatmentId;
+            dbcState.plotsByKey[key].treatment_id = treatmentId;
     });
   });
-});
+}); // fecha o addEventListener
+
+  function extractParcelaFromCode(plotCode) {
+  if (!plotCode) return null;
+  const match = String(plotCode).match(/P(\d+)/i);
+  if (!match) return null;
+  return Number(match[1]);
+}
+
 
