@@ -350,12 +350,7 @@ if (!treatments || treatments.length === 0) {
     });
 
     alert("Mapa salvo com sucesso.");
-
-    // volta para a tela de Experimentos
-    const experimentsItem = document.querySelector('[data-page="experiments"]');
-    if (experimentsItem) {
-      experimentsItem.click();
-    }
+   
   });
 } // fecha renderDbcMapPage
 
