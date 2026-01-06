@@ -375,6 +375,13 @@ function initDbcQrArea() {
         Gere etiquetas com QR Code a partir do experimento selecionado.
       </div>
     </div>
+    
+    <div class="content-header" style="margin-top:0;">
+    <div class="content-title">QR Code das Parcelas</div>
+    <div class="content-subtitle" id="qrCurrentExperimentInfo">
+      Use o experimento já selecionado no Mapa DBC.
+    </div>
+  </div>
 
     <div class="card">
       <div style="
