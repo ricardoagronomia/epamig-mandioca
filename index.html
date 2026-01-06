@@ -486,7 +486,8 @@
       color: var(--gray-400);
     }
 
-   @media (max-width: 768px) {
+  @media (max-width: 768px) {
+  /* barra lateral vira carrossel horizontal */
   .sidebar {
     position: fixed;
     top: 100px;
@@ -495,40 +496,65 @@
     height: auto;
     display: flex;
     flex-direction: row;
-    overflow-x: auto;       /* permite rolar na horizontal */
+    overflow-x: auto;
     overflow-y: hidden;
     border-right: none;
     border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-    padding-inline: 8px;    /* afasta dos cantos da tela */
+    padding-inline: 8px;
     box-sizing: border-box;
   }
-         @media (max-width: 640px) {
-      .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
 
-      .header-right {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start; /* alinha texto e botão à esquerda */
-        gap: 4px;
-      }
+  .sidebar-section { border-bottom: none; }
+  .sidebar-section-title { display: none; }
 
-      .header-user {
-        font-size: 12px;
-        max-width: 100%;
-        white-space: normal;   /* permite quebrar em mais de uma linha */
-        word-break: break-word;
-      }
+  .sidebar-item {
+    padding: 10px 14px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
 
-      .btn-outline {
-        align-self: stretch;   /* botão ocupar a largura toda no mobile */
-        text-align: center;
-      }
-    }
+  .content-area {
+    padding: 16px;
+    margin-top: 120px;
+  }
+
+  /* cabeçalho: info à esquerda, botão sair à direita */
+  .header-content {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .header-user {
+    font-size: 12px;
+    max-width: 160px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .btn-outline {
+    padding: 4px 10px;
+    font-size: 12px;
+    align-self: flex-end;
+    width: auto;
+    text-align: center;
+  }
+}
 
   .sidebar-section { border-bottom: none; }
   .sidebar-section-title { display: none; }
@@ -757,6 +783,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
+
 
 
 
