@@ -254,16 +254,45 @@ function showApp() {
   if (subtitle) subtitle.textContent = "Gestão de Usuários";
 
   // habilita itens conforme a role
-// Experimentos e Mapa DBC: admin + pesquisador
-if (currentRole === "admin" || currentRole === "collaborator") {
-  const elExperiments = document.querySelector('[data-page="experiments"]');
-  if (elExperiments) elExperiments.classList.remove("disabled");
+// function showApp() {
+  $("authScreen").style.display = "none";
+  $("appScreen").style.display = "flex";
 
-  const elNew = document.querySelector('[data-page="new-experiment"]');
-  if (elNew) elNew.classList.remove("disabled");
+  if (currentUser) {
+    const el = $("userEmail");
+    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
+  }
 
+  const subtitle = document.getElementById("headerSubtitle");
+  if (subtitle) subtitle.textContent = "Gestão de Usuários";
+
+  // Mapa DBC: liberado para todas as roles (inclusive visitor)
   const elDbc = document.querySelector('[data-page="dbc-map"]');
   if (elDbc) elDbc.classList.remove("disabled");
+
+  // Experimentos: admin + pesquisador
+  if (currentRole === "admin" || currentRole === "collaborator") {
+    const elExperiments = document.querySelector('[data-page="experiments"]');
+    if (elExperiments) elExperiments.classList.remove("disabled");
+
+    const elNew = document.querySelector('[data-page="new-experiment"]');
+    if (elNew) elNew.classList.remove("disabled");
+  }
+
+  // Usuários: só admin
+  if (currentRole === "admin") {
+    const elUsers = document.querySelector('[data-page="users"]');
+    if (elUsers) elUsers.classList.remove("disabled");
+  }
+
+  // Convites: admin + pesquisador
+  if (currentRole === "admin" || currentRole === "collaborator") {
+    const elInvites = document.querySelector('[data-page="invites"]');
+    if (elInvites) elInvites.classList.remove("disabled");
+  }
+
+  setupNavigation();
+  navigateTo("users");
 }
 
 // Usuários: só admin
@@ -712,6 +741,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
