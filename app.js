@@ -254,22 +254,28 @@ function showApp() {
   if (subtitle) subtitle.textContent = "Gestão de Usuários";
 
   // habilita itens conforme a role
-  if (currentRole === "admin" || currentRole === "collaborator") {
+// Experimentos e Mapa DBC: admin + pesquisador
+if (currentRole === "admin" || currentRole === "collaborator") {
   const elExperiments = document.querySelector('[data-page="experiments"]');
   if (elExperiments) elExperiments.classList.remove("disabled");
 
   const elNew = document.querySelector('[data-page="new-experiment"]');
   if (elNew) elNew.classList.remove("disabled");
 
+  const elDbc = document.querySelector('[data-page="dbc-map"]');
+  if (elDbc) elDbc.classList.remove("disabled");
+}
+
+// Usuários: só admin
+if (currentRole === "admin") {
   const elUsers = document.querySelector('[data-page="users"]');
   if (elUsers) elUsers.classList.remove("disabled");
+}
 
+// Convites: admin + pesquisador
+if (currentRole === "admin" || currentRole === "collaborator") {
   const elInvites = document.querySelector('[data-page="invites"]');
   if (elInvites) elInvites.classList.remove("disabled");
-  
-    const elDbc = document.querySelector('[data-page="dbc-map"]');
-  if (elDbc) elDbc.classList.remove("disabled");
-
 }
 
   // navegação
@@ -716,6 +722,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
