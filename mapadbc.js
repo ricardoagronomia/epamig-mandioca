@@ -488,8 +488,9 @@ async function initDbcQrArea() {
         height: 96
       });
     }
-  });
-} // <-- esta chave fecha renderQrLabels
+   }); // fecha change do experimento
+} // fecha renderDbcMapPage
+
 
   // eventos de preview
   qrPreviewBtn.addEventListener("click", renderQrLabels);
