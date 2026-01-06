@@ -64,148 +64,151 @@ function renderDbcMapPage(container) {
     `;
   })();
 
-  // 2) Reagir à mudança do select: desenhar blocos 1–3 com grade 3×4
+    // 2) Reagir à mudança do select: desenhar blocos 1–3 com grade 3×4
   dbcExperimentSelect.addEventListener("change", async () => {
-  const expId = dbcExperimentSelect.value;
-  if (!expId) {
-    dbcState.experimentId = null;
+    const expId = dbcExperimentSelect.value;
+    if (!expId) {
+      dbcState.experimentId = null;
+      dbcState.plotsByKey = {};
+      dbcMapArea.innerHTML = `
+        <p style="color:#6b7280;font-size:14px;">
+          Selecione um experimento para carregar o mapa DBC.
+        </p>
+      `;
+      return;
+    }
+
+    dbcState.experimentId = expId;
     dbcState.plotsByKey = {};
-    dbcMapArea.innerHTML = `
-      <p style="color:#6b7280;font-size:14px;">
-        Selecione um experimento para carregar o mapa DBC.
-      </p>
-    `;
-    return;
-  }
 
-  dbcState.experimentId = expId;
-  dbcState.plotsByKey = {};
+    // 1) Buscar plots existentes
+    const { data: plots, error: plotsError } = await s
+      .from("plots")
+      .select("id, plot_code, block_number, treatment_id")
+      .eq("experiment_id", expId)
+      .order("block_number", { ascending: true });
 
-  // 1) Buscar plots existentes
-  const { data: plots, error: plotsError } = await s
-    .from("plots")
-    .select("id, plot_code, block_number, treatment_id")
-    .eq("experiment_id", expId)
-    .order("block_number", { ascending: true });
+    if (plotsError) {
+      dbcMapArea.innerHTML = `
+        <p style="color:#b91c1c;font-size:14px;">
+          Erro ao carregar parcelas (plots) deste experimento.
+        </p>
+      `;
+      return;
+    }
 
-  if (plotsError) {
-    dbcMapArea.innerHTML = `
-      <p style="color:#b91c1c;font-size:14px;">
-        Erro ao carregar parcelas (plots) deste experimento.
-      </p>
-    `;
-    return;
-  }
+    // 2) Buscar treatments do experimento
+    const { data: treatments, error: trError } = await s
+      .from("treatments")
+      .select("id, code, position, description")
+      .eq("experiment_id", expId)
+      .order("code", { ascending: true });
 
-  // 2) Buscar treatments do experimento
-  const { data: treatments, error: trError } = await s
-    .from("treatments")
-    .select("id, code, position, description")
-    .eq("experiment_id", expId)
-    .order("code", { ascending: true });
+    if (trError) {
+      dbcMapArea.innerHTML = `
+        <p style="color:#b91c1c;font-size:14px;">
+          Erro ao carregar tratamentos deste experimento.
+        </p>
+      `;
+      return;
+    }
 
-  if (trError) {
-    dbcMapArea.innerHTML = `
-      <p style="color:#b91c1c;font-size:14px;">
-        Erro ao carregar tratamentos deste experimento.
-      </p>
-    `;
-    return;
-  }
+    // Indexar plots por chave `${block}-${parcelaNum}`
+    (plots || []).forEach((p) => {
+      const parcelaNum = extractParcelaFromCode(p.plot_code);
+      if (!parcelaNum) return;
+      const key = `${p.block_number}-${parcelaNum}`;
+      dbcState.plotsByKey[key] = {
+        id: p.id,
+        plot_code: p.plot_code,
+        block_number: p.block_number,
+        treatment_id: p.treatment_id
+      };
+    });
 
-  // Indexar plots por chave `${block}-${parcelaNum}`
-  (plots || []).forEach((p) => {
-    const parcelaNum = extractParcelaFromCode(p.plot_code);
-    if (!parcelaNum) return;
-    const key = `${p.block_number}-${parcelaNum}`;
-    dbcState.plotsByKey[key] = {
-      id: p.id,
-      plot_code: p.plot_code,
-      block_number: p.block_number,
-      treatment_id: p.treatment_id
-    };
-  });
+    // 3) Montar blocos e grade 3×4 com selects de tratamento
+    const blockNumbers = [1, 2, 3];
 
-  // 3) Montar blocos e grade 3×4 com selects de tratamento
-  const blockNumbers = [1, 2, 3];
+    dbcMapArea.innerHTML = blockNumbers
+      .map((block) => {
+        const cellsHtml = Array.from({ length: 12 }, (_, i) => {
+          const parcelaNum = i + 1; // 1..12
+          const parcelaLabel = String(parcelaNum).padStart(2, "0");
+          const key = `${block}-${parcelaNum}`;
+          const existing = dbcState.plotsByKey[key];
 
-  dbcMapArea.innerHTML = blockNumbers
-    .map((block) => {
-      const cellsHtml = Array.from({ length: 12 }, (_, i) => {
-        const parcelaNum = i + 1; // 1..12
-        const parcelaLabel = String(parcelaNum).padStart(2, "0");
-        const key = `${block}-${parcelaNum}`;
-        const existing = dbcState.plotsByKey[key];
+          const statusText = existing
+            ? `Plot salvo (id: ${existing.id.slice(0, 8)}...)`
+            : `Sem plot cadastrado`;
 
-        const statusText = existing
-          ? `Plot salvo (id: ${existing.id.slice(0, 8)}...)`
-          : `Sem plot cadastrado`;
+          const selectId = `dbc-select-${block}-${parcelaNum}`;
 
-        const selectId = `dbc-select-${block}-${parcelaNum}`;
+          return `
+            <div class="dbc-plot-cell">
+              <div class="dbc-plot-label-main">Parcela ${parcelaLabel}</div>
+              <div class="dbc-plot-label-sub">Bloco ${block}</div>
+              <div class="dbc-plot-label-sub" style="margin-top:4px;color:#6b7280;">
+                ${statusText}
+              </div>
+              <div style="margin-top:6px;">
+                <select id="${selectId}" data-block="${block}" data-parcela="${parcelaNum}" class="dbc-plot-select">
+                  <option value="">Selecione tratamento...</option>
+                  ${treatments
+                    .map((t) => {
+                      const label = `${(t.code || '').toUpperCase()} ${t.position ? '· ' + t.position.toUpperCase() : ''}`;
+                      const selected = existing && existing.treatment_id === t.id ? 'selected' : '';
+                      return `<option value="${t.id}" ${selected}>${label}</option>`;
+                    })
+                    .join("")}
+                </select>
+              </div>
+            </div>
+          `;
+        }).join("");
 
         return `
-          <div class="dbc-plot-cell">
-            <div class="dbc-plot-label-main">Parcela ${parcelaLabel}</div>
-            <div class="dbc-plot-label-sub">Bloco ${block}</div>
-            <div class="dbc-plot-label-sub" style="margin-top:4px;color:#6b7280;">
-              ${statusText}
+          <div class="card" style="margin-bottom:12px;">
+            <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
+              Bloco ${block}
             </div>
-            <div style="margin-top:6px;">
-              <select id="${selectId}" data-block="${block}" data-parcela="${parcelaNum}" class="dbc-plot-select">
-                <option value="">Selecione tratamento...</option>
-                ${treatments
-                  .map((t) => {
-                    const label = `${(t.code || '').toUpperCase()} ${t.position ? '· ' + t.position.toUpperCase() : ''}`;
-                    const selected = existing && existing.treatment_id === t.id ? 'selected' : '';
-                    return `<option value="${t.id}" ${selected}>${label}</option>`;
-                  })
-                  .join("")}
-              </select>
+            <div class="dbc-block-grid">
+              ${cellsHtml}
             </div>
           </div>
         `;
-      }).join("");
+      })
+      .join("");
 
-      return `
-        <div class="card" style="margin-bottom:12px;">
-          <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
-            Bloco ${block}
-          </div>
-          <div class="dbc-block-grid">
-            ${cellsHtml}
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+    // 4) Ligar eventos de change nos selects para atualizar o estado em memória
+    dbcMapArea.querySelectorAll(".dbc-plot-select").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const block = Number(sel.dataset.block);
+        const parcelaNum = Number(sel.dataset.parcela);
+        const key = `${block}-${parcelaNum}`;
+        const treatmentId = sel.value || null;
 
-  // 4) Ligar eventos de change nos selects para atualizar o estado em memória
-  dbcMapArea.querySelectorAll(".dbc-plot-select").forEach((sel) => {
-    sel.addEventListener("change", () => {
-      const block = Number(sel.dataset.block);
-      const parcelaNum = Number(sel.dataset.parcela);
-      const key = `${block}-${parcelaNum}`;
-      const treatmentId = sel.value || null;
+        // garante que há um objeto no estado
+        if (!dbcState.plotsByKey[key]) {
+          const parcelaLabel = String(parcelaNum).padStart(2, "0");
+          dbcState.plotsByKey[key] = {
+            id: null,
+            plot_code: `B${block}P${parcelaLabel}`,
+            block_number: block,
+            treatment_id: null
+          };
+        }
 
-            // garante que há um objeto no estado
-      if (!dbcState.plotsByKey[key]) {
-        const parcelaLabel = String(parcelaNum).padStart(2, "0");
-        dbcState.plotsByKey[key] = {
-          id: null,
-          plot_code: `B${block}P${parcelaLabel}`,
-          block_number: block,
-          treatment_id: null
-        };
-      }
-
-      dbcState.plotsByKey[key].treatment_id = treatmentId;
+        dbcState.plotsByKey[key].treatment_id = treatmentId;
+      });
     });
-  });
-}); // fecha o addEventListener de change do experimento
+  }); // fecha o addEventListener de change do experimento
+}
 
+// helper fora da função
 function extractParcelaFromCode(plotCode) {
   if (!plotCode) return null;
   const match = String(plotCode).match(/P(\d+)/i);
   if (!match) return null;
   return Number(match[1]);
 }
+
