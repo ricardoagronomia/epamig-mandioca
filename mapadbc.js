@@ -299,18 +299,16 @@ if (!treatments || treatments.length === 0) {
     dbcSaveBtn.textContent = "Salvando...";
 
     const { data, error } = await s
-      .from("plots")
-      .upsert(rows, { onConflict: "id" })
-      .select("id, experiment_id, block_number, plot_code, treatment_id");
+  .from("plots")
+  .upsert(rows, { onConflict: "id" })
+  .select("id, experiment_id, block_number, plot_code, treatment_id");
 
-    dbcSaveBtn.disabled = false;
-    dbcSaveBtn.textContent = "Salvar mapa";
-
-    if (error) {
-      console.error(error);
-      alert("Erro ao salvar mapa de parcelas.");
-      return;
-    }
+console.log("rows", rows);
+console.log("upsert error", error);
+if (error) {
+  console.log("upsert message:", error.message);
+  console.log("upsert details:", error.details);
+}
 
     (data || []).forEach((row) => {
       const parcelaNum = extractParcelaFromCode(row.plot_code);
