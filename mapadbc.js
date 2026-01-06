@@ -262,27 +262,31 @@ if (!treatments || treatments.length === 0) {
       return;
     }
 
-    const rows = Object.values(dbcState.plotsByKey)
-      .filter((p) => p.treatment_id)
-      .map((p) => ({
-        id: p.id || undefined,
-        experiment_id: dbcState.experimentId,
-        block_number: p.block_number,
-        plot_code: p.plot_code,
-        treatment_id: p.treatment_id
-      }));
+   const rows = Object.values(dbcState.plotsByKey)
+  .filter((p) => p.treatment_id)
+  .map((p) => {
+    const base = {
+      experiment_id: dbcState.experimentId,
+      block_number: p.block_number,
+      plot_code: p.plot_code,
+      treatment_id: p.treatment_id
+    };
 
-    if (rows.length === 0) {
-      alert("Nenhuma parcela com tratamento selecionado para salvar.");
-      return;
+    // se já existe id, manda para atualizar; se não existe, não inclui id
+    if (p.id) {
+      base.id = p.id;
     }
+
+    return base;
+  });
 
     dbcSaveBtn.disabled = true;
     dbcSaveBtn.textContent = "Salvando...";
 
     const { data, error } = await s
-      .from("plots")
-      .upsert(rows, { onConflict: "id" }); // upsert em lote [web:643]
+  .from("plots")
+  .upsert(rows, { onConflict: "id" })
+  .select("id, experiment_id, block_number, plot_code, treatment_id");
 
       console.log("rows", rows);
       console.log("upsert error", error);
