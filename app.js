@@ -253,18 +253,7 @@ function showApp() {
   const subtitle = document.getElementById("headerSubtitle");
   if (subtitle) subtitle.textContent = "Gestão de Usuários";
 
-  // habilita itens conforme a role
-// function showApp() {
-  $("authScreen").style.display = "none";
-  $("appScreen").style.display = "flex";
-
-  if (currentUser) {
-    const el = $("userEmail");
-    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
-  }
-
-  const subtitle = document.getElementById("headerSubtitle");
-  if (subtitle) subtitle.textContent = "Gestão de Usuários";
+  // ========= VISIBILIDADE DO MENU POR ROLE =========
 
   // Mapa DBC: liberado para todas as roles (inclusive visitor)
   const elDbc = document.querySelector('[data-page="dbc-map"]');
@@ -291,23 +280,8 @@ function showApp() {
     if (elInvites) elInvites.classList.remove("disabled");
   }
 
-  setupNavigation();
-  navigateTo("users");
-}
+  // ========= FIM DAS REGRAS =========
 
-// Usuários: só admin
-if (currentRole === "admin") {
-  const elUsers = document.querySelector('[data-page="users"]');
-  if (elUsers) elUsers.classList.remove("disabled");
-}
-
-// Convites: admin + pesquisador
-if (currentRole === "admin" || currentRole === "collaborator") {
-  const elInvites = document.querySelector('[data-page="invites"]');
-  if (elInvites) elInvites.classList.remove("disabled");
-}
-
-  // navegação
   setupNavigation();
   navigateTo("users"); // ou "experiments", se preferir
 }
@@ -741,6 +715,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
