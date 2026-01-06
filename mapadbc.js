@@ -443,7 +443,7 @@ async function initDbcQrArea() {
     list = list.filter((p) => p.block === blockNum);
   }
 
-  // SE for etiqueta térmica, mostrar apenas a parcela escolhida
+  // etiqueta térmica: apenas a parcela escolhida
   if (fmt === "label-100x70") {
     if (!singleTemplateId) {
       qrLabelsWrapper.innerHTML = `
@@ -495,37 +495,39 @@ async function initDbcQrArea() {
       })
       .join("");
   } else {
-    // A4 – grade 2 colunas × 3 linhas (6 por página), 100×70, QR à esquerda
-    // trecho do formato A4 dentro de renderQrLabels()
-const cardsHtml = list
-  .map((p) => `
-    <div class="qr-label-card" style="
-      display:flex;
-      flex-direction:row;
-      align-items:center;
-      gap:6mm;
-    ">
-      <div id="qr-${p.templateId}" style="width:32mm;height:32mm;"></div>
-      <div style="display:flex;flex-direction:column;gap:2mm;">
-        <div style="font-weight:700;font-size:15px;">
-          ${p.treatmentCode} ${p.position}
-        </div>
-        <div style="font-size:14px;color:#111827;">
-          ${p.plotCode}
-        </div>
-        <div style="font-size:12px;color:#4b5563;">
-          Experimento: ${expName}
-        </div>
-      </div>
-    </div>
-  `)
-  .join("");
+    // A4 – 6 por página (2 x 3)
+    const cardsHtml = list
+      .map((p) => {
+        return `
+          <div class="qr-label-card" style="
+            display:flex;
+            flex-direction:row;
+            align-items:center;
+            gap:6mm;
+          ">
+            <div id="qr-${p.templateId}" style="width:32mm;height:32mm;"></div>
+            <div style="display:flex;flex-direction:column;gap:2mm;">
+              <div style="font-weight:700;font-size:15px;">
+                ${p.treatmentCode} ${p.position}
+              </div>
+              <div style="font-size:14px;color:#111827;">
+                ${p.plotCode}
+              </div>
+              <div style="font-size:12px;color:#4b5563;">
+                Experimento: ${expName}
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
 
-qrLabelsWrapper.innerHTML = `
-  <div class="qr-label-sheet">
-    ${cardsHtml}
-  </div>
-`;
+    qrLabelsWrapper.innerHTML = `
+      <div class="qr-label-sheet">
+        ${cardsHtml}
+      </div>
+    `;
+  }
 
   // GERAR QRCODES DEPOIS DO innerHTML
   list.forEach((p) => {
