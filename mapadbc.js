@@ -99,36 +99,7 @@ dbcTabQrBtn.addEventListener("click", () => {
   // buscar experimentos, listener de change, salvar etc.
   // (não coloque mais nenhum initDbcQrArea aqui dentro)
 
-  function buildQrParcelsFromState() {
-  const plots = dbcState.plotsByKey || {};
-  const items = [];
-
-  Object.keys(plots).forEach((key) => {
-    const [blockStr, parcelaStr] = key.split("-");
-    const block = Number(blockStr);
-    const parcelaNum = Number(parcelaStr);
-    if (!block || !parcelaNum) return;
-
-    const parcelaLabel = String(parcelaNum).padStart(2, "0");
-    const code = `B${block}T${parcelaLabel}`; // ex.: B1T01, B1T12 etc.
-    items.push({
-      block,
-      parcelaNum,
-      code,
-      key
-    });
-  });
-
-  // ordena por bloco e parcela
-  items.sort((a, b) => {
-    if (a.block !== b.block) return a.block - b.block;
-    return a.parcelaNum - b.parcelaNum;
-  });
-
-  return items;
-}
-
-      // 1) Buscar experimentos no Supabase
+        // 1) Buscar experimentos no Supabase
   (async () => {
     const { data: experiments, error } = await s
       .from("experiments")
@@ -400,78 +371,7 @@ function extractParcelaFromCode(plotCode) {
 // ===============================
 // Área de QR Codes dentro do Mapa
 // ===============================
-function initDbcQrArea() {
-  const area = document.getElementById("dbcTabQrArea");
-  if (!area) return;
 
-  const expName = dbcState.experimentName || "nenhum experimento selecionado";
-
-  area.innerHTML = `
-    <div class="content-header" style="margin-top:0;">
-      <div class="content-title">QR Code das Parcelas</div>
-      <div class="content-subtitle">
-        Etiquetas para o experimento: <strong>${expName}</strong>.
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="
-        display:flex;
-        flex-wrap:wrap;
-        gap:16px;
-        align-items:flex-end;
-        margin-bottom:16px;
-      ">
-        <div style="flex:0 0 160px;">
-          <label for="qrBlockFilter">Bloco</label>
-          <select id="qrBlockFilter">
-            <option value="all">Todos os blocos</option>
-            <option value="1">Bloco 1</option>
-            <option value="2">Bloco 2</option>
-            <option value="3">Bloco 3</option>
-          </select>
-        </div>
-
-        <div style="flex:0 0 220px;">
-          <label for="qrFormatSelect">Formato de impressão</label>
-          <select id="qrFormatSelect">
-            <option value="a4-6">A4 – 6 etiquetas por página</option>
-            <option value="label-100x70">Etiqueta térmica 100×70 mm (1 etiqueta)</option>
-          </select>
-        </div>
-
-        <div id="qrSingleLabelWrapper" style="flex:0 0 220px; display:none;">
-          <label for="qrSinglePlotSelect">Parcela para etiqueta única</label>
-          <select id="qrSinglePlotSelect">
-            <option value="">Selecione a parcela</option>
-          </select>
-        </div>
-
-        <div style="
-          flex:0 0 auto;
-          margin-left:auto;
-          display:flex;
-          gap:8px;
-          justify-content:flex-end;
-        ">
-          <button id="qrPreviewBtn" class="btn-secondary">
-            Atualizar visualização
-          </button>
-          <button id="qrPrintBtn" class="btn-primary">
-            Imprimir / Baixar
-          </button>
-        </div>
-      </div>
-
-      <div id="qrLabelsWrapper" style="
-        display:grid;
-        grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
-        gap:12px;
-      ">
-      </div>
-    </div>
-  `;
-}
 function initDbcQrArea() {
   const area = document.getElementById("dbcTabQrArea");
   if (!area) return;
@@ -589,6 +489,34 @@ function initDbcQrArea() {
     `
           )
           .join("");
-}
+  }
 
+function buildQrParcelsFromState() {
+  const plots = dbcState.plotsByKey || {};
+  const items = [];
+
+  Object.keys(plots).forEach((key) => {
+    const [blockStr, parcelaStr] = key.split("-");
+    const block = Number(blockStr);
+    const parcelaNum = Number(parcelaStr);
+    if (!block || !parcelaNum) return;
+
+    const parcelaLabel = String(parcelaNum).padStart(2, "0");
+    const code = `B${block}T${parcelaLabel}`; // ex.: B1T01, B1T12 etc.
+    items.push({
+      block,
+      parcelaNum,
+      code,
+      key
+    });
+  });
+
+  // ordena por bloco e parcela
+  items.sort((a, b) => {
+    if (a.block !== b.block) return a.block - b.block;
+    return a.parcelaNum - b.parcelaNum;
+  });
+
+  return items;
+}
 
