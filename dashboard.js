@@ -26,8 +26,9 @@ function renderExperimentDashboardPage(container) {
   const name = experiment.name || "Sem nome definido";
   const farm = experiment.farm || "-";
   const municipality = experiment.municipality || "-";
-  const totalArea = experiment.totalarea || "-";
-  const plotArea = experiment.plotarea || "-";
+  const totalArea = experiment.total_area ?? experiment.totalarea ?? "-";
+  const plotArea = experiment.plot_area ?? experiment.plotarea ?? "-";
+  const soilType = experiment.soil_type ?? experiment.soiltype ?? "-";
   const plantingDateRaw = experiment.plantingdate || experiment.planting_date || null;
 
   const plantingDate = typeof formatExperimentDate === "function"
@@ -123,9 +124,9 @@ function renderExperimentDashboardPage(container) {
           </div>
           <div style="flex:1 1 140px;">
             <div style="font-weight:500;">Área total (m²)</div>
-            <div>${escapeHtml(String(totalArea))}</div>
-          </div>
-          <div style="flex:1 1 140px;">
+              <div>${escapeHtml(String(totalArea))}</div>
+            </div>
+            <div style="flex:1 1 140px;">
             <div style="font-weight:500;">Área útil/parcela (m²)</div>
             <div>${escapeHtml(String(plotArea))}</div>
           </div>
@@ -150,7 +151,7 @@ function renderExperimentDashboardPage(container) {
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
           <div style="flex:1 1 160px;">
             <div style="font-weight:500;">Tipo de solo</div>
-            <div>${escapeHtml(experiment.soiltype || "–")}</div>
+            <div>${escapeHtml(soilType)}</div>
           </div>
           <div style="flex:1 1 160px;">
             <div style="font-weight:500;">Clima</div>
