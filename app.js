@@ -253,11 +253,15 @@ function showApp() {
   const subtitle = document.getElementById("headerSubtitle");
   if (subtitle) subtitle.textContent = "Gestão de Usuários";
 
-  // ========= VISIBILIDADE DO MENU POR ROLE =========
+    // ========= VISIBILIDADE DO MENU POR ROLE =========
 
   // Mapa DBC: liberado para todas as roles (inclusive visitor)
   const elDbc = document.querySelector('[data-page="dbc-map"]');
   if (elDbc) elDbc.classList.remove("disabled");
+
+  // Identificação: liberada para todas as roles (inclusive visitor)
+  const elDashboard = document.querySelector('[data-page="experiment-dashboard"]');
+  if (elDashboard) elDashboard.classList.remove("disabled");
 
   // Experimentos: admin + pesquisador
   if (currentRole === "admin" || currentRole === "collaborator") {
@@ -721,6 +725,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
