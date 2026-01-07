@@ -111,6 +111,12 @@ async function loadExperimentsIntoList() {
   }
 
   const experiments = data || [];
+
+  window.experiments = experiments;
+
+if (!window.currentExperiment && experiments.length > 0) {
+  window.currentExperiment = experiments[0];
+}
   
 // torna a lista acessível globalmente
 window.experiments = experiments;
@@ -644,6 +650,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
