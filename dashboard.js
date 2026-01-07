@@ -1,6 +1,5 @@
 function renderExperimentDashboardPage(container) {
-  // Exemplo: pegar experimento atual de algum estado global
-  const experiment = window.currentExperiment; // ou como você já estiver armazenando
+  const experiment = window.currentExperiment;
 
   if (!experiment) {
     container.innerHTML = `
@@ -22,10 +21,7 @@ function renderExperimentDashboardPage(container) {
         ${experiment.code || "Sem código"} · ${experiment.name || "Sem nome definido"}
       </div>
     </div>
-  `;
-}
 
-    <!-- Card principal: DAP em estilo calendário -->
     <div class="card" style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;margin-bottom:16px;">
       <div class="dap-calendar" style="
         flex:0 0 180px;
@@ -74,7 +70,6 @@ function renderExperimentDashboardPage(container) {
         </div>
       </div>
 
-      <!-- Card identificação básica -->
       <div class="card" style="
         flex:1 1 220px;
         margin-bottom:0;
@@ -111,7 +106,6 @@ function renderExperimentDashboardPage(container) {
       </div>
     </div>
 
-    <!-- Timeline principal -->
     <div class="card">
       <div style="font-size:14px;font-weight:600;color:#065f46;margin-bottom:8px;">
         Linha do tempo do experimento
