@@ -1,14 +1,9 @@
 function renderExperimentDashboardPage(container) {
   const experiment = window.currentExperiment;
-
-  if (!experiment) {
-    container.innerHTML = `
-      <div class="card">
-        <p>Nenhum experimento selecionado.</p>
-      </div>
-    `;
-    return;
-  }
+if (!experiment) {
+  container.innerHTML = `<div class="card"><p>Nenhum experimento selecionado.</p></div>`;
+  return;
+}
 
   const dap = experiment.dap;
   const plantingDate = experiment.planting_date_formatted;
