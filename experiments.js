@@ -337,7 +337,6 @@ function openExperimentFormModal(exp) {
   const isEdit = !!exp;
   const title = isEdit ? "Editar experimento" : "Novo experimento";
 
-  // valores padrão se não houver experimento ainda
   const blocks = exp?.blocks_count ?? 3;
   const plotsPerBlock = exp?.plots_per_block ?? 12;
 
@@ -378,10 +377,9 @@ function openExperimentFormModal(exp) {
           placeholder="Descreva o objetivo do experimento...">${escapeHtml(exp?.objective || "")}</textarea>
 
         <label for="expResearcher">Pesquisadores responsáveis</label>
-<textarea id="expResearcher" rows="2"
-  style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
-  placeholder="Ex.: Ricardo L. Ribeiro; (um por linha ou separados por ponto e vírgula)">
-${escapeHtml(exp?.researcher || "")}</textarea>
+        <textarea id="expResearcher" rows="2"
+          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--gray-200); font-size:14px; resize:vertical;"
+          placeholder="Ex.: Ricardo L. Ribeiro; (um por linha ou separados por ponto e vírgula)">${escapeHtml(exp?.researcher || "")}</textarea>
 
         <label for="expPlantingDate">Data de plantio</label>
         <input id="expPlantingDate" type="date"
@@ -399,8 +397,8 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
           value="${escapeHtml(exp?.farm || "")}"
           placeholder="Ex.: EPAMIG ITAP" />
 
-        <label for="expmunicipality">Município / Estado</label>
-        <input id="expmunicipality" type="text"
+        <label for="expMunicipality">Município / Estado</label>
+        <input id="expMunicipality" type="text"
           value="${escapeHtml(exp?.municipality || "")}"
           placeholder="Ex.: Pitangui - MG" />
 
@@ -451,28 +449,28 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
 
         <div style="margin-top:10px;">
           <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Disposição das plantas na parcela</div>
-          <<div style="display:flex; flex-wrap:wrap; gap:8px;">
-  <div style="flex:1 1 120px;">
-    <label for="expPlotLength">Comprimento (m)</label>
-    <input id="expPlotLength" type="number" step="0.01" min="0"
-      value="${plotLength}" />
-  </div>
-  <div style="flex:1 1 120px;">
-    <label for="expPlotWidth">Largura (m)</label>
-    <input id="expPlotWidth" type="number" step="0.01" min="0"
-      value="${plotWidth}" />
-  </div>
-  <div style="flex:1 1 120px;">
-    <label for="expRowSpacing">Espaç. linhas (m)</label>
-    <input id="expRowSpacing" type="number" step="0.01" min="0"
-      value="${rowSpacing}" />
-  </div>
-  <div style="flex:1 1 120px;">
-    <label for="expPlantSpacing">Espaç. plantas (m)</label>
-    <input id="expPlantSpacing" type="number" step="0.01" min="0"
-  value="${plantSpacing}" />
-  </div>
-</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <div style="flex:1 1 120px;">
+              <label for="expPlotLength">Comprimento (m)</label>
+              <input id="expPlotLength" type="number" step="0.01" min="0"
+                value="${plotLength}" />
+            </div>
+            <div style="flex:1 1 120px;">
+              <label for="expPlotWidth">Largura (m)</label>
+              <input id="expPlotWidth" type="number" step="0.01" min="0"
+                value="${plotWidth}" />
+            </div>
+            <div style="flex:1 1 120px;">
+              <label for="expRowSpacing">Espaç. linhas (m)</label>
+              <input id="expRowSpacing" type="number" step="0.01" min="0"
+                value="${rowSpacing}" />
+            </div>
+            <div style="flex:1 1 120px;">
+              <label for="expPlantSpacing">Espaç. plantas (m)</label>
+              <input id="expPlantSpacing" type="number" step="0.01" min="0"
+                value="${plantSpacing}" />
+            </div>
+          </div>
         </div>
 
         <div style="margin-top:10px;">
@@ -500,7 +498,7 @@ ${escapeHtml(exp?.researcher || "")}</textarea>
         </div>
       </div>
 
-               <!-- CRONOGRAMA & REVISÃO (esqueleto simples) -->
+      <!-- CRONOGRAMA & REVISÃO (esqueleto simples) -->
       <div style="margin-bottom:12px;">
         <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
           Cronograma (planejamento geral)
@@ -650,6 +648,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
