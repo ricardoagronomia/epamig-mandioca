@@ -5,6 +5,8 @@
 
 // estado local do módulo
 let currentExperiment = null;
+window.currentExperiment = window.currentExperiment || null;
+window.experiments = window.experiments || [];
 
 // usa formatDate que já existe no app.js, se disponível
 function formatExperimentDate(dateString) {
@@ -106,6 +108,14 @@ async function loadExperimentsIntoList() {
   }
 
   const experiments = data || [];
+// torna a lista acessível globalmente
+window.experiments = experiments;
+
+// se ainda não há experimento selecionado, pega o primeiro
+if (!window.currentExperiment && experiments.length > 0) {
+  window.currentExperiment = experiments[0];
+  currentExperiment = window.currentExperiment;
+}
 
   if (!experiments.length) {
     listEl.innerHTML = `
@@ -628,6 +638,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
