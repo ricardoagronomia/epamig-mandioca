@@ -13,7 +13,7 @@ const s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // =====================================
 let currentUser = null;
 let currentRole = null;
-let currentPage = "experiment-dashboard"; // página padrão
+let currentPage = "experiments"; // página padrão
 
 // =====================================
 // HELPERS
@@ -288,7 +288,7 @@ function showApp() {
     loadExperimentsIntoList().catch(() => {});
   }
 
-  navigateTo("experiment-dashboard");
+  navigateTo("experiments");
 }
 
 // navegação da sidebar
@@ -728,6 +728,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
