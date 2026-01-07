@@ -334,12 +334,18 @@ function renderPage(page) {
         </div>
       `;
     }
+    } else if (page === "experiment-dashboard") {
+    if (typeof renderExperimentDashboardPage === "function") {
+      renderExperimentDashboardPage(container);
+    } else {
+      container.innerHTML = `
+        <div class="card">
+          <p>Página de identificação não carregada.</p>
+        </div>
+      `;
+    }
   } else {
-    container.innerHTML = `
-      <div class="card">
-        <p>Em desenvolvimento...</p>
-      </div>
-    `;
+    // ...
   }
 }
 
@@ -715,6 +721,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
