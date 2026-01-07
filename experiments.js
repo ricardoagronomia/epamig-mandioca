@@ -553,9 +553,9 @@ async function submitExperimentForm(id) {
   const usefulRow = parseInt(val("expUsefulRow") || "0", 10);
   const usefulCol = parseInt(val("expUsefulCol") || "0", 10);
   const useful_plants_per_plot = parseInt(
-    val("expUsefulPlantsTotal") || usefulRow * usefulCol || "0",
-    10
-  );
+  val("expUsefulPlantsTotal") || "0",
+  10
+);
 
   // DIMENSÕES
   const plot_length = parseFloat(val("expPlotLength") || "0");
@@ -648,6 +648,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
