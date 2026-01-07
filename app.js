@@ -243,15 +243,16 @@ async function loadUserRole() {
 function showApp() {
   $("authScreen").style.display = "none";
   $("appScreen").style.display = "flex";
-
   // preenche e-mail + role no cabeçalho
   if (currentUser) {
     const el = $("userEmail");
-    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
+    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}... `;
   }
-
   const subtitle = document.getElementById("headerSubtitle");
-  if (subtitle) subtitle.textContent = "Painel geral";
+  if (subtitle) subtitle.textContent = "Gestão de Usuários";
+  // ========= VISIBILIDADE DO MENU POR ROLE =========
+  // Mapa DBC: liberado para todas as roles (inclusive visitor)
+  const elDbc = document.querySelector('[data-page="dbc-map"]');
 
   // ========= VISIBILIDADE DO MENU POR ROLE =========
 
@@ -723,6 +724,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
