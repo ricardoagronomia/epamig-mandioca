@@ -282,8 +282,10 @@ function showApp() {
   // ========= FIM DAS REGRAS =========
 
   setupNavigation();
-  navigateTo("experiment-dashboard");
+  if (typeof loadExperimentsIntoList === "function") {
+  loadExperimentsIntoList().catch(() => {});
 }
+  navigateTo("experiment-dashboard");
   
 function setupNavigation() {
   document.querySelectorAll(".sidebar-item").forEach(item => {
@@ -721,6 +723,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
