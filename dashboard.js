@@ -1,10 +1,19 @@
-function renderExperimentDashboardPage(container, experiment) {
-  // experiment: objeto com dados básicos (code, name, planting_date, etc.)
-  // dap: já calculado fora, ou você calcula aqui
+function renderExperimentDashboardPage(container) {
+  // Exemplo: pegar experimento atual de algum estado global
+  const experiment = window.currentExperiment; // ou como você já estiver armazenando
 
-  const dap = experiment.dap; // ex.: número de dias após plantio
-  const plantingDate = experiment.planting_date_formatted; // "12/03/2026"
-  const todayDate = experiment.today_formatted;            // "06/07/2026"
+  if (!experiment) {
+    container.innerHTML = `
+      <div class="card">
+        <p>Nenhum experimento selecionado.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const dap = experiment.dap;
+  const plantingDate = experiment.planting_date_formatted;
+  const todayDate = experiment.today_formatted;
 
   container.innerHTML = `
     <div class="content-header">
@@ -13,6 +22,8 @@ function renderExperimentDashboardPage(container, experiment) {
         ${experiment.code || "Sem código"} · ${experiment.name || "Sem nome definido"}
       </div>
     </div>
+  `;
+}
 
     <!-- Card principal: DAP em estilo calendário -->
     <div class="card" style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;margin-bottom:16px;">
