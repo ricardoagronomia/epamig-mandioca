@@ -243,16 +243,15 @@ async function loadUserRole() {
 function showApp() {
   $("authScreen").style.display = "none";
   $("appScreen").style.display = "flex";
+
   // preenche e-mail + role no cabeçalho
   if (currentUser) {
     const el = $("userEmail");
-    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}... `;
+    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
   }
+
   const subtitle = document.getElementById("headerSubtitle");
-  if (subtitle) subtitle.textContent = "Gestão de Usuários";
-  // ========= VISIBILIDADE DO MENU POR ROLE =========
-  // Mapa DBC: liberado para todas as roles (inclusive visitor)
-  const elDbc = document.querySelector('[data-page="dbc-map"]');
+  if (subtitle) subtitle.textContent = "Painel geral";
 
   // ========= VISIBILIDADE DO MENU POR ROLE =========
 
@@ -283,11 +282,16 @@ function showApp() {
   // ========= FIM DAS REGRAS =========
 
   setupNavigation();
+
+  // garante que experimentos sejam carregados em background
   if (typeof loadExperimentsIntoList === "function") {
-  loadExperimentsIntoList().catch(() => {});
-}
+    loadExperimentsIntoList().catch(() => {});
+  }
+
   navigateTo("experiment-dashboard");
-  
+}
+
+// navegação da sidebar
 function setupNavigation() {
   document.querySelectorAll(".sidebar-item").forEach(item => {
     item.addEventListener("click", function () {
@@ -724,6 +728,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
