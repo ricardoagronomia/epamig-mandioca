@@ -253,27 +253,16 @@ function showApp() {
   const subtitle = document.getElementById("headerSubtitle");
   if (subtitle) subtitle.textContent = "Painel geral";
 
-  setupNavigation();
-
-  // em vez de ir para users/experiments, forçar dashboard
-  navigateTo("experiment-dashboard");
-}
-
-    // ========= VISIBILIDADE DO MENU POR ROLE =========
+  // ========= VISIBILIDADE DO MENU POR ROLE =========
 
   // Mapa DBC: liberado para todas as roles (inclusive visitor)
   const elDbc = document.querySelector('[data-page="dbc-map"]');
   if (elDbc) elDbc.classList.remove("disabled");
 
-  // Identificação: liberada para todas as roles (inclusive visitor)
-  const elDashboard = document.querySelector('[data-page="experiment-dashboard"]');
-  if (elDashboard) elDashboard.classList.remove("disabled");
-
   // Experimentos: admin + pesquisador
   if (currentRole === "admin" || currentRole === "collaborator") {
     const elExperiments = document.querySelector('[data-page="experiments"]');
     if (elExperiments) elExperiments.classList.remove("disabled");
-
     const elNew = document.querySelector('[data-page="new-experiment"]');
     if (elNew) elNew.classList.remove("disabled");
   }
@@ -293,13 +282,13 @@ function showApp() {
   // ========= FIM DAS REGRAS =========
 
   setupNavigation();
-  navigateTo("users"); // ou "experiments", se preferir
+  navigateTo("experiment-dashboard");
 }
   
 function setupNavigation() {
-  document.querySelectorAll('.sidebar-item').forEach(item => {
-    item.addEventListener('click', function () {
-      if (this.classList.contains('disabled')) return;
+  document.querySelectorAll(".sidebar-item").forEach(item => {
+    item.addEventListener("click", function () {
+      if (this.classList.contains("disabled")) return;
       const page = this.dataset.page;
       navigateTo(page);
     });
@@ -317,33 +306,47 @@ function navigateTo(page) {
 }
 
 function renderPage(page) {
-  const container = contentArea;
+  const container = $("contentArea");
 
   if (page === "users") {
     renderUsersPage(container);
-  } else if (page === "invites") {
+    return;
+  }
+
+  if (page === "invites") {
     renderInvitesPage(container);
-  } else if (page === "experiments") {
+    return;
+  }
+
+  if (page === "experiments") {
     if (typeof renderExperimentsPage === "function") {
       renderExperimentsPage(container);
     } else {
       container.innerHTML = `<div class="card"><p>Módulo de experimentos não carregado.</p></div>`;
     }
-  } else if (page === "dbc-map") {
+    return;
+  }
+
+  if (page === "dbc-map") {
     if (typeof renderDbcMapPage === "function") {
       renderDbcMapPage(container);
     } else {
       container.innerHTML = `<div class="card"><p>Módulo de Mapa DBC não carregado.</p></div>`;
     }
-  } else if (page === "experiment-dashboard") {
+    return;
+  }
+
+  if (page === "experiment-dashboard") {
     if (typeof renderExperimentDashboardPage === "function") {
       renderExperimentDashboardPage(container);
     } else {
       container.innerHTML = `<div class="card"><p>Dashboard de experimento não carregada.</p></div>`;
     }
-  } else {
-    container.innerHTML = `<div class="card"><p>Em desenvolvimento...</p></div>`;
+    return;
   }
+
+  // fallback
+  container.innerHTML = `<div class="card"><p>Em desenvolvimento...</p></div>`;
 }
 
 // =====================================
@@ -718,6 +721,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
