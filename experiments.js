@@ -8,6 +8,9 @@ let currentExperiment = null;
 window.currentExperiment = window.currentExperiment || null;
 window.experiments = window.experiments || [];
 
+window.currentExperiment = window.currentExperiment || null;
+window.experiments = window.experiments || [];
+
 // usa formatDate que já existe no app.js, se disponível
 function formatExperimentDate(dateString) {
   if (typeof formatDate === "function") {
@@ -108,6 +111,7 @@ async function loadExperimentsIntoList() {
   }
 
   const experiments = data || [];
+  
 // torna a lista acessível globalmente
 window.experiments = experiments;
 
@@ -284,10 +288,12 @@ function selectExperiment(id) {
     .single()
     .then(({ data, error }) => {
       if (!error && data) {
-        currentExperiment = data;
-        loadExperimentsIntoList();
-        alert(`Experimento "${data.code || ""}" selecionado.`);
-      }
+  currentExperiment = data;
+  window.currentExperiment = data; // <-- garante que o dashboard veja
+  loadExperimentsIntoList();
+  alert(`Experimento "${data.code || ""}" selecionado.`);
+}
+
     });
 }
 
@@ -638,6 +644,7 @@ function safeJson(obj) {
   if (!obj) return "null";
   return "'" + JSON.stringify(obj).replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 }
+
 
 
 
