@@ -13,7 +13,7 @@ const s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // =====================================
 let currentUser = null;
 let currentRole = null;
-let currentPage = "users";
+let currentPage = "experiment-dashboard"; // página padrão
 
 // =====================================
 // HELPERS
@@ -251,7 +251,13 @@ function showApp() {
   }
 
   const subtitle = document.getElementById("headerSubtitle");
-  if (subtitle) subtitle.textContent = "Gestão de Usuários";
+  if (subtitle) subtitle.textContent = "Painel geral";
+
+  setupNavigation();
+
+  // em vez de ir para users/experiments, forçar dashboard
+  navigateTo("experiment-dashboard");
+}
 
     // ========= VISIBILIDADE DO MENU POR ROLE =========
 
@@ -303,16 +309,15 @@ function setupNavigation() {
 function navigateTo(page) {
   currentPage = page;
 
-  document.querySelectorAll('.sidebar-item').forEach(item => {
-    item.classList.remove('active');
-    if (item.dataset.page === page) item.classList.add('active');
+  document.querySelectorAll(".sidebar-item").forEach(item => {
+    item.classList.toggle("active", item.dataset.page === page);
   });
 
   renderPage(page);
 }
 
 function renderPage(page) {
-  const container = $("contentArea");
+  const container = contentArea;
 
   if (page === "users") {
     renderUsersPage(container);
@@ -322,34 +327,22 @@ function renderPage(page) {
     if (typeof renderExperimentsPage === "function") {
       renderExperimentsPage(container);
     } else {
-      container.innerHTML = `
-        <div class="card">
-          <p>Módulo de experimentos não carregado.</p>
-        </div>
-      `;
+      container.innerHTML = `<div class="card"><p>Módulo de experimentos não carregado.</p></div>`;
     }
   } else if (page === "dbc-map") {
     if (typeof renderDbcMapPage === "function") {
       renderDbcMapPage(container);
     } else {
-      container.innerHTML = `
-        <div class="card">
-          <p>Módulo de Mapa DBC não carregado.</p>
-        </div>
-      `;
+      container.innerHTML = `<div class="card"><p>Módulo de Mapa DBC não carregado.</p></div>`;
     }
-    } else if (page === "experiment-dashboard") {
+  } else if (page === "experiment-dashboard") {
     if (typeof renderExperimentDashboardPage === "function") {
       renderExperimentDashboardPage(container);
     } else {
-      container.innerHTML = `
-        <div class="card">
-          <p>Página de identificação não carregada.</p>
-        </div>
-      `;
+      container.innerHTML = `<div class="card"><p>Dashboard de experimento não carregada.</p></div>`;
     }
   } else {
-    // ...
+    container.innerHTML = `<div class="card"><p>Em desenvolvimento...</p></div>`;
   }
 }
 
@@ -725,6 +718,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
