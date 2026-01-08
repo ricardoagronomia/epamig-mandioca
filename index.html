@@ -495,14 +495,36 @@
     .sched-row .btn-danger {
       padding: 2px 6px;
     }
+/* Cronograma: melhor layout no mobile */
+@media (max-width: 640px) {
+  .sched-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
 
-    /* Deixar o botão principal largo no mobile */
-    @media (max-width: 640px) {
-      .modal-content .btn-primary {
-        width: 100%;
-        justify-content: center;
-      }
-    }
+  .sched-row span {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .sched-row input[type="date"] {
+    flex: 1 1 130px;
+    min-width: 0;
+  }
+
+  .sched-row .btn-danger {
+    flex: 0 0 auto;
+    margin-top: 4px;
+  }
+}
+
+/* Deixar o botão principal largo no mobile */
+@media (max-width: 640px) {
+  .modal-content .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
 
     .modal-header {
       display: flex;
@@ -854,6 +876,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </body>
 </html>
+
 
 
 
