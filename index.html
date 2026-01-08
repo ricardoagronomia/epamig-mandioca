@@ -186,12 +186,16 @@
     .app-layout { display: flex; flex-direction: column; height: 100vh; }
 
     .header {
-      background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
-      color: #f9fafb;
-      padding: 6px 12px;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
-      z-index: 10;
-    }
+  background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
+  color: #f9fafb;
+  padding: 6px 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+  z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
 
     .header-content {
       display: flex;
@@ -251,6 +255,7 @@
       display: flex;
       min-height: 0;
       background: #f3f4f6;
+      margin-top: 60px; /* ajuste para a altura real do header */
     }
 
     .sidebar {
@@ -845,6 +850,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </body>
 </html>
+
 
 
 
