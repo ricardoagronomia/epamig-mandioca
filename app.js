@@ -266,6 +266,12 @@ function showApp() {
     const elNew = document.querySelector('[data-page="new-experiment"]');
     if (elNew) elNew.classList.remove("disabled");
   }
+  
+  // Monitoramento: admin + pesquisador (ajuste se quiser outra regra)
+  if (currentRole === "admin" || currentRole === "collaborator") {
+    const elMonitoring = document.querySelector('[data-page="monitoring"]');
+    if (elMonitoring) elMonitoring.classList.remove("disabled");
+  }
 
   // Usuários: só admin
   if (currentRole === "admin") {
@@ -731,6 +737,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
