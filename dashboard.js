@@ -29,13 +29,28 @@ function renderExperimentDashboardPage(container) {
   const totalArea = experiment.total_area ?? experiment.totalarea ?? "-";
   const plotArea = experiment.plot_area ?? experiment.plotarea ?? "-";
   const soilType = experiment.soil_type ?? experiment.soiltype ?? "-";
-  const plantingDateRaw = experiment.plantingdate || experiment.planting_date || null;
+  const plantingDateRaw = experiment.planting_date || experiment.plantingdate || null;
 
-  const plantingDate = typeof formatExperimentDate === "function"
-    ? formatExperimentDate(plantingDateRaw)
-    : (plantingDateRaw || "-");
+const todayIso = getTodayIsoLocal();
 
-  const todayIso = new Date().toISOString().split("T")[0];
+const plantingDate = typeof formatExperimentDate === "function"
+  ? formatExperimentDate(plantingDateRaw)
+  : (plantingDateRaw || "-");
+
+const todayFormatted = typeof formatExperimentDate === "function"
+  ? formatExperimentDate(todayIso)
+  : todayIso;
+
+const dap = calculateDAP(plantingDateRaw, todayIso);
+
+  function getTodayIsoLocal() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
   const todayFormatted = typeof formatExperimentDate === "function"
     ? formatExperimentDate(todayIso)
     : todayIso;
