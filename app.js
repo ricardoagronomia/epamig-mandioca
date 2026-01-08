@@ -356,7 +356,7 @@ function renderPage(page) {
     if (typeof renderMonitoringPage === "function") {
       renderMonitoringPage(container);
     } else {
-      container.innerHTML = '<div class="card"><p>Módulo de monitoramento não carregado.</p></div>';
+      container.innerHTML = `<div class="card"><p>Módulo de monitoramento não carregado.</p></div>`;
     }
     return;
   }
@@ -731,6 +731,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
