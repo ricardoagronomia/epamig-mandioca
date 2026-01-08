@@ -31,32 +31,17 @@ function renderExperimentDashboardPage(container) {
   const soilType = experiment.soil_type ?? experiment.soiltype ?? "-";
   const plantingDateRaw = experiment.planting_date || experiment.plantingdate || null;
 
-const todayIso = getTodayIsoLocal();
+  const todayIso = getTodayIsoLocal();
 
-const plantingDate = typeof formatExperimentDate === "function"
-  ? formatExperimentDate(plantingDateRaw)
-  : (plantingDateRaw || "-");
-
-const todayFormatted = typeof formatExperimentDate === "function"
-  ? formatExperimentDate(todayIso)
-  : todayIso;
-
-const dap = calculateDAP(plantingDateRaw, todayIso);
-
-  function getTodayIsoLocal() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+  const plantingDate = typeof formatExperimentDate === "function"
+    ? formatExperimentDate(plantingDateRaw)
+    : (plantingDateRaw || "-");
 
   const todayFormatted = typeof formatExperimentDate === "function"
     ? formatExperimentDate(todayIso)
     : todayIso;
 
   const dap = calculateDAP(plantingDateRaw, todayIso);
-
   container.innerHTML = `
     <div class="content-header">
       <div class="content-title">Identificação do experimento</div>
@@ -266,5 +251,12 @@ if (typeof escapeHtml !== "function") {
       .replace(/'/g, "&#39;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+  }
+  function getTodayIsoLocal() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
   }
 }
