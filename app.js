@@ -351,13 +351,15 @@ function renderPage(page) {
     }
     return;
   }
-  else if (page === "monitoring") {
+
+  if (page === "monitoring") {
     if (typeof renderMonitoringPage === "function") {
-    renderMonitoringPage(container);
-  } else {
-    container.innerHTML = '<div class="card"><p>Módulo de monitoramento não carregado.</p></div>';
+      renderMonitoringPage(container);
+    } else {
+      container.innerHTML = '<div class="card"><p>Módulo de monitoramento não carregado.</p></div>';
+    }
+    return;
   }
-}
 
   // fallback
   container.innerHTML = `<div class="card"><p>Em desenvolvimento...</p></div>`;
@@ -606,17 +608,24 @@ window.openInviteModal = function () {
 };
 
 window.sendInvite = async function () {
-  // apenas admin e colaborador podem enviar convites
-if (currentRole !== "admin" && currentRole !== "collaborator") {
-  alert("Apenas administradores e pesquisadores podem enviar convites.");
-  return;
-}
+  if (currentRole !== "admin" && currentRole !== "collaborator") {
+    alert("Apenas administradores e pesquisadores podem enviar convites.");
+    return;
+  }
 
-// colaborador NÃO pode criar admin
-if (currentRole !== "admin" && role === "admin") {
-  alert("Apenas administradores podem convidar administradores.");
-  return;
-}
+  const email = document.getElementById("inviteEmail").value.trim();
+  const role = document.getElementById("inviteRole").value;
+
+  if (!email) {
+    alert("Informe um e-mail para o convite.");
+    return;
+  }
+
+  // colaborador NÃO pode criar admin
+  if (currentRole !== "admin" && role === "admin") {
+    alert("Apenas administradores podem convidar administradores.");
+    return;
+  }
 
   try {
     const expiresAt = new Date();
@@ -628,7 +637,8 @@ if (currentRole !== "admin" && role === "admin") {
       role,
       token,
       invited_by: currentUser.id,
-      // se você quiser, pode adicionar expires_at depois e ajustar aqui
+      // você pode adicionar expires_at aqui depois
+      // expires_at: expiresAt.toISOString()
     });
     if (error) throw error;
 
@@ -639,26 +649,12 @@ if (currentRole !== "admin" && role === "admin") {
       <p style="font-size:14px;color:#374151;margin-bottom:8px;">
         Convite criado para <strong>${email}</strong> como <strong>${roleLabel(role)}</strong>.
       </p>
-      <label style="font-size:13px;font-weight:500;color:#374151;margin-bottom:4px;display:block;">
-        Link do convite
-      </label>
-      <input type="text" id="inviteLinkField" value="${link}"
-             readonly
-             style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #d1d5db;
-                    font-size:13px;background:#f9fafb;margin-bottom:8px;">
-      <button class="btn-primary" style="width:100%;margin-bottom:6px;" onclick="copyInviteLinkFromModal()">
-        Copiar link
-      </button>
-      <button class="btn-secondary" style="width:100%;" onclick="closeModal()">
-        Fechar
-      </button>
+      ...
     `;
 
-    // tenta copiar automaticamente uma vez
-    try { await navigator.clipboard.writeText(link); } catch(_) {}
+    try { await navigator.clipboard.writeText(link); } catch (_) {}
 
-    // atualiza lista na página de convites
-    renderInvitesPage(contentArea);
+    renderInvitesPage($("contentArea"));
   } catch (err) {
     alert(err.message || "Erro ao enviar convite.");
   }
@@ -735,6 +731,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
