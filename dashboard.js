@@ -200,7 +200,6 @@ async function loadExperimentTimeline(experimentId) {
   const timelineEl = document.getElementById("experimentTimeline");
   if (!timelineEl) return;
 
-  // exemplo simples de placeholder
   if (typeof s === "undefined") {
     timelineEl.innerHTML = `
       <p style="font-size:13px; color:#b91c1c;">
@@ -210,32 +209,154 @@ async function loadExperimentTimeline(experimentId) {
     return;
   }
 
-  try {
-    // TODO: conectar com Supabase para buscar:
-    // - tabela scheduled_actions (cronograma)
-    // - tabela de registros de campo (quando existir)
-    //
-    // Exemplo (baseado em cronograma.js):
-    // const { data: actions, error } = await s
-    //   .from("scheduled_actions")
-    //   .select("*")
-    //   .eq("experiment_id", experimentId)
-    //   .order("start_date", { ascending: true });
-    //
-    // if (error) throw error;
+  timelineEl.innerHTML = `
+    <p style="font-size:13px; color:#6b7280;">
+      Carregando ações do cronograma...
+    </p>
+  `;
 
-    // Por enquanto, só mostra uma mensagem amigável:
-    timelineEl.innerHTML = `
-      <p style="font-size:13px; color:#6b7280;">
-        Integração da linha do tempo ainda não implementada.
-        Use a guia <strong>Cronograma</strong> nos cartões de experimentos para editar as ações.
-      </p>
-    `;
+  try {
+    // 1) Buscar experimento (para ter planting_date)
+    const { data: exp, error: expError } = await s
+      .from("experiments")
+      .select("*")
+      .eq("id", experimentId)
+      .single();
+
+    if (expError || !exp) {
+      timelineEl.innerHTML = `
+        <p style="font-size:13px; color:#b91c1c;">
+          Não foi possível carregar dados do experimento para a linha do tempo.
+        </p>
+      `;
+      return;
+    }
+
+    // 2) Buscar ações do cronograma
+    const { data: actions, error } = await s
+      .from("scheduled_actions")
+      .select("*")
+      .eq("experiment_id", experimentId)
+      .order("start_date", { ascending: true });
+
+    if (error) {
+      console.error("Erro ao carregar cronograma:", error);
+      timelineEl.innerHTML = `
+        <p style="font-size:13px; color:#b91c1c;">
+          Erro ao carregar ações do cronograma.
+        </p>
+      `;
+      return;
+    }
+
+    if (!actions || actions.length === 0) {
+      timelineEl.innerHTML = `
+        <p style="font-size:13px; color:#6b7280;">
+          Nenhuma ação cadastrada no cronograma deste experimento.
+        </p>
+      `;
+      return;
+    }
+
+    // 3) Agrupar por fase (mesma lógica de fases do cronograma.js)
+    const phases = [
+      "pre-plantio",
+      "plantio",
+      "acompanhamento",
+      "tratos-culturais",
+      "colheita",
+    ];
+
+    const phaseLabels = {
+      "pre-plantio": "Pré-plantio",
+      "plantio": "Plantio",
+      "acompanhamento": "Acompanhamento",
+      "tratos-culturais": "Tratos culturais",
+      "colheita": "Colheita",
+    };
+
+    const todayIso = getTodayIsoLocal();
+    const plantingDate = exp.planting_date || exp.plantingdate || null;
+
+    let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+
+    phases.forEach((phase) => {
+      const phaseActions = actions.filter((a) => a.phase === phase);
+      if (!phaseActions.length) return;
+
+      html += `
+        <div style="border-radius:10px; border:1px solid #e5e7eb; padding:10px 12px; background:#f9fafb;">
+          <div style="font-size:13px; font-weight:600; color:#065f46; margin-bottom:6px;">
+            ${phaseLabels[phase] || phase}
+          </div>
+      `;
+
+      phaseActions.forEach((action) => {
+        const start = action.start_date || action.startdate || null;
+        const end = action.end_date || action.enddate || null;
+        const dap = plantingDate && start ? daysBetween(plantingDate, start) : null;
+
+        let statusLabel = "Pendente";
+        let statusColor = "#6b7280";
+        let bg = "#f9fafb";
+
+        if (action.completed_at || action.completedat) {
+          statusLabel = "Concluída";
+          statusColor = "#065f46";
+          bg = "#ecfdf5";
+        } else if (end && end < todayIso) {
+          statusLabel = "Atrasada";
+          statusColor = "#b91c1c";
+          bg = "#fef2f2";
+        }
+
+        html += `
+          <div style="
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:6px;
+            padding:6px 8px;
+            margin-bottom:4px;
+            border-radius:8px;
+            background:${bg};
+            font-size:12px;
+            color:#374151;
+          ">
+            <div style="flex:1 1 140px; font-weight:500;">
+              ${escapeHtml(action.name || "")}
+              ${dap != null ? `<span style="font-size:11px; color:#6b7280;"> · DAP ${dap}</span>` : ""}
+            </div>
+            <div style="flex:0 0 auto; font-size:11px; color:#4b5563;">
+              ${start ? formatDateBr(start) : "–"}
+              ${end ? ` a ${formatDateBr(end)}` : ""}
+            </div>
+            <div style="
+              flex:0 0 auto;
+              padding:2px 8px;
+              border-radius:999px;
+              font-size:11px;
+              font-weight:600;
+              color:${statusColor};
+              background:rgba(148,163,184,0.15);
+            ">
+              ${statusLabel}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    html += `</div>`;
+
+    timelineEl.innerHTML = html;
   } catch (err) {
-    console.error("Erro ao carregar linha do tempo:", err);
+    console.error("Erro ao montar linha do tempo:", err);
     timelineEl.innerHTML = `
       <p style="font-size:13px; color:#b91c1c;">
-        Erro ao carregar linha do tempo do experimento.
+        Erro ao montar a linha do tempo do experimento.
       </p>
     `;
   }
