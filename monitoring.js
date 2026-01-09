@@ -335,102 +335,126 @@
   }
 
   function openPlantStatusDialog(selection, usefulPerPlot) {
-    const itemsHtml = Array.from({ length: usefulPerPlot }).map((_, idx) => {
-      const n = idx + 1;
-      return `
-        <button type="button"
-          class="plant-circle"
-          data-index="${n}"
-          style="
-            width:32px; height:32px; border-radius:999px;
-            border:1px solid #d1d5db;
-            background:#e5e7eb;
-            color:#374151;
-            font-size:12px;
-            display:flex; align-items:center; justify-content:center;
-            cursor:pointer;
-          ">
-          ${n}
-        </button>
-      `;
-    }).join("");
-
-    const bodyHtml = `
-      <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-        Marcar brotação e mortalidade – Parcela ${escapeHtml(
-          selection.plotCode
-        )}, bloco ${selection.block}.
-      </div>
-
-      <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-        Clique em cada planta para alternar:
-        <strong>cinza</strong> (não brotou) → <strong>verde</strong> (brotou/viva) → <strong>vermelho</strong> (morta).
-      </div>
-
-      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
-        ${itemsHtml}
-      </div>
-
-      <button class="btn-primary" style="width:100%;" disabled>
-        Salvar brotação/mortalidade (ligar ao banco depois)
+  const total = usefulPerPlot || 9;
+  const itemsHtml = Array.from({ length: total }).map((_, idx) => {
+    const n = idx + 1;
+    return `
+      <button type="button"
+        class="plant-circle"
+        data-index="${n}"
+        style="
+          width:34px; height:34px; border-radius:999px;
+          border:1px solid #d1d5db;
+          background:#e5e7eb;
+          color:#374151;
+          font-size:13px;
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer;
+        ">
+        ${n}
       </button>
     `;
+  }).join("");
 
-    if (typeof openModal === "function") {
-      openModal("Plantas úteis – brotação/mortalidade", bodyHtml);
-    } else {
-      alert("Função de modal não encontrada no app.");
-    }
+  const bodyHtml = `
+    <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
+      Marcar brotação e mortalidade – Parcela ${escapeHtml(
+        selection.plotCode
+      )}, bloco ${selection.block}.
+    </div>
+
+    <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
+      Clique em cada planta para alternar:
+      <strong>cinza</strong> (não brotou) → <strong>verde</strong> (brotou/viva) → <strong>vermelho</strong> (morta).
+    </div>
+
+    <!-- grade 3x3 de plantas úteis -->
+    <div style="
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:8px;
+      justify-items:center;
+      margin-bottom:12px;
+    ">
+      ${itemsHtml}
+    </div>
+
+    <div style="font-size:11px; color:#6b7280; margin-bottom:8px;">
+      As 9 posições representam as plantas úteis da parcela (3 linhas × 3 colunas), excluindo bordaduras.
+    </div>
+
+    <button class="btn-primary" style="width:100%;" disabled>
+      Salvar brotação/mortalidade (ligar ao banco depois)
+    </button>
+  `;
+
+  if (typeof openModal === "function") {
+    openModal("Plantas úteis – brotação/mortalidade", bodyHtml);
+  } else {
+    alert("Função de modal não encontrada no app.");
   }
+}
 
   function openPlantLodgingDialog(selection, usefulPerPlot) {
-    const itemsHtml = Array.from({ length: usefulPerPlot }).map((_, idx) => {
-      const n = idx + 1;
-      return `
-        <button type="button"
-          class="plant-circle"
-          data-index="${n}"
-          style="
-            width:32px; height:32px; border-radius:999px;
-            border:1px solid #d1d5db;
-            background:#dcfce7;
-            color:#065f46;
-            font-size:12px;
-            display:flex; align-items:center; justify-content:center;
-            cursor:pointer;
-          ">
-          ${n}
-        </button>
-      `;
-    }).join("");
-
-    const bodyHtml = `
-      <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-        Marcar plantas tombadas – Parcela ${escapeHtml(
-          selection.plotCode
-        )}, bloco ${selection.block}.
-      </div>
-
-      <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-        Apenas plantas brotadas e vivas devem ser marcadas aqui.
-        Clique para alternar entre <strong>em pé</strong> e <strong>tombada</strong>.
-      </div>
-
-      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
-        ${itemsHtml}
-      </div>
-
-      <button class="btn-primary" style="width:100%;" disabled>
-        Salvar tombamento (ligar ao banco depois)
+  const total = usefulPerPlot || 9;
+  const itemsHtml = Array.from({ length: total }).map((_, idx) => {
+    const n = idx + 1;
+    return `
+      <button type="button"
+        class="plant-circle"
+        data-index="${n}"
+        style="
+          width:34px; height:34px; border-radius:999px;
+          border:1px solid #d1d5db;
+          background:#dcfce7;
+          color:#065f46;
+          font-size:13px;
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer;
+        ">
+        ${n}
       </button>
     `;
+  }).join("");
 
-    if (typeof openModal === "function") {
-      openModal("Plantas tombadas", bodyHtml);
-    } else {
-      alert("Função de modal não encontrada no app.");
-    }
+  const bodyHtml = `
+    <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
+      Marcar plantas tombadas – Parcela ${escapeHtml(
+        selection.plotCode
+      )}, bloco ${selection.block}.
+    </div>
+
+    <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
+      Apenas plantas brotadas e vivas devem ser marcadas aqui.
+      Clique para alternar entre <strong>em pé</strong> e <strong>tombada</strong>.
+    </div>
+
+    <!-- grade 3x3 de plantas úteis -->
+    <div style="
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:8px;
+      justify-items:center;
+      margin-bottom:12px;
+    ">
+      ${itemsHtml}
+    </div>
+
+    <div style="font-size:11px; color:#6b7280; margin-bottom:8px;">
+      As 9 posições representam as plantas úteis (3×3) onde o tombamento é avaliado.
+    </div>
+
+    <button class="btn-primary" style="width:100%;" disabled>
+      Salvar tombamento (ligar ao banco depois)
+    </button>
+  `;
+
+  if (typeof openModal === "function") {
+    openModal("Plantas tombadas", bodyHtml);
+  } else {
+    alert("Função de modal não encontrada no app.");
   }
+}
 
   function escapeHtml(str) {
     if (!str) return "";
