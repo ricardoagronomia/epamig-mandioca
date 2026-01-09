@@ -267,7 +267,7 @@ function showApp() {
     if (elNew) elNew.classList.remove("disabled");
   }
 
-  // Monitoramento manual + drone + colheita: admin + pesquisador
+ // Monitoramento / Colheita / Intervenções: admin + pesquisador
 if (currentRole === "admin" || currentRole === "collaborator") {
   const elMonitoring = document.querySelector('[data-page="monitoring"]');
   if (elMonitoring) elMonitoring.classList.remove("disabled");
@@ -277,6 +277,9 @@ if (currentRole === "admin" || currentRole === "collaborator") {
 
   const elHarvest = document.querySelector('[data-page="harvest"]');
   if (elHarvest) elHarvest.classList.remove("disabled");
+
+  const elInterventions = document.querySelector('[data-page="interventions"]');
+  if (elInterventions) elInterventions.classList.remove("disabled");
 }
 
   // Usuários: só admin
@@ -387,6 +390,15 @@ function renderPage(page) {
     renderHarvestPage(container);
   } else {
     container.innerHTML = '<div class="card"><p>Página de colheita não carregada.</p></div>';
+  }
+  return;
+}
+
+  if (page === "interventions") {
+  if (typeof renderInterventionsPage === "function") {
+    renderInterventionsPage(container);
+  } else {
+    container.innerHTML = '<div class="card"><p>Página de intervenções não carregada.</p></div>';
   }
   return;
 }
@@ -761,6 +773,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
