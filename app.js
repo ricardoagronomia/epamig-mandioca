@@ -286,6 +286,9 @@ if (currentRole === "admin" || currentRole === "collaborator") {
 
   const elCharts = document.querySelector('[data-page="charts"]');
   if (elCharts) elCharts.classList.remove("disabled");
+
+  const elReports = document.querySelector('[data-page="reports"]');
+  if (elReports) elReports.classList.remove("disabled");
 }
 
   // Usuários: só admin
@@ -423,6 +426,15 @@ function renderPage(page) {
     renderChartsPage(container);
   } else {
     container.innerHTML = '<div class="card"><p>Página de gráficos não carregada.</p></div>';
+  }
+  return;
+}
+
+  if (page === "reports") {
+  if (typeof renderReportsPage === "function") {
+    renderReportsPage(container);
+  } else {
+    container.innerHTML = '<div class="card"><p>Página de relatórios não carregada.</p></div>';
   }
   return;
 }
@@ -797,6 +809,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
