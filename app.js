@@ -365,19 +365,19 @@ function renderPage(page) {
     if (typeof renderMonitoringPage === "function") {
       renderMonitoringPage(container);
     } else {
-      container.innerHTML = `<div class="card"><p>Módulo de monitoramento não carregado.</p></div>`;
+      container.innerHTML = '<div class="card"><p>Módulo de monitoramento não carregado.</p></div>';
     }
     return;
   }
-  
-if (page === "monitoring-drone") {
-  if (typeof renderMonitoringDronePage === "function") {
-    renderMonitoringDronePage(container);
-  } else {
-    container.innerHTML = '<div class="card"><p>Página de monitoramento por drone não carregada.</p></div>';
+
+  if (page === "monitoring-drone") {
+    if (typeof renderMonitoringDronePage === "function") {
+      renderMonitoringDronePage(container);
+    } else {
+      container.innerHTML = '<div class="card"><p>Página de monitoramento por drone não carregada.</p></div>';
+    }
+    return;
   }
-  return;
-}
 
   // fallback
   container.innerHTML = `<div class="card"><p>Em desenvolvimento...</p></div>`;
@@ -749,6 +749,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
