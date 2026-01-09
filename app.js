@@ -283,6 +283,9 @@ if (currentRole === "admin" || currentRole === "collaborator") {
 
   const elClimate = document.querySelector('[data-page="climate"]');
   if (elClimate) elClimate.classList.remove("disabled");
+
+  const elCharts = document.querySelector('[data-page="charts"]');
+  if (elCharts) elCharts.classList.remove("disabled");
 }
 
   // Usuários: só admin
@@ -411,6 +414,15 @@ function renderPage(page) {
     renderClimatePage(container);
   } else {
     container.innerHTML = '<div class="card"><p>Página de dados climáticos não carregada.</p></div>';
+  }
+  return;
+}
+
+  if (page === "charts") {
+  if (typeof renderChartsPage === "function") {
+    renderChartsPage(container);
+  } else {
+    container.innerHTML = '<div class="card"><p>Página de gráficos não carregada.</p></div>';
   }
   return;
 }
@@ -785,6 +797,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
