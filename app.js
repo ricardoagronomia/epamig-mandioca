@@ -267,7 +267,7 @@ function showApp() {
     if (elNew) elNew.classList.remove("disabled");
   }
 
- // Monitoramento / Colheita / Intervenções: admin + pesquisador
+ // Monitoramento / Colheita / Intervenções / Clima: admin + pesquisador
 if (currentRole === "admin" || currentRole === "collaborator") {
   const elMonitoring = document.querySelector('[data-page="monitoring"]');
   if (elMonitoring) elMonitoring.classList.remove("disabled");
@@ -280,6 +280,9 @@ if (currentRole === "admin" || currentRole === "collaborator") {
 
   const elInterventions = document.querySelector('[data-page="interventions"]');
   if (elInterventions) elInterventions.classList.remove("disabled");
+
+  const elClimate = document.querySelector('[data-page="climate"]');
+  if (elClimate) elClimate.classList.remove("disabled");
 }
 
   // Usuários: só admin
@@ -399,6 +402,15 @@ function renderPage(page) {
     renderInterventionsPage(container);
   } else {
     container.innerHTML = '<div class="card"><p>Página de intervenções não carregada.</p></div>';
+  }
+  return;
+}
+
+  if (page === "climate") {
+  if (typeof renderClimatePage === "function") {
+    renderClimatePage(container);
+  } else {
+    container.innerHTML = '<div class="card"><p>Página de dados climáticos não carregada.</p></div>';
   }
   return;
 }
@@ -773,6 +785,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
