@@ -335,7 +335,7 @@
   }
 
   function openPlantStatusDialog(selection, usefulPerPlot) {
-  const total = usefulPerPlot || 9;
+  const total = 9; // sempre 3 x 3
   const itemsHtml = Array.from({ length: total }).map((_, idx) => {
     const n = idx + 1;
     return `
@@ -396,7 +396,7 @@
 }
 
   function openPlantLodgingDialog(selection, usefulPerPlot) {
-  const total = usefulPerPlot || 9;
+  const total = 9; // sempre 3 x 3
   const itemsHtml = Array.from({ length: total }).map((_, idx) => {
     const n = idx + 1;
     return `
