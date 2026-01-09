@@ -272,6 +272,9 @@ function showApp() {
     const elMonitoring = document.querySelector('[data-page="monitoring"]');
     if (elMonitoring) elMonitoring.classList.remove("disabled");
   }
+  const elMonitoringDrone = document.querySelector('[data-page="monitoring-drone"]');
+  if (elMonitoringDrone) elMonitoringDrone.classList.remove("disabled");
+}
 
   // Usuários: só admin
   if (currentRole === "admin") {
@@ -366,6 +369,15 @@ function renderPage(page) {
     }
     return;
   }
+  
+if (page === "monitoring-drone") {
+  if (typeof renderMonitoringDronePage === "function") {
+    renderMonitoringDronePage(container);
+  } else {
+    container.innerHTML = '<div class="card"><p>Página de monitoramento por drone não carregada.</p></div>';
+  }
+  return;
+}
 
   // fallback
   container.innerHTML = `<div class="card"><p>Em desenvolvimento...</p></div>`;
@@ -737,6 +749,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
