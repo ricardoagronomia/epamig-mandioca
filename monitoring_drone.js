@@ -145,25 +145,25 @@
     <input type="number" step="0.001" id="droneVegIndex" placeholder="Ex.: 0,78">
   </div>
 
-  <div style="flex:1 1 160px;">
-    <label for="droneFrontOverlap">Sobreposição frontal (%)</label>
-    <select id="droneFrontOverlap">
-      <option value="">Selecione</option>
-      <option value="80">80%</option>
-      <option value="85">85%</option>
-    </select>
-  </div>
+  <div style="flex:1 1 220px; display:flex; gap:10px;">
+    <div style="flex:1 1 100px;">
+      <label for="droneFrontOverlap">Sobreposição frontal (%)</label>
+      <select id="droneFrontOverlap">
+        <option value="">Selecione</option>
+        <option value="80">80%</option>
+        <option value="85">85%</option>
+      </select>
+    </div>
 
-  <div style="flex:1 1 160px;">
-    <label for="droneSideOverlap">Sobreposição lateral (%)</label>
-    <select id="droneSideOverlap">
-      <option value="">Selecione</option>
-      <option value="80">80%</option>
-      <option value="85">85%</option>
-    </select>
+    <div style="flex:1 1 100px;">
+      <label for="droneSideOverlap">Sobreposição lateral (%)</label>
+      <select id="droneSideOverlap">
+        <option value="">Selecione</option>
+        <option value="80">80%</option>
+        <option value="85">85%</option>
+      </select>
+    </div>
   </div>
-
-</div>
 
         <div style="margin-top:8px;">
           <label>Observações</label>
