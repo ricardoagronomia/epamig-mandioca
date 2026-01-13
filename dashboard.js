@@ -263,7 +263,7 @@ async function loadExperimentTimeline(experimentId) {
       "pre-plantio",
       "plantio",
       "acompanhamento",
-      "tratos-culturais",
+      "tratosculturais",
       "colheita",
     ];
 
@@ -271,7 +271,7 @@ async function loadExperimentTimeline(experimentId) {
       "pre-plantio": "Pré-plantio",
       "plantio": "Plantio",
       "acompanhamento": "Acompanhamento",
-      "tratos-culturais": "Tratos culturais",
+      "tratosculturais": "Tratos culturais",
       "colheita": "Colheita",
     };
 
