@@ -175,10 +175,6 @@
           <input type="number" step="0.1" id="monStemDiameter" />
         </div>
         <div style="flex:1 1 140px;">
-          <label for="monCoverage">Índice de cobertura (%)</label>
-          <input type="number" step="1" id="monCoverage" />
-        </div>
-        <div style="flex:1 1 140px;">
           <label for="monSanity">Sanidade (1–5)</label>
           <input type="number" min="1" max="5" id="monSanity" />
         </div>
