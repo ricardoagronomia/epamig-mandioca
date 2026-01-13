@@ -106,6 +106,64 @@
             <input type="number" step="0.01" placeholder="0,00–1,00" disabled />
           </div>
         </div>
+        
+        <!-- Novos campos de métricas do monitoramento remoto -->
+<div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-top:10px;">
+
+  <div style="flex:1 1 160px;">
+    <label for="dronePlantHeight">Altura da planta (m)</label>
+    <input type="number" step="0.01" id="dronePlantHeight" placeholder="Ex.: 1,20">
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneCanopyVolume">Volume de copa (m³)</label>
+    <input type="number" step="0.1" id="droneCanopyVolume" placeholder="Ex.: 3,5">
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneLai">Índice de área foliar</label>
+    <input type="number" step="0.01" id="droneLai" placeholder="Ex.: 2,3">
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneMarginIndex">Índice de margeamento</label>
+    <input type="number" step="0.01" id="droneMarginIndex" placeholder="Ex.: 0,85">
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneStand">Estande (plantas/ha)</label>
+    <input type="number" step="1" id="droneStand" placeholder="Ex.: 11000">
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneHealth">Sanidade (nota)</label>
+    <input type="number" step="0.1" id="droneHealth" placeholder="Ex.: 4,5">
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneVegIndex">Índice de vegetação</label>
+    <input type="number" step="0.001" id="droneVegIndex" placeholder="Ex.: 0,78">
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneFrontOverlap">Sobreposição frontal (%)</label>
+    <select id="droneFrontOverlap">
+      <option value="">Selecione</option>
+      <option value="80">80%</option>
+      <option value="85">85%</option>
+    </select>
+  </div>
+
+  <div style="flex:1 1 160px;">
+    <label for="droneSideOverlap">Sobreposição lateral (%)</label>
+    <select id="droneSideOverlap">
+      <option value="">Selecione</option>
+      <option value="80">80%</option>
+      <option value="85">85%</option>
+    </select>
+  </div>
+
+</div>
 
         <div style="margin-top:8px;">
           <label>Observações</label>
