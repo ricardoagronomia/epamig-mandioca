@@ -117,6 +117,15 @@
             <label>Nº raízes comerciais</label>
             <input type="number" placeholder="Ex. 32" disabled />
           </div>
+          <div style="flex:1 1 160px;">
+            <label for="harvestMeanDiameter">Diâmetro médio (cm)</label>
+            <input
+              type="number"
+              step="0.1"
+              id="harvestMeanDiameter"
+              placeholder="Ex.: 6,5"
+              >
+          </div>
           <div style="flex:1 1 140px;">
             <label>Nota de qualidade (1–5)</label>
             <input type="number" min="1" max="5" placeholder="Ex. 4" disabled />
