@@ -110,60 +110,60 @@
         <!-- Novos campos de métricas do monitoramento remoto -->
 <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-top:10px;">
 
-  <div style="flex:1 1 160px;">
+  <div style="flex:1 1 140px; min-width:140px;">
     <label for="dronePlantHeight">Altura da planta (m)</label>
     <input type="number" step="0.01" id="dronePlantHeight" placeholder="Ex.: 1,20">
   </div>
 
-  <div style="flex:1 1 160px;">
+  <div style="flex:1 1 140px; min-width:140px;">
     <label for="droneCanopyVolume">Volume de copa (m³)</label>
     <input type="number" step="0.1" id="droneCanopyVolume" placeholder="Ex.: 3,5">
   </div>
 
-  <div style="flex:1 1 160px;">
-    <label for="droneLai">Índice de área foliar</label>
+  <div style="flex:1 1 140px; min-width:140px;">
+    <label for="droneLai">Área foliar (IAF)</label>
     <input type="number" step="0.01" id="droneLai" placeholder="Ex.: 2,3">
   </div>
 
-  <div style="flex:1 1 160px;">
-    <label for="droneMarginIndex">Índice de margeamento</label>
+  <div style="flex:1 1 140px; min-width:140px;">
+    <label for="droneMarginIndex">Margeamento</label>
     <input type="number" step="0.01" id="droneMarginIndex" placeholder="Ex.: 0,85">
   </div>
 
-  <div style="flex:1 1 160px;">
+  <div style="flex:1 1 140px; min-width:140px;">
     <label for="droneStand">Estande (plantas/ha)</label>
     <input type="number" step="1" id="droneStand" placeholder="Ex.: 11000">
   </div>
 
-  <div style="flex:1 1 160px;">
+  <div style="flex:1 1 140px; min-width:140px;">
     <label for="droneHealth">Sanidade (nota)</label>
     <input type="number" step="0.1" id="droneHealth" placeholder="Ex.: 4,5">
   </div>
 
-  <div style="flex:1 1 160px;">
+  <div style="flex:1 1 140px; min-width:140px;">
     <label for="droneVegIndex">Índice de vegetação</label>
     <input type="number" step="0.001" id="droneVegIndex" placeholder="Ex.: 0,78">
   </div>
 
-  <div style="flex:1 1 220px; display:flex; gap:10px;">
-    <div style="flex:1 1 100px;">
-      <label for="droneFrontOverlap">Sobreposição frontal (%)</label>
-      <select id="droneFrontOverlap">
-        <option value="">Selecione</option>
+  <!-- Frontal + lateral na mesma “coluna” de largura padrão -->
+  <div style="flex:1 1 140px; min-width:140px;">
+    <label>Sobreposição (%)</label>
+    <div style="display:flex; gap:6px;">
+      <select id="droneFrontOverlap" style="flex:1;">
+        <option value="">Frontal</option>
         <option value="80">80%</option>
         <option value="85">85%</option>
       </select>
-    </div>
-
-    <div style="flex:1 1 100px;">
-      <label for="droneSideOverlap">Sobreposição lateral (%)</label>
-      <select id="droneSideOverlap">
-        <option value="">Selecione</option>
+      <select id="droneSideOverlap" style="flex:1;">
+        <option value="">Lateral</option>
         <option value="80">80%</option>
         <option value="85">85%</option>
       </select>
     </div>
   </div>
+
+</div>
+
 
         <div style="margin-top:8px;">
           <label>Observações</label>
