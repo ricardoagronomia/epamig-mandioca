@@ -583,53 +583,152 @@
     }
   };
 
-  // --- Edição de voo ---
-  async function openDroneFlightEditModal(id) {
-    if (!id) return;
+ // --- Edição de voo ---
+async function openDroneFlightEditModal(id) {
+  if (!id) return;
 
-    if (typeof s === "undefined") {
-      alert("Cliente Supabase não encontrado.");
+  if (typeof s === "undefined") {
+    alert("Cliente Supabase não encontrado.");
+    return;
+  }
+
+  try {
+    const { data, error } = await s
+      .from("drone_monitoring")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) {
+      alert("Erro ao carregar voo para edição.");
       return;
     }
 
-    try {
-      const { data, error } = await s
-        .from("drone_monitoring")
-        .select("*")
-        .eq("id", id)
-        .single();
+    const f = data;
+    const experiment = window.currentExperiment || null;
 
-      if (error || !data) {
-        alert("Erro ao carregar voo para edição.");
-        return;
-      }
+    const bodyHtml = `
+      <form id="droneFlightEditForm">
+        <p style="font-size:13px; color:#4b5563; margin-bottom:10px;">
+          Editar voo de drone${experiment ? ` do experimento <strong>${escapeHtml(experiment.code || "")}</strong>` : ""}.
+        </p>
 
-      const f = data;
-      const experiment = window.currentExperiment || null;
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+          <div style="flex:1 1 150px;">
+            <label for="efFlightDate">Data do voo</label>
+            <input type="date" id="efFlightDate" value="${f.flight_date || ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efFlightTime">Horário</label>
+            <input type="time" id="efFlightTime" value="${f.flight_time ? f.flight_time.slice(0,5) : ""}">
+          </div>
+          <div style="flex:1 1 200px;">
+            <label for="efOperatorName">Operador</label>
+            <input type="text" id="efOperatorName" value="${escapeHtml(f.operator_name || "")}">
+          </div>
+        </div>
 
-      const bodyHtml = `
-        <form id="droneFlightEditForm">
-          <p style="font-size:13px; color:#4b5563; margin-bottom:10px;">
-            Editar voo de drone${experiment ? ` do experimento <strong>${escapeHtml(experiment.code || "")}</strong>` : ""}.
-          </p>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+          <div style="flex:1 1 120px;">
+            <label for="efBlockNumber">Bloco</label>
+            <input type="number" id="efBlockNumber" min="1" value="${f.block_number != null ? f.block_number : ""}">
+          </div>
+          <div style="flex:1 1 120px;">
+            <label for="efAltitude">Altitude (m)</label>
+            <input type="number" step="0.1" id="efAltitude" value="${f.altitude_m != null ? f.altitude_m : ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efImageCount">Imagens capturadas</label>
+            <input type="number" id="efImageCount" value="${f.image_count != null ? f.image_count : ""}">
+          </div>
+        </div>
 
-          <!-- (mesma estrutura de campos do modal de novo voo, mas com valores f.* preenchidos) -->
-          <!-- por brevidade, você já tem esse bloco montado no código atual -->
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+          <div style="flex:1 1 140px;">
+            <label for="efCoverageIndex">Índice de cobertura (%)</label>
+            <input type="number" step="0.1" id="efCoverageIndex" value="${f.coverage_index != null ? f.coverage_index : ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efNdviMean">NDVI médio</label>
+            <input type="number" step="0.01" id="efNdviMean" value="${f.ndvi_mean != null ? f.ndvi_mean : ""}">
+          </div>
+        </div>
 
-        </form>
-      `;
-      // Para não alongar demais aqui: reaproveite o HTML que já montamos antes
-      // ou mantenha o que você já colou.
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+          <div style="flex:1 1 140px;">
+            <label for="efPlantHeight">Altura da planta (m)</label>
+            <input type="number" step="0.01" id="efPlantHeight" value="${f.plant_height_m != null ? f.plant_height_m : ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efCanopyVolume">Volume de copa (m³)</label>
+            <input type="number" step="0.1" id="efCanopyVolume" value="${f.canopy_volume_m3 != null ? f.canopy_volume_m3 : ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efLai">Área foliar (IAF)</label>
+            <input type="number" step="0.01" id="efLai" value="${f.leaf_area_index != null ? f.leaf_area_index : ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efMarginIndex">Índice de margeamento</label>
+            <input type="number" step="0.01" id="efMarginIndex" value="${f.margin_index != null ? f.margin_index : ""}">
+          </div>
+        </div>
 
-      if (typeof openModal === "function") {
-        openModal("Editar voo de drone", bodyHtml);
-      } else {
-        alert("Função de modal não encontrada no app.");
-      }
-    } catch (err) {
-      alert("Erro inesperado ao carregar voo para edição.");
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+          <div style="flex:1 1 140px;">
+            <label for="efStand">Estande (plantas/ha)</label>
+            <input type="number" step="1" id="efStand" value="${f.stand_plants_per_ha != null ? f.stand_plants_per_ha : ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efHealthScore">Sanidade (nota)</label>
+            <input type="number" step="0.1" id="efHealthScore" value="${f.health_score != null ? f.health_score : ""}">
+          </div>
+          <div style="flex:1 1 140px;">
+            <label for="efVegIndex">Índice de vegetação</label>
+            <input type="number" step="0.001" id="efVegIndex" value="${f.vegetation_index != null ? f.vegetation_index : ""}">
+          </div>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+          <div style="flex:1 1 160px;">
+            <label>Sobreposição (%)</label>
+            <div style="display:flex; gap:6px;">
+              <select id="efFrontOverlap" style="flex:1">
+                <option value="">Frontal</option>
+                <option value="80" ${f.front_overlap_pct === 80 ? "selected" : ""}>80</option>
+                <option value="85" ${f.front_overlap_pct === 85 ? "selected" : ""}>85</option>
+              </select>
+              <select id="efSideOverlap" style="flex:1">
+                <option value="">Lateral</option>
+                <option value="80" ${f.side_overlap_pct === 80 ? "selected" : ""}>80</option>
+                <option value="85" ${f.side_overlap_pct === 85 ? "selected" : ""}>85</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:4px;">
+          <label for="efNotes">Observações</label>
+          <textarea id="efNotes" rows="3" style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;">${escapeHtml(f.notes || "")}</textarea>
+        </div>
+
+        <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
+          <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button type="button" class="btn-primary" style="width:auto; padding-inline:18px;" onclick="updateDroneFlight('${f.id}')">
+            Salvar alterações
+          </button>
+        </div>
+      </form>
+    `;
+
+    if (typeof openModal === "function") {
+      openModal("Editar voo de drone", bodyHtml);
+    } else {
+      alert("Função de modal não encontrada no app.");
     }
+  } catch (err) {
+    alert("Erro inesperado ao carregar voo para edição.");
   }
+}
 
   async function updateDroneFlight(id) {
     // implementação que você já colou está correta; mantê-la aqui
