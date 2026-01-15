@@ -158,52 +158,56 @@
       </div>
 
       <!-- Resumo mensal / anual (mock) -->
-      <div class="card">
-        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Resumo mensal e acumulado (em desenvolvimento)
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Esta seção apresentará precipitação total por mês, precipitação acumulada no ano e médias de temperatura,
-          servindo de base para gráficos na aba de análises.
-        </p>
+<div class="card">
+  <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+    Resumo mensal e acumulado (em desenvolvimento)
+  </div>
+  <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+    Esta seção apresentará precipitação total por mês, precipitação acumulada no ano, médias de temperatura
+    <span style="font-weight:500;">e umidade relativa do ar</span>, servindo de base para gráficos na aba de análises.
+  </p>
 
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Mês</th>
-                <th>Precipitação (mm)</th>
-                <th>Precipitação acumulada (mm)</th>
-                <th>Temp. máx. média (°C)</th>
-                <th>Temp. mín. média (°C)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Jan</td>
-                <td>–</td>
-                <td>–</td>
-                <td>–</td>
-                <td>–</td>
-              </tr>
-              <tr>
-                <td>Fev</td>
-                <td>–</td>
-                <td>–</td>
-                <td>–</td>
-                <td>–</td>
-              </tr>
-              <tr>
-                <td>Mar</td>
-                <td>–</td>
-                <td>–</td>
-                <td>–</td>
-                <td>–</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Mês</th>
+          <th>Precipitação (mm)</th>
+          <th>Precipitação acumulada (mm)</th>
+          <th>Temp. máx. média (°C)</th>
+          <th>Temp. mín. média (°C)</th>
+          <th>Umidade relativa média (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Jan</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+        </tr>
+        <tr>
+          <td>Fev</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+        </tr>
+        <tr>
+          <td>Mar</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
       <!-- Histórico de registros -->
       <div class="card">
