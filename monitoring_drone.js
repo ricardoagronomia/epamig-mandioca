@@ -650,5 +650,3 @@ window.updateDroneFlight = async function updateDroneFlight(id) {
   window.openDroneFlightModal = openDroneFlightModal;   // <‑ ADICIONE ESTA LINHA
   window.renderMonitoringDronePage = renderMonitoringDronePage;
 })();
-
-})();
