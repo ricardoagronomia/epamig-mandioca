@@ -170,28 +170,124 @@
         </div>
       </div>
 
-      <!-- Lista de registros (em breve) -->
-      <div class="card">
-        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Registros de voos (em breve)
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Em breve, esta área vai listar os voos cadastrados para este experimento.
-        </p>
+     <!-- Lista de registros -->
+<div class="card">
+  <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+    Registros de voos
+  </div>
+  <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+    Voos cadastrados para este experimento. Use as ações para revisar, editar ou excluir.
+  </p>
+  <div id="droneFlightsList" style="font-size:13px; color:#374151;">
+    <div style="border-radius:10px; border:1px dashed #d1d5db; padding:10px 12px; font-size:13px; color:#6b7280; background:#f9fafb;">
+      Nenhum voo cadastrado ainda.<br>
+      <span style="font-size:12px;">
+        Use o botão <strong>Novo voo</strong> para registrar o primeiro voo de drone deste experimento.
+      </span>
+    </div>
+  </div>
+</div>
+    `;
+
+    // Depois de montar o HTML, se houver experimento, carrega dados
+    if (experiment && typeof loadLastDroneFlight === "function") {
+    loadLastDroneFlight(experiment.id);
+    }
+    if (experiment && typeof loadDroneFlightsList === "function") {
+    loadDroneFlightsList(experiment.id);
+    }
+  }
+  
+// --- Lista de voos do experimento ---
+async function loadDroneFlightsList(experimentId) {
+  if (typeof s === "undefined") return;
+
+  const listEl = document.getElementById("droneFlightsList");
+  if (!listEl) return;
+
+  listEl.innerHTML = `<p style="font-size:13px; color:#6b7280;">Carregando voos...</p>`;
+
+  try {
+    const { data, error } = await s
+      .from("drone_monitoring")
+      .select("*")
+      .eq("experiment_id", experimentId)
+      .order("flight_date", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Erro ao carregar lista de voos:", error);
+      listEl.innerHTML = `<p style="font-size:13px; color:#b91c1c;">Erro ao carregar voos.</p>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      listEl.innerHTML = `
         <div style="border-radius:10px; border:1px dashed #d1d5db; padding:10px 12px; font-size:13px; color:#6b7280; background:#f9fafb;">
           Nenhum voo cadastrado ainda.<br>
           <span style="font-size:12px;">
             Use o botão <strong>Novo voo</strong> para registrar o primeiro voo de drone deste experimento.
           </span>
         </div>
+      `;
+      return;
+    }
+
+    const rowsHtml = data
+      .map(f => {
+        const date = f.flight_date || "-";
+        const time = f.flight_time ? f.flight_time.slice(0,5) : "-";
+        const op = f.operator_name || "-";
+        const block = f.block_number != null ? f.block_number : "-";
+        const ndvi = f.ndvi_mean != null ? f.ndvi_mean : "-";
+
+        return `
+          <tr>
+            <td>${date}</td>
+            <td>${time}</td>
+            <td>${escapeHtml(op)}</td>
+            <td>${block}</td>
+            <td>${ndvi}</td>
+            <td style="text-align:right;">
+              <button type="button" class="btn-secondary" style="font-size:12px; padding:4px 8px;"
+                onclick="openDroneFlightEditModal('${f.id}')">
+                Editar
+              </button>
+              <button type="button" class="btn-danger" style="font-size:12px; padding:4px 8px; margin-left:4px;"
+                onclick="confirmDeleteDroneFlight('${f.id}')">
+                Excluir
+              </button>
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    listEl.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead>
+            <tr style="background:#f3f4f6; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">
+              <th style="padding:6px 8px;">Data</th>
+              <th style="padding:6px 8px;">Hora</th>
+              <th style="padding:6px 8px;">Operador</th>
+              <th style="padding:6px 8px;">Bloco</th>
+              <th style="padding:6px 8px;">NDVI</th>
+              <th style="padding:6px 8px; text-align:right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
       </div>
     `;
-
-    // Depois de montar o HTML, se houver experimento, carrega o último voo
-    if (experiment && typeof loadLastDroneFlight === "function") {
-      loadLastDroneFlight(experiment.id);
-    }
+  } catch (err) {
+    console.error("Erro inesperado ao carregar lista de voos:", err);
+    listEl.innerHTML = `<p style="font-size:13px; color:#b91c1c;">Erro inesperado ao carregar voos.</p>`;
   }
+}
+
 
   // --- Carrega o último voo do experimento ---
   async function loadLastDroneFlight(experimentId) {
