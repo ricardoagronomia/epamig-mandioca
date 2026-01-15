@@ -130,16 +130,21 @@
               <td>${escapeHtml(op)}</td>
               <td>${block}</td>
               <td>${ndvi}</td>
-              <td style="text-align:right;">
-                <button type="button" class="btn-secondary" style="font-size:12px; padding:4px 8px;"
-                  onclick="openDroneFlightEditModal('${f.id}')">
-                  Editar
-                </button>
-                <button type="button" class="btn-danger" style="font-size:12px; padding:4px 8px; margin-left:4px;"
-                  onclick="confirmDeleteDroneFlight('${f.id}')">
-                  Excluir
-                </button>
-              </td>
+              <td style="text-align:right; white-space:nowrap;">
+  <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end;">
+    <button type="button" class="btn-secondary"
+      style="font-size:12px; padding:4px 8px;"
+      onclick="openDroneFlightEditModal('${f.id}')">
+      Editar
+    </button>
+    <button type="button" class="btn-danger"
+      style="font-size:12px; padding:4px 8px;"
+      onclick="confirmDeleteDroneFlight('${f.id}')">
+      Excluir
+    </button>
+  </div>
+</td>
+
             </tr>
           `;
         })
