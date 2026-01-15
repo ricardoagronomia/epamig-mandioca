@@ -129,10 +129,56 @@ async function loadDroneSummary(experimentId) {
     const height = latest && latest.plant_height_m != null ? `${latest.plant_height_m.toFixed(2)} m` : "–";
     const stand = latest && latest.stand_plants_per_ha != null ? `${latest.stand_plants_per_ha.toLocaleString("pt-BR")} plantas/ha` : "–";
 
-    summaryEl.innerHTML = `
-      <span style="font-weight:500; color:#111827;">${totalFlights}</span> voos registrados.<br>
-      Cobertura: <span style="font-weight:500;">${cov}</span> · Altura: <span style="font-weight:500;">${height}</span> · Estande: <span style="font-weight:500;">${stand}</span>
+        summaryEl.innerHTML = `
+      <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin-top:4px;">
+
+        <!-- Bloco: voos -->
+        <div style="flex:1 1 90px; min-width:90px; padding:8px 10px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#dbeafe; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            ✈
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#111827;">${totalFlights}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Voos</div>
+          </div>
+        </div>
+
+        <!-- Bloco: cobertura -->
+        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#ecfdf3; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#bbf7d0; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            🌿
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#14532d;">${cov}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Cobertura</div>
+          </div>
+        </div>
+
+        <!-- Bloco: altura -->
+        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fefce8; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#fef3c7; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            📏
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#713f12;">${height}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Altura</div>
+          </div>
+        </div>
+
+        <!-- Bloco: estande -->
+        <div style="flex:1 1 130px; min-width:130px; padding:8px 10px; border-radius:10px; background:#f9fafb; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#e5e7eb; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            🌱
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#111827;">${stand}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Plantas/ha</div>
+          </div>
+        </div>
+
+      </div>
     `;
+
   } catch (err) {
     console.error("Erro inesperado ao carregar resumo de voos:", err);
     summaryEl.textContent = "Erro ao carregar resumo de voos.";
