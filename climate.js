@@ -8,6 +8,42 @@
   const experiment = window.currentExperiment || null;
 
   container.innerHTML = `
+    <!-- Resumo rápido de clima (mock, com ícones) -->
+    <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin-bottom:16px;">
+      <!-- Bloco: precipitação -->
+      <div style="flex:1 1 140px; min-width:140px; padding:8px 10px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; gap:8px;">
+        <div style="width:28px; height:28px; border-radius:999px; background:#dbeafe; display:flex; align-items:center; justify-content:center; font-size:16px;">
+          🌧
+        </div>
+        <div>
+          <div style="font-size:18px; font-weight:600; color:#111827;">– mm</div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Chuva (últimos dias)</div>
+        </div>
+      </div>
+
+      <!-- Bloco: temperatura média -->
+      <div style="flex:1 1 140px; min-width:140px; padding:8px 10px; border-radius:10px; background:#fefce8; display:flex; align-items:center; gap:8px;">
+        <div style="width:28px; height:28px; border-radius:999px; background:#fef3c7; display:flex; align-items:center; justify-content:center; font-size:16px;">
+          🌡
+        </div>
+        <div>
+          <div style="font-size:18px; font-weight:600; color:#713f12;">– °C</div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Temp. média</div>
+        </div>
+      </div>
+
+      <!-- Bloco: umidade relativa -->
+      <div style="flex:1 1 160px; min-width:160px; padding:8px 10px; border-radius:10px; background:#ecfdf3; display:flex; align-items:center; gap:8px;">
+        <div style="width:28px; height:28px; border-radius:999px; background:#bbf7d0; display:flex; align-items:center; justify-content:center; font-size:16px;">
+          💧
+        </div>
+        <div>
+          <div style="font-size:18px; font-weight:600; color:#14532d;">– %</div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Umidade relativa</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Entrada rápida de dados diários -->
     <div class="card">
       <div style="font-size:14px; font-weight:600; color:#111827; margin-bottom:6px;">
