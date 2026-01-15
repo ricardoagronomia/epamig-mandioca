@@ -600,58 +600,7 @@ window.updateDroneFlight = async function updateDroneFlight(id) {
     }
   };
 
-  // --- Edição de voo ---
-  async function openDroneFlightEditModal(id) {
-    if (!id) return;
-
-    if (typeof s === "undefined") {
-      alert("Cliente Supabase não encontrado.");
-      return;
-    }
-
-    try {
-      const { data, error } = await s
-        .from("drone_monitoring")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error || !data) {
-        alert("Erro ao carregar voo para edição.");
-        return;
-      }
-
-      const f = data;
-      const experiment = window.currentExperiment || null;
-
-      const bodyHtml = `
-        <form id="droneFlightEditForm">
-          <p style="font-size:13px; color:#4b5563; margin-bottom:10px;">
-            Editar voo de drone${experiment ? ` do experimento <strong>${escapeHtml(experiment.code || "")}</strong>` : ""}.
-          </p>
-
-          <!-- mesmo layout do modal de novo voo, com ids ef* e valores f.* -->
-          <!-- (use a versão que já está funcionando no seu arquivo) -->
-
-        </form>
-      `;
-      // Aqui você mantém a versão completa de edição que já colocamos antes.
-
-      if (typeof openModal === "function") {
-        openModal("Editar voo de drone", bodyHtml);
-      } else {
-        alert("Função de modal não encontrada no app.");
-      }
-    } catch (err) {
-      alert("Erro inesperado ao carregar voo para edição.");
-    }
-  }
-
-  window.updateDroneFlight = async function updateDroneFlight(id) {
-    // mesma função de update que você já tem funcionando
-  };
-
-  async function confirmDeleteDroneFlight(id) {
+   async function confirmDeleteDroneFlight(id) {
     if (!id) return;
     if (!window.currentExperiment) {
       alert("Nenhum experimento selecionado.");
