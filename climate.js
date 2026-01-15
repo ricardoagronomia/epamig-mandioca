@@ -232,6 +232,37 @@
     .join("");
 };
 
+  window.saveClimateDailyRecord = async function saveClimateDailyRecord() {
+  const experiment = window.currentExperiment || null;
+  if (!experiment) {
+    alert("Nenhum experimento selecionado.");
+    return;
+  }
+
+  const date = document.getElementById("clDate")?.value || null;
+  const rain_mm = document.getElementById("clRain")?.value;
+  const tmax_c = document.getElementById("clTmax")?.value;
+  const tmin_c = document.getElementById("clTmin")?.value;
+  const rh_mean = document.getElementById("clRh")?.value;
+
+  if (!date) {
+    alert("Informe a data do registro.");
+    return;
+  }
+
+  const payload = {
+    experiment_id: experiment.id,
+    date,                        // YYYY-MM-DD no banco
+    rain_mm: rain_mm === "" ? null : Number(rain_mm),
+    tmax_c: tmax_c === "" ? null : Number(tmax_c),
+    tmin_c: tmin_c === "" ? null : Number(tmin_c),
+    rh_mean: rh_mean === "" ? null : Number(rh_mean),
+  };
+
+  console.log("Registro climático pronto para salvar:", payload);
+  alert("Próximo passo: enviar este payload para a tabela de clima no banco.");
+};
+
   function escapeHtml(str) {
     if (!str) return "";
     return String(str)
