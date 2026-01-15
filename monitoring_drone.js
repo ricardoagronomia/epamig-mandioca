@@ -641,4 +641,14 @@ window.updateDroneFlight = async function updateDroneFlight(id) {
   }
     // expõe o renderizador da página
   window.renderMonitoringDronePage = renderMonitoringDronePage;
+
+    // funções auxiliares
+  window.openDroneFlightEditModal = openDroneFlightEditModal;
+  window.updateDroneFlight = updateDroneFlight;
+  window.saveDroneFlight = saveDroneFlight;
+  window.confirmDeleteDroneFlight = confirmDeleteDroneFlight;
+  window.openDroneFlightModal = openDroneFlightModal;   // <‑ ADICIONE ESTA LINHA
+  window.renderMonitoringDronePage = renderMonitoringDronePage;
+})();
+
 })();
