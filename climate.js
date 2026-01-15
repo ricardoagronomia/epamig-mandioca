@@ -147,20 +147,8 @@
               <th style="width:90px;">Ações</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>–</td>
-              <td>–</td>
-              <td>–</td>
-              <td>–</td>
-              <td>–</td>
-              <td>
-                <div style="display:flex; gap:4px; justify-content:flex-start;">
-                  <button class="ghost small" disabled>Editar</button>
-                  <button class="ghost small" disabled>Excluir</button>
-                </div>
-              </td>
-            </tr>
+          <tbody id="climateDailyTableBody">
+            <!-- preenchido dinamicamente por loadClimateDailyReadings -->
           </tbody>
         </table>
       </div>
@@ -202,12 +190,48 @@
 
   alert("No futuro, este botão vai salvar o registro climático no banco.");
 };
-  window.loadClimateDailyReadings = async function loadClimateDailyReadings(experimentId) {
-  // Em breve: buscar no banco pelos registros de clima do experimento.
-  console.log("Carregar registros climáticos diários para experimento:", experimentId);
+ window.loadClimateDailyReadings = async function loadClimateDailyReadings(experimentId) {
+  // Mock temporário de registros climáticos diários
+  const mock = [
+    { date: "2026-01-10", rain_mm: 5.2, tmax_c: 30.5, tmin_c: 20.1, rh_mean: 72 },
+    { date: "2026-01-11", rain_mm: 0.0, tmax_c: 32.0, tmin_c: 19.8, rh_mean: 65 },
+    { date: "2026-01-12", rain_mm: 18.7, tmax_c: 28.3, tmin_c: 21.0, rh_mean: 80 },
+  ];
+
+  const tbody = document.querySelector("#climateDailyTableBody");
+  if (!tbody) return;
+
+  if (!mock.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; font-size:13px; color:#6b7280;">
+          Nenhum registro climático diário ainda.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = mock
+    .map(row => {
+      return `
+        <tr>
+          <td>${row.date}</td>
+          <td>${row.rain_mm.toFixed(1)}</td>
+          <td>${row.tmax_c.toFixed(1)}</td>
+          <td>${row.tmin_c.toFixed(1)}</td>
+          <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
+          <td>
+            <div style="display:flex; gap:4px; justify-content:flex-start;">
+              <button class="ghost small" disabled>Editar</button>
+              <button class="ghost small" disabled>Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
 };
-
-
 
   function escapeHtml(str) {
     if (!str) return "";
