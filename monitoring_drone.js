@@ -500,6 +500,70 @@
       alert("Função de modal não encontrada no app.");
     }
   }
+  
+window.updateDroneFlight = async function updateDroneFlight(id) {
+  if (!id) return;
+  if (typeof s === "undefined") {
+    alert("Cliente Supabase não encontrado.");
+    return;
+  }
+
+  const val = (fieldId) => {
+    const el = document.getElementById(fieldId);
+    return el ? el.value : "";
+  };
+
+  const flight_date = val("efFlightDate");
+  if (!flight_date) {
+    alert("Informe a data do voo.");
+    return;
+  }
+
+  const payload = {
+    flight_date,
+    flight_time: val("efFlightTime") || null,
+    operator_name: val("efOperatorName").trim() || null,
+    block_number: val("efBlockNumber") ? parseInt(val("efBlockNumber"), 10) : null,
+    altitude_m: val("efAltitude") ? parseFloat(val("efAltitude")) : null,
+    image_count: val("efImageCount") ? parseInt(val("efImageCount"), 10) : null,
+    coverage_index: val("efCoverageIndex") ? parseFloat(val("efCoverageIndex")) : null,
+    ndvi_mean: val("efNdviMean") ? parseFloat(val("efNdviMean")) : null,
+    plant_height_m: val("efPlantHeight") ? parseFloat(val("efPlantHeight")) : null,
+    canopy_volume_m3: val("efCanopyVolume") ? parseFloat(val("efCanopyVolume")) : null,
+    leaf_area_index: val("efLai") ? parseFloat(val("efLai")) : null,
+    margin_index: val("efMarginIndex") ? parseFloat(val("efMarginIndex")) : null,
+    stand_plants_per_ha: val("efStand") ? parseInt(val("efStand"), 10) : null,
+    health_score: val("efHealthScore") ? parseFloat(val("efHealthScore")) : null,
+    vegetation_index: val("efVegIndex") ? parseFloat(val("efVegIndex")) : null,
+    front_overlap_pct: val("efFrontOverlap") ? parseInt(val("efFrontOverlap"), 10) : null,
+    side_overlap_pct: val("efSideOverlap") ? parseInt(val("efSideOverlap"), 10) : null,
+    notes: val("efNotes").trim() || null
+  };
+
+  try {
+    const { error } = await s
+      .from("drone_monitoring")
+      .update(payload)
+      .eq("id", id);
+
+    if (error) {
+      alert("Erro ao atualizar voo: " + (error.message || ""));
+      return;
+    }
+
+    alert("Voo atualizado com sucesso.");
+
+    if (typeof closeModal === "function") closeModal();
+
+    const exp = window.currentExperiment;
+    if (exp) {
+      loadDroneFlightsList(exp.id);
+      loadLastDroneFlight(exp.id);
+    }
+  } catch (err) {
+    alert("Erro inesperado ao atualizar voo.");
+  }
+};
 
   // ---- Salvar novo voo ----
   window.saveDroneFlight = async function saveDroneFlight() {
