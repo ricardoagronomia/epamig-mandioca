@@ -316,6 +316,45 @@ async function loadDroneFlightsList(experimentId) {
       console.error("Erro inesperado ao carregar voos de drone:", err);
     }
   }
+  // --- Exclusão de voo ---
+window.confirmDeleteDroneFlight = async function confirmDeleteDroneFlight(id) {
+  if (!id) return;
+  if (!window.currentExperiment) {
+    alert("Nenhum experimento selecionado.");
+    return;
+  }
+
+  const ok = confirm("Tem certeza que deseja excluir este voo de drone?");
+  if (!ok) return;
+
+  if (typeof s === "undefined") {
+    alert("Cliente Supabase não encontrado.");
+    return;
+  }
+
+  try {
+    const { error } = await s
+      .from("drone_monitoring")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      alert("Erro ao excluir voo: " + (error.message || ""));
+      return;
+    }
+
+    alert("Voo excluído com sucesso.");
+
+    // Recarrega formulário principal (último voo) e lista
+    const exp = window.currentExperiment;
+    if (exp) {
+      loadLastDroneFlight(exp.id);
+      loadDroneFlightsList(exp.id);
+    }
+  } catch (err) {
+    alert("Erro inesperado ao excluir voo.");
+  }
+};
 
   function fillMainFormWithFlight(flight) {
     const setVal = (id, value) => {
