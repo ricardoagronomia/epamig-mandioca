@@ -639,4 +639,6 @@ window.updateDroneFlight = async function updateDroneFlight(id) {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
+    // expõe o renderizador da página
+  window.renderMonitoringDronePage = renderMonitoringDronePage;
 })();
