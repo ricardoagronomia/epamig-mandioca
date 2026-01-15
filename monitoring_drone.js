@@ -524,9 +524,15 @@ window.updateDroneFlight = async function updateDroneFlight(id) {
 
         <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
           <div style="flex:1 1 120px;">
-            <label for="dfBlockNumber">Bloco</label>
-            <input type="number" id="dfBlockNumber" min="1" placeholder="Ex. 1">
-          </div>
+          <label for="dfBlockNumber">Bloco</label>
+          <select id="dfBlockNumber">
+          <option value="">Todos os blocos</option>
+          <option value="1">Bloco 1</option>
+          <option value="2">Bloco 2</option>
+          <option value="3">Bloco 3</option>
+        </select>
+      </div>
+
           <div style="flex:1 1 120px;">
             <label for="dfAltitude">Altitude (m)</label>
             <input type="number" step="0.1" id="dfAltitude" placeholder="Ex. 80">
