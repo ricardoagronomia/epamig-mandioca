@@ -251,13 +251,13 @@
   }
 
   const payload = {
-    experiment_id: experiment.id,
-    date,                        // YYYY-MM-DD no banco
-    rain_mm: rain_mm === "" ? null : Number(rain_mm),
-    tmax_c: tmax_c === "" ? null : Number(tmax_c),
-    tmin_c: tmin_c === "" ? null : Number(tmin_c),
-    rh_mean: rh_mean === "" ? null : Number(rh_mean),
-  };
+  station_code: "ESTACAO_PADRAO", // temporário, até ter escolha de estação
+  date,
+  rain_mm: ...,
+  tmax_c: ...,
+  tmin_c: ...,
+  rh_mean: ...,
+};
 
   console.log("Registro climático pronto para salvar:", payload);
   alert("Próximo passo: enviar este payload para a tabela de clima no banco.");
