@@ -80,13 +80,14 @@
           <input type="number" id="clRh" step="1" min="0" max="100" placeholder="Ex. 75">
         </div>
 
-        <div style="flex:0 0 auto;">
-          <button class="primary" style="margin-top:4px;" onclick="saveClimateDailyRecord()" disabled>
-            Salvar registro diário (em desenvolvimento)
+        <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:2px;">
+          <button class="primary" style="margin-top:4px;" onclick="saveClimateDailyRecord()">
+            Salvar registro diário
           </button>
+          <span style="font-size:11px; color:#9ca3af;">
+            Funcionalidade em desenvolvimento
+          </span>
         </div>
-      </div>
-    </div>
 
     <!-- Resumo mensal / anual (mock) -->
     <div class="card" style="margin-top:16px;">
@@ -223,8 +224,8 @@
           <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
           <td>
             <div style="display:flex; gap:4px; justify-content:flex-start;">
-              <button class="ghost small" disabled>Editar</button>
-              <button class="ghost small" disabled>Excluir</button>
+                <button class="ghost small">Editar</button>
+                <button class="ghost small danger">Excluir</button>
             </div>
           </td>
         </tr>
