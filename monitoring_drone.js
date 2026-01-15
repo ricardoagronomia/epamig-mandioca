@@ -152,7 +152,7 @@
 
       listEl.innerHTML = `
         <div style="overflow-x:auto;">
-          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <table style="width:100%; min-width:520px; border-collapse:collapse; font-size:13px;">
             <thead>
               <tr style="background:#f3f4f6; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">
                 <th style="padding:6px 8px;">Data</th>
