@@ -196,8 +196,8 @@
 
   alert("No futuro, este botão vai salvar o registro climático no banco.");
 };
+  
  window.loadClimateDailyReadings = async function loadClimateDailyReadings(experimentId) {
-  // Mock temporário de registros climáticos diários
   const mock = [
     { date: "2026-01-10", rain_mm: 5.2, tmax_c: 30.5, tmin_c: 20.1, rh_mean: 72 },
     { date: "2026-01-11", rain_mm: 0.0, tmax_c: 32.0, tmin_c: 19.8, rh_mean: 65 },
@@ -207,43 +207,28 @@
   const tbody = document.querySelector("#climateDailyTableBody");
   if (!tbody) return;
 
-  if (!mock.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align:center; font-size:13px; color:#6b7280;">
-          Nenhum registro climático diário ainda.
-        </td>
-      </tr>
-    `;
-    return;
-  }
+  const formatDate = iso => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}-${m}-${y}`;
+  };
 
   tbody.innerHTML = mock
-    .map(row => {
-      return `
-        <tr>
-          <td>${row.date}</td>
-          <td>${row.rain_mm.toFixed(1)}</td>
-          <td>${row.tmax_c.toFixed(1)}</td>
-          <td>${row.tmin_c.toFixed(1)}</td>
-          <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
-          <td>
-            <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
-              <button type="button" class="btn-secondary"
-                style="font-size:12px; padding:4px 8px;"
-                onclick="/* openClimateDailyEditModal(id) */">
-                Editar
-             </button>
-             <button type="button" class="btn-danger"
-                style="font-size:12px; padding:4px 8px;"
-                onclick="/* confirmDeleteClimateDaily(id) */">
-                Excluir
-              </button>
-            </div>
-            </td>
-        </tr>
-      `;
-    })
+    .map(row => `
+      <tr>
+        <td>${formatDate(row.date)}</td>
+        <td>${row.rain_mm.toFixed(1)}</td>
+        <td>${row.tmax_c.toFixed(1)}</td>
+        <td>${row.tmin_c.toFixed(1)}</td>
+        <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
+        <td>
+          <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
+            <button type="button" class="btn-secondary" style="font-size:12px; padding:4px 8px;">Editar</button>
+            <button type="button" class="btn-danger" style="font-size:12px; padding:4px 8px;">Excluir</button>
+          </div>
+        </td>
+      </tr>
+    `)
     .join("");
 };
 
