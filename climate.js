@@ -82,10 +82,8 @@
 
         <div style="flex:0 0 auto;">
           <button class="primary" style="margin-top:4px;" disabled>
-          Salvar registro diário (em desenvolvimento)
-        </button>
-
-
+            Salvar registro diário (em desenvolvimento)
+          </button>
         </div>
       </div>
     </div>
