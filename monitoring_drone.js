@@ -2,13 +2,6 @@
 // Página de Monitoramento Drone (lista + CRUD no Supabase)
 
 (function () {
-window.renderMonitoringDronePage = renderMonitoringDronePage;
-window.openDroneFlightModal = openDroneFlightModal;
-window.openDroneFlightEditModal = openDroneFlightEditModal;
-window.updateDroneFlight = updateDroneFlight;
-window.confirmDeleteDroneFlight = confirmDeleteDroneFlight;
-
-
   function renderMonitoringDronePage(container) {
     const experiment = window.currentExperiment || null;
 
