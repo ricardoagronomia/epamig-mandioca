@@ -81,7 +81,7 @@
         </div>
 
         <div style="flex:0 0 auto;">
-          <button class="primary" style="margin-top:4px;" disabled>
+          <button class="primary" style="margin-top:4px;" onclick="saveClimateDailyRecord()" disabled>
             Salvar registro diário (em desenvolvimento)
           </button>
         </div>
@@ -166,7 +166,48 @@
       </div>
     </div>
   `;
+    
+    if (experiment && typeof loadClimateDailyReadings === "function") {
+  loadClimateDailyReadings(experiment.id);
+    }
 }
+  
+  window.saveClimateDailyRecord = async function saveClimateDailyRecord() {
+  const experiment = window.currentExperiment || null;
+  if (!experiment) {
+    alert("Nenhum experimento selecionado.");
+    return;
+  }
+
+  const date = document.getElementById("clDate")?.value || null;
+  const rain_mm = parseFloat(document.getElementById("clRain")?.value || "") || null;
+  const tmax_c = parseFloat(document.getElementById("clTmax")?.value || "") || null;
+  const tmin_c = parseFloat(document.getElementById("clTmin")?.value || "") || null;
+  const rh_mean = parseFloat(document.getElementById("clRh")?.value || "") || null;
+
+  // Por enquanto, só validação básica e log
+  if (!date) {
+    alert("Informe a data do registro.");
+    return;
+  }
+
+  console.log("Registro climático (mock):", {
+    experiment_id: experiment.id,
+    date,
+    rain_mm,
+    tmax_c,
+    tmin_c,
+    rh_mean,
+  });
+
+  alert("No futuro, este botão vai salvar o registro climático no banco.");
+};
+  window.loadClimateDailyReadings = async function loadClimateDailyReadings(experimentId) {
+  // Em breve: buscar no banco pelos registros de clima do experimento.
+  console.log("Carregar registros climáticos diários para experimento:", experimentId);
+};
+
+
 
   function escapeHtml(str) {
     if (!str) return "";
