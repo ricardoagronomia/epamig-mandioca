@@ -43,15 +43,15 @@
         </div>
       </div>
 
-      <!-- Card de estatísticas (placeholder) -->
+            <!-- Card de estatísticas -->
       <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
         <div style="width:48px; height:48px; border-radius:14px; background:#dbeafe; display:flex; align-items:center; justify-content:center; color:#1d4ed8; font-size:24px;">
           ✈
         </div>
         <div style="flex:1 1 180px;">
           <div style="font-size:14px; font-weight:600; color:#1f2937;">Voos de drone</div>
-          <div style="font-size:13px; color:#6b7280;">
-            Em breve: resumo de voos, área coberta e índices médios por experimento.
+          <div id="droneSummary" style="font-size:13px; color:#6b7280;">
+            Carregando resumo de voos...
           </div>
         </div>
       </div>
@@ -77,8 +77,67 @@
 
     if (experiment) {
       loadDroneFlightsList(experiment.id);
+      loadDroneSummary(experiment.id);
     }
   }
+  
+  // --- Resumo de voos (card estatístico) ---
+async function loadDroneSummary(experimentId) {
+  if (typeof s === "undefined") return;
+
+  const summaryEl = document.getElementById("droneSummary");
+  if (!summaryEl) return;
+
+  summaryEl.textContent = "Carregando resumo de voos...";
+
+  try {
+    // 1) Conta total de voos
+    const { count, error: countError } = await s
+      .from("drone_monitoring")
+      .select("*", { count: "exact", head: true })
+      .eq("experiment_id", experimentId);
+
+    if (countError) {
+      console.error("Erro ao contar voos de drone:", countError);
+    }
+
+    // 2) Busca o voo mais recente (estado atual da cultura)
+    const { data: latestData, error: latestError } = await s
+      .from("drone_monitoring")
+      .select("coverage_index, plant_height_m, stand_plants_per_ha")
+      .eq("experiment_id", experimentId)
+      .order("flight_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (latestError) {
+      console.error("Erro ao carregar último voo para resumo:", latestError);
+    }
+
+    const totalFlights = typeof count === "number" ? count : 0;
+    const latest = latestData && latestData[0] ? latestData[0] : null;
+
+    if (!totalFlights) {
+      summaryEl.innerHTML = `
+        Nenhum voo registrado ainda.<br>
+        <span style="font-size:12px;">Use o botão <strong>Novo voo</strong> para iniciar o monitoramento.</span>
+      `;
+      return;
+    }
+
+    const cov = latest && latest.coverage_index != null ? `${latest.coverage_index.toFixed(1)} %` : "–";
+    const height = latest && latest.plant_height_m != null ? `${latest.plant_height_m.toFixed(2)} m` : "–";
+    const stand = latest && latest.stand_plants_per_ha != null ? `${latest.stand_plants_per_ha.toLocaleString("pt-BR")} plantas/ha` : "–";
+
+    summaryEl.innerHTML = `
+      <span style="font-weight:500; color:#111827;">${totalFlights}</span> voos registrados.<br>
+      Cobertura: <span style="font-weight:500;">${cov}</span> · Altura: <span style="font-weight:500;">${height}</span> · Estande: <span style="font-weight:500;">${stand}</span>
+    `;
+  } catch (err) {
+    console.error("Erro inesperado ao carregar resumo de voos:", err);
+    summaryEl.textContent = "Erro ao carregar resumo de voos.";
+  }
+}
 
   // --- Lista de voos do experimento ---
   async function loadDroneFlightsList(experimentId) {
