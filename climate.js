@@ -228,18 +228,18 @@
           <td>${row.tmin_c.toFixed(1)}</td>
           <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
           <td>
-            <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end;">
+            <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
               <button type="button" class="btn-secondary"
                 style="font-size:12px; padding:4px 8px;"
                 onclick="/* openClimateDailyEditModal(id) */">
                 Editar
+             </button>
+             <button type="button" class="btn-danger"
+                style="font-size:12px; padding:4px 8px;"
+                onclick="/* confirmDeleteClimateDaily(id) */">
+                Excluir
               </button>
-              <button type="button" class="btn-danger"
-                  style="font-size:12px; padding:4px 8px;"
-                  onclick="/* confirmDeleteClimateDaily(id) */">
-                  Excluir
-                </button>
-              </div>
+            </div>
             </td>
         </tr>
       `;
