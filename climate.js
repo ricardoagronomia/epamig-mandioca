@@ -81,7 +81,12 @@
         </div>
 
         <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:2px;">
-          <button style="margin-top:4px;" onclick="saveClimateDailyRecord()">
+          <button
+            type="button"
+            class="btn-primary"
+            style="margin-top:4px; font-size:13px; padding:6px 12px; width:auto; padding-inline:18px;"
+            onclick="saveClimateDailyRecord()"
+          >
             Salvar registro diário
           </button>
           <span style="font-size:11px; color:#9ca3af;">
@@ -223,11 +228,19 @@
           <td>${row.tmin_c.toFixed(1)}</td>
           <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
           <td>
-            <div style="display:flex; gap:4px; justify-content:flex-start;">
-              <button>Editar</button>
-              <button>Excluir</button>
-            </div>
-          </td>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end;">
+              <button type="button" class="btn-secondary"
+                style="font-size:12px; padding:4px 8px;"
+                onclick="/* openClimateDailyEditModal(id) */">
+                Editar
+              </button>
+              <button type="button" class="btn-danger"
+                  style="font-size:12px; padding:4px 8px;"
+                  onclick="/* confirmDeleteClimateDaily(id) */">
+                  Excluir
+                </button>
+              </div>
+            </td>
         </tr>
       `;
     })
