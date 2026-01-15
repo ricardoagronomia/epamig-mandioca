@@ -178,7 +178,7 @@ window.confirmDeleteDroneFlight = confirmDeleteDroneFlight;
   }
   
   // --- Edição de voo ---
-async function openDroneFlightEditModal(id) {
+window.openDroneFlightEditModal = async function openDroneFlightEditModal(id) {
   if (!id) return;
 
   if (typeof s === "undefined") {
@@ -600,7 +600,7 @@ window.updateDroneFlight = async function updateDroneFlight(id) {
     }
   };
 
-   async function confirmDeleteDroneFlight(id) {
+   window.confirmDeleteDroneFlight = async function confirmDeleteDroneFlight(id) {
     if (!id) return;
     if (!window.currentExperiment) {
       alert("Nenhum experimento selecionado.");
