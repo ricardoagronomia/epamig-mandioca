@@ -1,5 +1,5 @@
 // monitoring_drone.js
-// Página de Monitoramento Drone (placeholder estático, sem lógica ainda)
+// Página de Monitoramento Drone (layout pronto, ainda sem salvar no banco)
 
 (function () {
   window.renderMonitoringDronePage = renderMonitoringDronePage;
@@ -11,78 +11,77 @@
       <div class="content-header">
         <div class="content-title">Monitoramento por drone</div>
         <div class="content-subtitle">
-          Registre voos de drone, parâmetros de captura e índices gerados (NDVI, cobertura, etc.).
+          Registre voos de drone, parâmetros de captura e índices gerados (NDVI, cobertura, altura, IAF, etc.).
         </div>
       </div>
 
-      <!-- Header + botão Novo Voo -->
+      <!-- Header + botão -->
       <div class="card">
         <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;">
           <div style="font-size:13px; color:#4b5563;">
-            ${experiment
-              ? `
-                Experimento <strong>${escapeHtml(experiment.code || "")}</strong> ·
-                ${escapeHtml(experiment.name || "Sem nome")}<br>
-                <span style="font-size:12px; color:#6b7280;">
-                  Configure voos de drone associados a este experimento.
-                </span>
-              `
-              : `
-                <span style="color:#6b7280;">
-                  Nenhum experimento selecionado. Selecione um experimento na aba "Experimentos" para vincular voos de drone.
-                </span>
-              `}
+            ${
+              experiment
+                ? `Experimento <strong>${escapeHtml(experiment.code || '')}</strong> – ${escapeHtml(experiment.name || 'Sem nome')}<br>
+                   <span style="font-size:12px; color:#6b7280;">
+                     Configure voos de drone associados a este experimento.
+                   </span>`
+                : `<span style="color:#6b7280;">
+                     Nenhum experimento selecionado. Selecione um experimento na aba <strong>Experimentos</strong> para vincular voos de drone.
+                   </span>`
+            }
           </div>
-          <button class="btn-primary" style="width:auto; padding-inline:18px;" disabled>
-            Novo voo (em desenvolvimento)
+          <button
+            class="btn-primary"
+            style="width:auto; padding-inline:18px; ${experiment ? '' : 'opacity:0.7; cursor:default;'}"
+            ${experiment ? '' : 'disabled'}
+          >
+            Novo voo (em breve)
           </button>
         </div>
       </div>
 
       <!-- Card de estatísticas -->
       <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
-        <div style="
-          width:48px; height:48px; border-radius:14px;
-          background:#dbeafe;
-          display:flex; align-items:center; justify-content:center;
-          color:#1d4ed8; font-size:24px;
-        ">
-          ✈️
+        <div style="width:48px; height:48px; border-radius:14px; background:#dbeafe; display:flex; align-items:center; justify-content:center; color:#1d4ed8; font-size:24px;">
+          ✈
         </div>
         <div style="flex:1 1 180px;">
-          <div style="font-size:14px; font-weight:600; color:#1f2937;">
-            Voos de drone
-          </div>
+          <div style="font-size:14px; font-weight:600; color:#1f2937;">Voos de drone</div>
           <div style="font-size:13px; color:#6b7280;">
-            Em breve: resumo de voos realizados, área coberta e índices médios por experimento.
+            Em breve: resumo de voos, área coberta e índices médios por experimento.
           </div>
         </div>
       </div>
 
-      <!-- Formulário mockado (somente leitura, para demonstração) -->
+      <!-- Formulário mockado somente leitura -->
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div style="font-size:14px; font-weight:600; color:#065f46;">
-            Configuração de voo (em desenvolvimento)
+            Configuração de voo (layout pronto)
           </div>
           <span style="font-size:12px; color:#6b7280;">
-            Layout do formulário para cadastro/edição de voos.
+            Este formulário ainda não salva no banco. Vamos ligar ao Supabase nos próximos passos.
           </span>
         </div>
 
+        <!-- Linha 1: data, horário, operador -->
         <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151;">
           <div style="flex:1 1 160px;">
             <label>Data do voo</label>
-            <input type="date" disabled />
+            <input type="date" disabled>
           </div>
           <div style="flex:1 1 140px;">
             <label>Horário</label>
-            <input type="time" disabled />
+            <input type="time" disabled>
           </div>
           <div style="flex:1 1 200px;">
             <label>Operador</label>
-            <input type="text" placeholder="Nome do operador" disabled />
+            <input type="text" placeholder="Nome do operador" disabled>
           </div>
+        </div>
+
+        <!-- Linha 2: bloco, altitude, imagens, índice de cobertura, NDVI -->
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-top:10px;">
           <div style="flex:1 1 140px;">
             <label>Bloco</label>
             <select disabled>
@@ -91,79 +90,69 @@
           </div>
           <div style="flex:1 1 140px;">
             <label>Altitude (m)</label>
-            <input type="number" placeholder="Ex. 80" disabled />
+            <input type="number" placeholder="Ex. 80" disabled>
           </div>
           <div style="flex:1 1 140px;">
             <label>Imagens capturadas</label>
-            <input type="number" placeholder="Ex. 120" disabled />
+            <input type="number" placeholder="Ex. 120" disabled>
           </div>
           <div style="flex:1 1 140px;">
             <label>Índice de cobertura (%)</label>
-            <input type="number" placeholder="0–100" disabled />
+            <input type="number" placeholder="0–100" disabled>
           </div>
           <div style="flex:1 1 140px;">
             <label>NDVI médio</label>
-            <input type="number" step="0.01" placeholder="0,00–1,00" disabled />
+            <input type="number" step="0.01" placeholder="0,00–1,00" disabled>
           </div>
         </div>
-        
-        <!-- Novos campos de métricas do monitoramento remoto -->
-<div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-top:10px;">
 
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label for="dronePlantHeight">Altura da planta (m)</label>
-    <input type="number" step="0.01" id="dronePlantHeight" placeholder="Ex.: 1,20">
-  </div>
-
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label for="droneCanopyVolume">Volume de copa (m³)</label>
-    <input type="number" step="0.1" id="droneCanopyVolume" placeholder="Ex.: 3,5">
-  </div>
-
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label for="droneLai">Área foliar (IAF)</label>
-    <input type="number" step="0.01" id="droneLai" placeholder="Ex.: 2,3">
-  </div>
-
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label for="droneMarginIndex">Margeamento</label>
-    <input type="number" step="0.01" id="droneMarginIndex" placeholder="Ex.: 0,85">
-  </div>
-
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label for="droneStand">Estande (plantas/ha)</label>
-    <input type="number" step="1" id="droneStand" placeholder="Ex.: 11000">
-  </div>
-
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label for="droneHealth">Sanidade (nota)</label>
-    <input type="number" step="0.1" id="droneHealth" placeholder="Ex.: 4,5">
-  </div>
-
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label for="droneVegIndex">Índice de vegetação</label>
-    <input type="number" step="0.001" id="droneVegIndex" placeholder="Ex.: 0,78">
-  </div>
-
-  <!-- Frontal + lateral na mesma “coluna” de largura padrão -->
-  <div style="flex:1 1 140px; min-width:140px;">
-    <label>Sobreposição (%)</label>
-    <div style="display:flex; gap:6px;">
-      <select id="droneFrontOverlap" style="flex:1;">
-        <option value="">Frontal</option>
-        <option value="80">80%</option>
-        <option value="85">85%</option>
-      </select>
-      <select id="droneSideOverlap" style="flex:1;">
-        <option value="">Lateral</option>
-        <option value="80">80%</option>
-        <option value="85">85%</option>
-      </select>
-    </div>
-  </div>
-
-</div>
-
+        <!-- Linha 3: novos campos de métricas do monitoramento remoto -->
+        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-top:10px;">
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label for="dronePlantHeight">Altura da planta (m)</label>
+            <input type="number" step="0.01" id="dronePlantHeight" placeholder="Ex. 1,20" disabled>
+          </div>
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label for="droneCanopyVolume">Volume de copa (m³)</label>
+            <input type="number" step="0.1" id="droneCanopyVolume" placeholder="Ex. 3,5" disabled>
+          </div>
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label for="droneLai">Área foliar (IAF)</label>
+            <input type="number" step="0.01" id="droneLai" placeholder="Ex. 2,3" disabled>
+          </div>
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label for="droneMarginIndex">Índice de margeamento</label>
+            <input type="number" step="0.01" id="droneMarginIndex" placeholder="Ex. 0,85" disabled>
+          </div>
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label for="droneStand">Estande (plantas/ha)</label>
+            <input type="number" step="1" id="droneStand" placeholder="Ex. 11000" disabled>
+          </div>
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label for="droneHealth">Sanidade (nota)</label>
+            <input type="number" step="0.1" id="droneHealth" placeholder="Ex. 4,5" disabled>
+          </div>
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label for="droneVegIndex">Índice de vegetação</label>
+            <input type="number" step="0.001" id="droneVegIndex" placeholder="Ex. 0,78" disabled>
+          </div>
+          <!-- Frontal / lateral na mesma coluna -->
+          <div style="flex:1 1 140px; min-width:140px;">
+            <label>Sobreposição (%)</label>
+            <div style="display:flex; gap:6px;">
+              <select id="droneFrontOverlap" style="flex:1" disabled>
+                <option>Frontal</option>
+                <option value="80">80</option>
+                <option value="85">85</option>
+              </select>
+              <select id="droneSideOverlap" style="flex:1" disabled>
+                <option>Lateral</option>
+                <option value="80">80</option>
+                <option value="85">85</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         <div style="margin-top:8px;">
           <label>Observações</label>
@@ -174,7 +163,7 @@
         <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
           <button class="btn-secondary" style="opacity:0.7; cursor:default;">Cancelar</button>
           <button class="btn-primary" style="width:auto; padding-inline:18px; opacity:0.7; cursor:default;">
-            Salvar voo
+            Salvar voo (em breve)
           </button>
         </div>
       </div>
@@ -182,25 +171,15 @@
       <!-- Lista de registros -->
       <div class="card">
         <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Registros de voos (em desenvolvimento)
+          Registros de voos (em breve)
         </div>
         <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
           Aqui serão listados os voos cadastrados para este experimento, com horário, operador, bloco, quantidade de imagens e índices calculados.
         </p>
-
-        <div style="
-          border-radius:10px;
-          border:1px dashed #d1d5db;
-          padding:10px 12px;
-          font-size:13px;
-          color:#6b7280;
-          background:#f9fafb;
-        ">
-          Nenhum voo cadastrado ainda.
-          <br>
+        <div style="border-radius:10px; border:1px dashed #d1d5db; padding:10px 12px; font-size:13px; color:#6b7280; background:#f9fafb;">
+          Nenhum voo cadastrado ainda.<br>
           <span style="font-size:12px;">
-            Após definir as métricas com o orientador, esta seção será ligada ao banco de dados
-            para registrar voos, permitir edição e exclusão (com controle de permissões).
+            Primeiro vamos definir o modelo de dados e a integração com o Supabase. Depois, este módulo permitirá cadastrar, editar e excluir voos de forma segura.
           </span>
         </div>
       </div>
@@ -208,12 +187,12 @@
   }
 
   function escapeHtml(str) {
-    if (!str) return "";
+    if (!str) return '';
     return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 })();
