@@ -81,7 +81,7 @@
         </div>
 
         <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:2px;">
-          <button class="primary" style="margin-top:4px;" onclick="saveClimateDailyRecord()">
+          <button style="margin-top:4px;" onclick="saveClimateDailyRecord()">
             Salvar registro diário
           </button>
           <span style="font-size:11px; color:#9ca3af;">
@@ -224,8 +224,8 @@
           <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
           <td>
             <div style="display:flex; gap:4px; justify-content:flex-start;">
-                <button class="ghost small">Editar</button>
-                <button class="ghost small danger">Excluir</button>
+              <button>Editar</button>
+              <button>Excluir</button>
             </div>
           </td>
         </tr>
