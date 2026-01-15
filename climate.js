@@ -214,10 +214,47 @@
         <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
           Histórico de registros climáticos (em desenvolvimento)
         </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Lista dos registros diários associados ao experimento, permitindo filtros por período (plantio, estabelecimento,
-          enchimento de raízes, colheita) e exportação para análise externa.
-        </p>
+        
+        <!-- Registros diários (mock) -->
+<div class="card" style="margin-top:16px;">
+  <div style="font-size:14px; font-weight:600; color:#111827; margin-bottom:6px;">
+    Registros diários de clima (em desenvolvimento)
+  </div>
+  <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+    Esta lista trará os registros climáticos diários associados ao experimento, incluindo precipitação, temperatura e
+    <span style="font-weight:500;">umidade relativa do ar</span>, com opções de filtro por período e exportação.
+  </p>
+
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Precipitação (mm)</th>
+          <th>Temp. máxima (°C)</th>
+          <th>Temp. mínima (°C)</th>
+          <th>Umidade relativa (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+        </tr>
+        <tr>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+          <td>–</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
         <div style="
           border-radius:10px;
