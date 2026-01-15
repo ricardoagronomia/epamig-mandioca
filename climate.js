@@ -156,8 +156,10 @@
               <td>–</td>
               <td>–</td>
               <td>
-                <button class="ghost small" disabled>Editar</button>
-                <button class="ghost small" disabled>Excluir</button>
+                <div style="display:flex; gap:4px; justify-content:flex-start;">
+                  <button class="btn ghost small" disabled>Editar</button>
+                  <button class="btn ghost small" disabled>Excluir</button>
+                </div>
               </td>
             </tr>
           </tbody>
