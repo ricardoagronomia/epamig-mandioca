@@ -264,30 +264,134 @@
   // ---- Modal "Novo voo" ----
 
   function openDroneFlightModal() {
-    const experiment = window.currentExperiment || null;
-    if (!experiment) {
-      alert("Selecione um experimento na aba Experimentos antes de registrar um voo.");
-      return;
-    }
-
-    const today = new Date().toISOString().split("T")[0];
-
-    const bodyHtml = `
-      <form id="droneFlightForm">
-        <p style="font-size:13px; color:#4b5563; margin-bottom:10px;">
-          Novo voo de drone para o experimento <strong>${escapeHtml(experiment.code || "")}</strong>.
-        </p>
-
-        <!-- ... resto do modal (seu código atual) ... -->
-      </form>
-    `;
-
-    if (typeof openModal === "function") {
-      openModal("Novo voo de drone", bodyHtml);
-    } else {
-      alert("Função de modal não encontrada no app.");
-    }
+  const experiment = window.currentExperiment || null;
+  if (!experiment) {
+    alert("Selecione um experimento na aba Experimentos antes de registrar um voo.");
+    return;
   }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const bodyHtml = `
+    <form id="droneFlightForm">
+      <p style="font-size:13px; color:#4b5563; margin-bottom:10px;">
+        Novo voo de drone para o experimento <strong>${escapeHtml(experiment.code || "")}</strong>.
+      </p>
+
+      <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+        <div style="flex:1 1 150px;">
+          <label for="dfFlightDate">Data do voo</label>
+          <input type="date" id="dfFlightDate" value="${today}">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfFlightTime">Horário</label>
+          <input type="time" id="dfFlightTime">
+        </div>
+        <div style="flex:1 1 200px;">
+          <label for="dfOperatorName">Operador</label>
+          <input type="text" id="dfOperatorName" placeholder="Nome do operador">
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+        <div style="flex:1 1 120px;">
+          <label for="dfBlockNumber">Bloco</label>
+          <input type="number" id="dfBlockNumber" min="1" placeholder="Ex. 1">
+        </div>
+        <div style="flex:1 1 120px;">
+          <label for="dfAltitude">Altitude (m)</label>
+          <input type="number" step="0.1" id="dfAltitude" placeholder="Ex. 80">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfImageCount">Imagens capturadas</label>
+          <input type="number" id="dfImageCount" placeholder="Ex. 120">
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+        <div style="flex:1 1 140px;">
+          <label for="dfCoverageIndex">Índice de cobertura (%)</label>
+          <input type="number" step="0.1" id="dfCoverageIndex" placeholder="0–100">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfNdviMean">NDVI médio</label>
+          <input type="number" step="0.01" id="dfNdviMean" placeholder="0,00–1,00">
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+        <div style="flex:1 1 140px;">
+          <label for="dfPlantHeight">Altura da planta (m)</label>
+          <input type="number" step="0.01" id="dfPlantHeight" placeholder="Ex. 1,20">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfCanopyVolume">Volume de copa (m³)</label>
+          <input type="number" step="0.1" id="dfCanopyVolume" placeholder="Ex. 3,5">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfLai">Área foliar (IAF)</label>
+          <input type="number" step="0.01" id="dfLai" placeholder="Ex. 2,3">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfMarginIndex">Índice de margeamento</label>
+          <input type="number" step="0.01" id="dfMarginIndex" placeholder="Ex. 0,85">
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+        <div style="flex:1 1 140px;">
+          <label for="dfStand">Estande (plantas/ha)</label>
+          <input type="number" step="1" id="dfStand" placeholder="Ex. 11000">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfHealthScore">Sanidade (nota)</label>
+          <input type="number" step="0.1" id="dfHealthScore" placeholder="Ex. 4,5">
+        </div>
+        <div style="flex:1 1 140px;">
+          <label for="dfVegIndex">Índice de vegetação</label>
+          <input type="number" step="0.001" id="dfVegIndex" placeholder="Ex. 0,78">
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151; margin-bottom:8px;">
+        <div style="flex:1 1 160px;">
+          <label>Sobreposição (%)</label>
+          <div style="display:flex; gap:6px;">
+            <select id="dfFrontOverlap" style="flex:1">
+              <option value="">Frontal</option>
+              <option value="80">80</option>
+              <option value="85">85</option>
+            </select>
+            <select id="dfSideOverlap" style="flex:1">
+              <option value="">Lateral</option>
+              <option value="80">80</option>
+              <option value="85">85</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:4px;">
+        <label for="dfNotes">Observações</label>
+        <textarea id="dfNotes" rows="3" style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+          placeholder="Notas sobre o voo, condições climáticas, problemas na captura, etc."></textarea>
+      </div>
+
+      <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button type="button" class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveDroneFlight()">
+          Salvar voo
+        </button>
+      </div>
+    </form>
+  `;
+
+  if (typeof openModal === "function") {
+    openModal("Novo voo de drone", bodyHtml);
+  } else {
+    alert("Função de modal não encontrada no app.");
+  }
+}
 
   // ---- Salvar no Supabase ----
 
