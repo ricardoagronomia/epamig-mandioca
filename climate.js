@@ -214,10 +214,6 @@
   }
 };
 
-    console.log("Registro climático pronto para salvar:", payload);
-    alert("Próximo passo: enviar este payload para a tabela de clima no banco.");
-  };
-
   window.loadClimateDailyReadings = async function loadClimateDailyReadings() {
   if (typeof s === "undefined") {
     console.warn("Supabase client não disponível.");
