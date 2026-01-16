@@ -89,9 +89,6 @@
             >
               Salvar registro diário
             </button>
-            <span style="font-size:11px; color:#9ca3af;">
-              Funcionalidade em desenvolvimento
-            </span>
           </div>
         </div>
       </div>
