@@ -118,16 +118,8 @@
                 <th>Umidade relativa média (%)</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>Jan</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td>
-              </tr>
-              <tr>
-                <td>Fev</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td>
-              </tr>
-              <tr>
-                <td>Mar</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td>
-              </tr>
+            <tbody id="climateMonthlyTableBody">
+              <!-- preenchido dinamicamente -->
             </tbody>
           </table>
         </div>
@@ -301,6 +293,111 @@
         </td>
       </tr>
     `;
+  }
+};
+  
+  window.loadClimateMonthlySummary = async function loadClimateMonthlySummary() {
+  if (typeof s === "undefined") {
+    console.warn("Supabase client não disponível.");
+    return;
+  }
+
+  const tbody = document.querySelector("#climateMonthlyTableBody");
+  if (!tbody) return;
+
+  // período fixo do experimento: nov/2025 a nov/2026
+  const dataInicio = "2025-11-01";
+  const dataFim = "2026-11-30";
+
+  try {
+    const { data, error } = await s
+      .from("climate_daily")
+      .select("date, rain_mm, tmax_c, tmin_c, rh_mean")
+      .gte("date", dataInicio)
+      .lte("date", dataFim)
+      .order("date", { ascending: true });
+
+    if (error) throw error;
+
+    // 12 meses, cada item: { rainSum, tmaxSum, tmaxCount, ... }
+    const months = Array.from({ length: 12 }, () => ({
+      rainSum: 0,
+      tmaxSum: 0,
+      tmaxCount: 0,
+      tminSum: 0,
+      tminCount: 0,
+      rhSum: 0,
+      rhCount: 0,
+    }));
+
+    let chuvaTotalPeriodo = 0;
+
+    (data || []).forEach((row) => {
+      if (!row.date) return;
+      const d = new Date(row.date + "T00:00:00"); // evita fuso
+      const m = d.getMonth(); // 0-11
+
+      if (row.rain_mm != null) {
+        months[m].rainSum += Number(row.rain_mm);
+        chuvaTotalPeriodo += Number(row.rain_mm);
+      }
+      if (row.tmax_c != null) {
+        months[m].tmaxSum += Number(row.tmax_c);
+        months[m].tmaxCount += 1;
+      }
+      if (row.tmin_c != null) {
+        months[m].tminSum += Number(row.tmin_c);
+        months[m].tminCount += 1;
+      }
+      if (row.rh_mean != null) {
+        months[m].rhSum += Number(row.rh_mean);
+        months[m].rhCount += 1;
+      }
+    });
+
+    const nomesMeses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+    // running total da chuva
+    let acumulado = 0;
+    const linhas = months.map((m, idx) => {
+      acumulado += m.rainSum;
+
+      const rain = m.rainSum > 0 ? m.rainSum.toFixed(1) : "–";
+      const rainAcum = acumulado > 0 ? acumulado.toFixed(1) : "–";
+      const tmax = m.tmaxCount ? (m.tmaxSum / m.tmaxCount).toFixed(1) : "–";
+      const tmin = m.tminCount ? (m.tminSum / m.tminCount).toFixed(1) : "–";
+      const rh = m.rhCount ? (m.rhSum / m.rhCount).toFixed(0) : "–";
+
+      return `
+        <tr>
+          <td>${nomesMeses[idx]}</td>
+          <td>${rain}</td>
+          <td>${rainAcum}</td>
+          <td>${tmax}</td>
+          <td>${tmin}</td>
+          <td>${rh}</td>
+        </tr>
+      `;
+    }).join("");
+
+    tbody.innerHTML = linhas;
+
+    // opcional: mostrar total do período em algum span
+    const totalSpan = document.getElementById("climateTotalRainSpan");
+    if (totalSpan) {
+      totalSpan.textContent = chuvaTotalPeriodo.toFixed(1) + " mm";
+    }
+  } catch (err) {
+    console.error("Erro ao carregar resumo mensal de clima:", err);
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align:center; font-size:13px; color:#b91c1c;">
+            Erro ao carregar resumo mensal.
+          </td>
+        </tr>
+      `;
+    }
   }
 };
 
