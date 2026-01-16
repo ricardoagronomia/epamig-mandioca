@@ -166,11 +166,8 @@
     }
 }
   
-  window.saveClimateDailyRecord = async function saveClimateDailyRecord() {
-  const experiment = window.currentExperiment || null;
-  if (!experiment) {
-    alert("Nenhum experimento selecionado.");
-    return;
+    if (typeof loadClimateDailyReadings === "function") {
+    loadClimateDailyReadings();
   }
 
   const date = document.getElementById("clDate")?.value || null;
@@ -197,21 +194,9 @@
   alert("No futuro, este botão vai salvar o registro climático no banco.");
 };
   
- window.loadClimateDailyReadings = async function loadClimateDailyReadings(experimentId) {
-  const mock = [
-    { date: "2026-01-10", rain_mm: 5.2, tmax_c: 30.5, tmin_c: 20.1, rh_mean: 72 },
-    { date: "2026-01-11", rain_mm: 0.0, tmax_c: 32.0, tmin_c: 19.8, rh_mean: 65 },
-    { date: "2026-01-12", rain_mm: 18.7, tmax_c: 28.3, tmin_c: 21.0, rh_mean: 80 },
-  ];
-
-  const tbody = document.querySelector("#climateDailyTableBody");
-  if (!tbody) return;
-
-  const formatDate = iso => {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    return `${d}-${m}-${y}`;
-  };
+ window.loadClimateDailyReadings = async function loadClimateDailyReadings() {
+  console.log("Carregar registros climáticos diários (sem vínculo com experimento).");
+};
 
   tbody.innerHTML = mock
     .map(row => `
@@ -233,7 +218,7 @@
 };
 
   window.saveClimateDailyRecord = async function saveClimateDailyRecord() {
-  const experiment = window.currentExperiment || null;
+  const date = document.getElementById("clDate")?.value || null;
   if (!experiment) {
     alert("Nenhum experimento selecionado.");
     return;
@@ -251,12 +236,13 @@
   }
 
   const payload = {
-  station_code: "ESTACAO_PADRAO", // temporário, até ter escolha de estação
-  date,
-  rain_mm: ...,
-  tmax_c: ...,
-  tmin_c: ...,
-  rh_mean: ...,
+    date,
+    rain_mm: ...,
+    tmax_c: ...,
+    tmin_c: ...,
+    rh_mean: ...,
+  };
+  console.log("Registro climático pronto para salvar:", payload);
 };
 
   console.log("Registro climático pronto para salvar:", payload);
