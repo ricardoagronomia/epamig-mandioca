@@ -16,7 +16,7 @@
             🌧
           </div>
           <div>
-            <div style="font-size:18px; font-weight:600; color:#111827;">– mm</div>
+            <div style="font-size:18px; font-weight:600; color:#111827;" id="clQuickRain">– mm</div>
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Chuva (últimos dias)</div>
           </div>
         </div>
@@ -27,7 +27,7 @@
             🌡
           </div>
           <div>
-            <div style="font-size:18px; font-weight:600; color:#713f12;">– °C</div>
+            <div style="font-size:18px; font-weight:600; color:#713f12;" id="clQuickTemp">– °C</div>
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Temp. média</div>
           </div>
         </div>
@@ -38,7 +38,7 @@
             💧
           </div>
           <div>
-            <div style="font-size:18px; font-weight:600; color:#14532d;">– %</div>
+            <div style="font-size:18px; font-weight:600; color:#14532d;" id="clQuickRh">– %</div>
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Umidade relativa</div>
           </div>
         </div>
@@ -160,6 +160,9 @@
     }
     if (typeof loadClimateMonthlySummary === "function") {
     loadClimateMonthlySummary();
+    }
+    if (typeof loadClimateQuickSummary === "function") {
+      loadClimateQuickSummary();
     }
   }
 
@@ -412,6 +415,66 @@
         </tr>
       `;
     }
+  }
+};
+  window.loadClimateQuickSummary = async function loadClimateQuickSummary() {
+  if (typeof s === "undefined") return;
+
+  // últimos 7 dias
+  const hoje = new Date();
+  const inicio = new Date();
+  inicio.setDate(hoje.getDate() - 6); // hoje + 6 dias anteriores
+
+  const fmt = (d) => d.toISOString().slice(0, 10); // yyyy-mm-dd
+  const dataInicio = fmt(inicio);
+  const dataFim = fmt(hoje);
+
+  try {
+    const { data, error } = await s
+      .from("climate_daily")
+      .select("rain_mm, tmax_c, tmin_c, rh_mean")
+      .gte("date", dataInicio)
+      .lte("date", dataFim);
+
+    if (error) throw error;
+
+    let rainSum = 0;
+    let rainCount = 0;
+    let tempSum = 0;
+    let tempCount = 0;
+    let rhSum = 0;
+    let rhCount = 0;
+
+    (data || []).forEach((row) => {
+      if (row.rain_mm != null) {
+        rainSum += Number(row.rain_mm);
+        rainCount += 1;
+      }
+      // média simples da diária: (tmax + tmin) / 2
+      if (row.tmax_c != null && row.tmin_c != null) {
+        tempSum += (Number(row.tmax_c) + Number(row.tmin_c)) / 2;
+        tempCount += 1;
+      }
+      if (row.rh_mean != null) {
+        rhSum += Number(row.rh_mean);
+        rhCount += 1;
+      }
+    });
+
+    const rainText = rainCount ? rainSum.toFixed(1) + " mm" : "– mm";
+    const tempText = tempCount ? (tempSum / tempCount).toFixed(1) + " °C" : "– °C";
+    const rhText = rhCount ? (rhSum / rhCount).toFixed(0) + " %" : "– %";
+
+    // preencher os 3 blocos do card
+    const rainSpan = document.getElementById("clQuickRain");
+    const tempSpan = document.getElementById("clQuickTemp");
+    const rhSpan = document.getElementById("clQuickRh");
+
+    if (rainSpan) rainSpan.textContent = rainText;
+    if (tempSpan) tempSpan.textContent = tempText;
+    if (rhSpan) rhSpan.textContent = rhText;
+  } catch (err) {
+    console.error("Erro no resumo rápido de clima:", err);
   }
 };
 
