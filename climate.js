@@ -184,8 +184,8 @@
   }
 
   const payload = {
-    station_code: "PADRAO", // depois podemos trocar por um seletor de estação
-    date,                   // YYYY-MM-DD
+    station_code: "PADRAO",
+    date,
     rain_mm: rain_mm === "" ? null : Number(rain_mm),
     tmax_c: tmax_c === "" ? null : Number(tmax_c),
     tmin_c: tmin_c === "" ? null : Number(tmin_c),
@@ -196,20 +196,11 @@
     const { error } = await s.from("climate_daily").insert(payload);
     if (error) throw error;
 
-    const { data, error } = await s
-  .from("climate_daily")
-  .select("id, date, rain_mm, tmax_c, tmin_c, rh_mean")
-  .order("date", { ascending: true });
-
-console.log("climate_daily data:", data, "error:", error);
-
-    // limpa campos
     document.getElementById("clRain").value = "";
     document.getElementById("clTmax").value = "";
     document.getElementById("clTmin").value = "";
     document.getElementById("clRh").value = "";
 
-    // recarrega lista
     if (typeof loadClimateDailyReadings === "function") {
       loadClimateDailyReadings();
     }
