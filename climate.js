@@ -158,6 +158,9 @@
     if (typeof loadClimateDailyReadings === "function") {
       loadClimateDailyReadings();
     }
+    if (typeof loadClimateMonthlySummary === "function") {
+    loadClimateMonthlySummary();
+    }
   }
 
   window.saveClimateDailyRecord = async function saveClimateDailyRecord() {
