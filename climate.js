@@ -171,6 +171,11 @@
     return;
   }
 
+  if (window.currentRole === "visitor") {
+    alert("Visitantes têm acesso somente leitura aos dados climáticos.");
+    return;
+  }
+
   const date = document.getElementById("clDate")?.value || null;
   const rain_mm = document.getElementById("clRain")?.value;
   const tmax_c = document.getElementById("clTmax")?.value;
@@ -486,6 +491,9 @@
 };
 
   window.openClimateDailyEdit = function openClimateDailyEdit(row) {
+  if (window.currentRole === "visitor") {
+    return;
+  }
   currentClimateEditId = row.id;
 
   document.getElementById("clDate").value = row.date || "";
@@ -499,9 +507,12 @@
 };
 
   window.confirmDeleteClimateDaily = async function confirmDeleteClimateDaily(id) {
+  if (window.currentRole === "visitor") {
+    alert("Visitantes não podem excluir registros climáticos.");
+    return;
+  }
   if (!id) return;
-  if (!confirm("Deseja excluir este registro climático diário?")) return;
-
+    
   if (typeof s === "undefined") {
     alert("Cliente Supabase não disponível.");
     return;
