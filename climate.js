@@ -341,34 +341,36 @@
       });
     }
 
-// ao percorrer os registros:
-(data || []).forEach((row) => {
-  if (!row.date) return;
-  const d = new Date(row.date + "T00:00:00");
-  const y = d.getFullYear();
-  const m = d.getMonth();
+    let chuvaTotalPeriodo = 0; // <<< Faltava isto
 
-  // achar o slot certo (ano+mês)
-  const slot = monthSlots.find(s => s.year === y && s.month === m);
-  if (!slot) return; // fora do intervalo nov/25–nov/26
+    // ao percorrer os registros:
+    (data || []).forEach((row) => {
+      if (!row.date) return;
+      const d = new Date(row.date + "T00:00:00");
+      const y = d.getFullYear();
+      const m = d.getMonth();
 
-  if (row.rain_mm != null) {
-    slot.rainSum += Number(row.rain_mm);
-    chuvaTotalPeriodo += Number(row.rain_mm);
-  }
-  if (row.tmax_c != null) {
-    slot.tmaxSum += Number(row.tmax_c);
-    slot.tmaxCount += 1;
-  }
-  if (row.tmin_c != null) {
-    slot.tminSum += Number(row.tmin_c);
-    slot.tminCount += 1;
-  }
-  if (row.rh_mean != null) {
-    slot.rhSum += Number(row.rh_mean);
-    slot.rhCount += 1;
-  }
-});
+      // achar o slot certo (ano+mês)
+      const slot = monthSlots.find((s) => s.year === y && s.month === m);
+      if (!slot) return; // fora do intervalo nov/25–nov/26
+
+      if (row.rain_mm != null) {
+        slot.rainSum += Number(row.rain_mm);
+        chuvaTotalPeriodo += Number(row.rain_mm);
+      }
+      if (row.tmax_c != null) {
+        slot.tmaxSum += Number(row.tmax_c);
+        slot.tmaxCount += 1;
+      }
+      if (row.tmin_c != null) {
+        slot.tminSum += Number(row.tmin_c);
+        slot.tminCount += 1;
+      }
+      if (row.rh_mean != null) {
+        slot.rhSum += Number(row.rh_mean);
+        slot.rhCount += 1;
+      }
+    });
 
     const nomesMeses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
@@ -396,7 +398,6 @@
 
     tbody.innerHTML = linhas;
 
-    // opcional: mostrar total do período em algum span
     const totalSpan = document.getElementById("climateTotalRainSpan");
     if (totalSpan) {
       totalSpan.textContent = chuvaTotalPeriodo.toFixed(1) + " mm";
