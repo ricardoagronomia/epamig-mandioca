@@ -2,6 +2,8 @@
 // Página de Dados Climáticos
 
 (function () {
+  let currentClimateEditId = null;
+
   window.renderClimatePage = renderClimatePage;
 
   function renderClimatePage(container) {
@@ -193,13 +195,26 @@
   };
 
   try {
-    const { error } = await s.from("climate_daily").insert(payload);
-    if (error) throw error;
+    if (currentClimateEditId) {
+      const { error } = await s
+        .from("climate_daily")
+        .update(payload)
+        .eq("id", currentClimateEditId);
+      if (error) throw error;
+    } else {
+      const { error } = await s.from("climate_daily").insert(payload);
+      if (error) throw error;
+    }
 
     document.getElementById("clRain").value = "";
     document.getElementById("clTmax").value = "";
     document.getElementById("clTmin").value = "";
     document.getElementById("clRh").value = "";
+    // mantém a data para facilitar lançamentos em série
+
+    currentClimateEditId = null;
+    const btn = document.querySelector('button[onclick="saveClimateDailyRecord()"]');
+    if (btn) btn.textContent = "Salvar registro diário";
 
     if (typeof loadClimateDailyReadings === "function") {
       loadClimateDailyReadings();
@@ -263,7 +278,7 @@
             <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
               <button type="button" class="btn-secondary"
                 style="font-size:12px; padding:4px 8px;"
-                onclick="/* openClimateDailyEditModal('${row.id}') */">
+                onclick="openClimateDailyEdit('${encodeURIComponent(JSON.stringify(row))}')">
                 Editar
               </button>
               <button type="button" class="btn-danger"
@@ -288,6 +303,21 @@
     `;
   }
 };
+
+  window.openClimateDailyEdit = function openClimateDailyEdit(rowJson) {
+  const row = JSON.parse(rowJson);
+  currentClimateEditId = row.id;
+
+  document.getElementById("clDate").value = row.date || "";
+  document.getElementById("clRain").value = row.rain_mm ?? "";
+  document.getElementById("clTmax").value = row.tmax_c ?? "";
+  document.getElementById("clTmin").value = row.tmin_c ?? "";
+  document.getElementById("clRh").value = row.rh_mean ?? "";
+
+  const btn = document.querySelector('button[onclick="saveClimateDailyRecord()"]');
+  if (btn) btn.textContent = "Atualizar registro diário";
+};
+
   window.confirmDeleteClimateDaily = async function confirmDeleteClimateDaily(id) {
   if (!id) return;
   if (!confirm("Deseja excluir este registro climático diário?")) return;
