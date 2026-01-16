@@ -268,7 +268,7 @@
               </button>
               <button type="button" class="btn-danger"
                 style="font-size:12px; padding:4px 8px;"
-                onclick="/* confirmDeleteClimateDaily('${row.id}') */">
+                onclick="confirmDeleteClimateDaily('${row.id}')">
                 Excluir
               </button>
             </div>
@@ -286,6 +286,31 @@
         </td>
       </tr>
     `;
+  }
+};
+  window.confirmDeleteClimateDaily = async function confirmDeleteClimateDaily(id) {
+  if (!id) return;
+  if (!confirm("Deseja excluir este registro climático diário?")) return;
+
+  if (typeof s === "undefined") {
+    alert("Cliente Supabase não disponível.");
+    return;
+  }
+
+  try {
+    const { error } = await s
+      .from("climate_daily")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+
+    if (typeof loadClimateDailyReadings === "function") {
+      loadClimateDailyReadings();
+    }
+  } catch (err) {
+    console.error("Erro ao excluir registro climático:", err);
+    alert("Erro ao excluir registro climático.");
   }
 };
 
