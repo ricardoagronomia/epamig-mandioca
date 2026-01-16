@@ -215,11 +215,11 @@
 };
 
   window.loadClimateDailyReadings = async function loadClimateDailyReadings() {
+  console.log("loadClimateDailyReadings: chamada ao entrar na página de clima");
   if (typeof s === "undefined") {
     console.warn("Supabase client não disponível.");
     return;
   }
-
   const tbody = document.querySelector("#climateDailyTableBody");
   if (!tbody) return;
 
