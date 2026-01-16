@@ -386,13 +386,27 @@ function renderPage(page) {
   }
 
   if (page === "monitoring-drone") {
-    if (typeof renderMonitoringDronePage === "function") {
-      renderMonitoringDronePage(container);
-    } else {
-      container.innerHTML = '<div class="card"><p>Página de monitoramento por drone não carregada.</p></div>';
-    }
-    return;
+  if (currentRole === "visitor") {
+    container.innerHTML = `
+      <div class="content-header">
+        <div class="content-title">Monitoramento por drone</div>
+        <div class="content-subtitle">
+          Apenas administradores e pesquisadores podem acessar este módulo.
+        </div>
+      </div>
+      <div class="card">
+        <p style="color:#6b7280;">
+          Você está autenticado como visitante (somente leitura).
+        </p>
+      </div>
+    `;
+  } else if (typeof renderMonitoringDronePage === "function") {
+    renderMonitoringDronePage(container);
+  } else {
+    container.innerHTML = '<div class="card"><p>Página de monitoramento por drone não carregada.</p></div>';
   }
+  return;
+}
   
   if (page === "harvest") {
   if (typeof renderHarvestPage === "function") {
@@ -809,6 +823,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
