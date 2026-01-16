@@ -7,6 +7,7 @@
   window.renderClimatePage = renderClimatePage;
 
   function renderClimatePage(container) {
+    const isVisitor = window.currentRole === "visitor";
     container.innerHTML = `
       <!-- Resumo rápido de clima (mock, com ícones) -->
       <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin-bottom:16px;">
@@ -86,6 +87,7 @@
               class="btn-primary"
               style="margin-top:4px; font-size:13px; padding:6px 12px; width:auto; padding-inline:18px;"
               onclick="saveClimateDailyRecord()"
+              ${isVisitor ? "disabled title='Somente leitura para visitantes'" : ""}
             >
               Salvar registro diário
             </button>
@@ -233,7 +235,7 @@
   const tbody = document.querySelector("#climateDailyTableBody");
   if (!tbody) return;
 
-  try {
+    try {
     const { data, error } = await s
       .from("climate_daily")
       .select("id, date, rain_mm, tmax_c, tmin_c, rh_mean")
@@ -260,6 +262,8 @@
       return;
     }
 
+    const isVisitor = window.currentRole === "visitor";
+
     tbody.innerHTML = data
       .map(
         (row) => `
@@ -271,16 +275,22 @@
           <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
           <td>
             <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
-              <button type="button" class="btn-secondary"
-                style="font-size:12px; padding:4px 8px;"
-                onclick='openClimateDailyEdit(${JSON.stringify(row)})'>
-                Editar
-              </button>
-              <button type="button" class="btn-danger"
-                style="font-size:12px; padding:4px 8px;"
-                onclick="confirmDeleteClimateDaily('${row.id}')">
-                Excluir
-              </button>
+              ${
+                isVisitor
+                  ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
+                  : `
+                    <button type="button" class="btn-secondary"
+                      style="font-size:12px; padding:4px 8px;"
+                      onclick='openClimateDailyEdit(${JSON.stringify(row)})'>
+                      Editar
+                    </button>
+                    <button type="button" class="btn-danger"
+                      style="font-size:12px; padding:4px 8px;"
+                      onclick="confirmDeleteClimateDaily('${row.id}')">
+                      Excluir
+                    </button>
+                  `
+              }
             </div>
           </td>
         </tr>
