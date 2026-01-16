@@ -167,46 +167,81 @@
   }
 
   window.saveClimateDailyRecord = async function saveClimateDailyRecord() {
-    const date = document.getElementById("clDate")?.value || null;
-    const rain_mm = document.getElementById("clRain")?.value;
-    const tmax_c = document.getElementById("clTmax")?.value;
-    const tmin_c = document.getElementById("clTmin")?.value;
-    const rh_mean = document.getElementById("clRh")?.value;
+  if (typeof s === "undefined") {
+    alert("Cliente Supabase não disponível.");
+    return;
+  }
 
-    if (!date) {
-      alert("Informe a data do registro.");
-      return;
+  const date = document.getElementById("clDate")?.value || null;
+  const rain_mm = document.getElementById("clRain")?.value;
+  const tmax_c = document.getElementById("clTmax")?.value;
+  const tmin_c = document.getElementById("clTmin")?.value;
+  const rh_mean = document.getElementById("clRh")?.value;
+
+  if (!date) {
+    alert("Informe a data do registro.");
+    return;
+  }
+
+  const payload = {
+    station_code: "PADRAO", // depois podemos trocar por um seletor de estação
+    date,                   // YYYY-MM-DD
+    rain_mm: rain_mm === "" ? null : Number(rain_mm),
+    tmax_c: tmax_c === "" ? null : Number(tmax_c),
+    tmin_c: tmin_c === "" ? null : Number(tmin_c),
+    rh_mean: rh_mean === "" ? null : Number(rh_mean),
+  };
+
+  try {
+    const { error } = await s.from("climate_daily").insert(payload);
+    if (error) throw error;
+
+    // limpa campos
+    document.getElementById("clRain").value = "";
+    document.getElementById("clTmax").value = "";
+    document.getElementById("clTmin").value = "";
+    document.getElementById("clRh").value = "";
+
+    // recarrega lista
+    if (typeof loadClimateDailyReadings === "function") {
+      loadClimateDailyReadings();
     }
 
-    const payload = {
-      date,
-      rain_mm: rain_mm === "" ? null : Number(rain_mm),
-      tmax_c: tmax_c === "" ? null : Number(tmax_c),
-      tmin_c: tmin_c === "" ? null : Number(tmin_c),
-      rh_mean: rh_mean === "" ? null : Number(rh_mean),
-    };
+    alert("Registro climático salvo com sucesso.");
+  } catch (err) {
+    console.error("Erro ao salvar registro climático:", err);
+    alert("Erro ao salvar registro climático.");
+  }
+};
 
     console.log("Registro climático pronto para salvar:", payload);
     alert("Próximo passo: enviar este payload para a tabela de clima no banco.");
   };
 
   window.loadClimateDailyReadings = async function loadClimateDailyReadings() {
-    const mock = [
-      { date: "2026-01-10", rain_mm: 5.2, tmax_c: 30.5, tmin_c: 20.1, rh_mean: 72 },
-      { date: "2026-01-11", rain_mm: 0.0, tmax_c: 32.0, tmin_c: 19.8, rh_mean: 65 },
-      { date: "2026-01-12", rain_mm: 18.7, tmax_c: 28.3, tmin_c: 21.0, rh_mean: 80 },
-    ];
+  if (typeof s === "undefined") {
+    console.warn("Supabase client não disponível.");
+    return;
+  }
 
-    const tbody = document.querySelector("#climateDailyTableBody");
-    if (!tbody) return;
+  const tbody = document.querySelector("#climateDailyTableBody");
+  if (!tbody) return;
 
-    const formatDate = (iso) => {
+  try {
+    const { data, error } = await s
+      .from("climate_daily")
+      .select("id, date, rain_mm, tmax_c, tmin_c, rh_mean")
+      .order("date", { ascending: true });
+
+    if (error) throw error;
+
+    const formatDate = iso => {
       if (!iso) return "";
       const [y, m, d] = iso.split("-");
       return `${d}-${m}-${y}`;
     };
 
-    if (!mock.length) {
+    if (!data || data.length === 0) {
       tbody.innerHTML = `
         <tr>
           <td colspan="6" style="text-align:center; font-size:13px; color:#6b7280;">
@@ -217,24 +252,42 @@
       return;
     }
 
-    tbody.innerHTML = mock
+    tbody.innerHTML = data
       .map(row => `
         <tr>
           <td>${formatDate(row.date)}</td>
-          <td>${row.rain_mm.toFixed(1)}</td>
-          <td>${row.tmax_c.toFixed(1)}</td>
-          <td>${row.tmin_c.toFixed(1)}</td>
+          <td>${row.rain_mm != null ? row.rain_mm.toFixed(1) : "–"}</td>
+          <td>${row.tmax_c != null ? row.tmax_c.toFixed(1) : "–"}</td>
+          <td>${row.tmin_c != null ? row.tmin_c.toFixed(1) : "–"}</td>
           <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
           <td>
             <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
-              <button type="button" class="btn-secondary" style="font-size:12px; padding:4px 8px;">Editar</button>
-              <button type="button" class="btn-danger" style="font-size:12px; padding:4px 8px;">Excluir</button>
+              <button type="button" class="btn-secondary"
+                style="font-size:12px; padding:4px 8px;"
+                onclick="/* openClimateDailyEditModal('${row.id}') */">
+                Editar
+              </button>
+              <button type="button" class="btn-danger"
+                style="font-size:12px; padding:4px 8px;"
+                onclick="/* confirmDeleteClimateDaily('${row.id}') */">
+                Excluir
+              </button>
             </div>
           </td>
         </tr>
       `)
       .join("");
-  };
+  } catch (err) {
+    console.error("Erro ao carregar registros climáticos diários:", err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; font-size:13px; color:#b91c1c;">
+          Erro ao carregar registros climáticos.
+        </td>
+      </tr>
+    `;
+  }
+};
 
   function escapeHtml(str) {
     if (!str) return "";
