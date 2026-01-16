@@ -322,58 +322,69 @@
 
     if (error) throw error;
 
-    // 12 meses, cada item: { rainSum, tmaxSum, tmaxCount, ... }
-    const months = Array.from({ length: 12 }, () => ({
-      rainSum: 0,
-      tmaxSum: 0,
-      tmaxCount: 0,
-      tminSum: 0,
-      tminCount: 0,
-      rhSum: 0,
-      rhCount: 0,
-    }));
+    // ordem fixa de meses do experimento: nov/2025 a out/2026 + nov/2026
+    const monthSlots = [];
+    for (let i = 0; i < 12; i++) {
+      // começa em nov/2025 (mês 10, pois é 0‑based)
+      const base = new Date(2025, 10, 1);
+      const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+      monthSlots.push({
+        year: d.getFullYear(),
+        month: d.getMonth(), // 0‑11
+        rainSum: 0,
+        tmaxSum: 0,
+        tmaxCount: 0,
+        tminSum: 0,
+        tminCount: 0,
+        rhSum: 0,
+        rhCount: 0,
+      });
+    }
 
-    let chuvaTotalPeriodo = 0;
+// ao percorrer os registros:
+(data || []).forEach((row) => {
+  if (!row.date) return;
+  const d = new Date(row.date + "T00:00:00");
+  const y = d.getFullYear();
+  const m = d.getMonth();
 
-    (data || []).forEach((row) => {
-      if (!row.date) return;
-      const d = new Date(row.date + "T00:00:00"); // evita fuso
-      const m = d.getMonth(); // 0-11
+  // achar o slot certo (ano+mês)
+  const slot = monthSlots.find(s => s.year === y && s.month === m);
+  if (!slot) return; // fora do intervalo nov/25–nov/26
 
-      if (row.rain_mm != null) {
-        months[m].rainSum += Number(row.rain_mm);
-        chuvaTotalPeriodo += Number(row.rain_mm);
-      }
-      if (row.tmax_c != null) {
-        months[m].tmaxSum += Number(row.tmax_c);
-        months[m].tmaxCount += 1;
-      }
-      if (row.tmin_c != null) {
-        months[m].tminSum += Number(row.tmin_c);
-        months[m].tminCount += 1;
-      }
-      if (row.rh_mean != null) {
-        months[m].rhSum += Number(row.rh_mean);
-        months[m].rhCount += 1;
-      }
-    });
+  if (row.rain_mm != null) {
+    slot.rainSum += Number(row.rain_mm);
+    chuvaTotalPeriodo += Number(row.rain_mm);
+  }
+  if (row.tmax_c != null) {
+    slot.tmaxSum += Number(row.tmax_c);
+    slot.tmaxCount += 1;
+  }
+  if (row.tmin_c != null) {
+    slot.tminSum += Number(row.tmin_c);
+    slot.tminCount += 1;
+  }
+  if (row.rh_mean != null) {
+    slot.rhSum += Number(row.rh_mean);
+    slot.rhCount += 1;
+  }
+});
 
     const nomesMeses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
-    // running total da chuva
     let acumulado = 0;
-    const linhas = months.map((m, idx) => {
-      acumulado += m.rainSum;
+    const linhas = monthSlots.map((s) => {
+      acumulado += s.rainSum;
 
-      const rain = m.rainSum > 0 ? m.rainSum.toFixed(1) : "–";
+      const rain = s.rainSum > 0 ? s.rainSum.toFixed(1) : "–";
       const rainAcum = acumulado > 0 ? acumulado.toFixed(1) : "–";
-      const tmax = m.tmaxCount ? (m.tmaxSum / m.tmaxCount).toFixed(1) : "–";
-      const tmin = m.tminCount ? (m.tminSum / m.tminCount).toFixed(1) : "–";
-      const rh = m.rhCount ? (m.rhSum / m.rhCount).toFixed(0) : "–";
+      const tmax = s.tmaxCount ? (s.tmaxSum / s.tmaxCount).toFixed(1) : "–";
+      const tmin = s.tminCount ? (s.tminSum / s.tminCount).toFixed(1) : "–";
+      const rh = s.rhCount ? (s.rhSum / s.rhCount).toFixed(0) : "–";
 
       return `
         <tr>
-          <td>${nomesMeses[idx]}</td>
+          <td>${nomesMeses[s.month]}</td>
           <td>${rain}</td>
           <td>${rainAcum}</td>
           <td>${tmax}</td>
