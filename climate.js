@@ -278,7 +278,7 @@
             <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
               <button type="button" class="btn-secondary"
                 style="font-size:12px; padding:4px 8px;"
-                onclick="openClimateDailyEdit('${encodeURIComponent(JSON.stringify(row))}')">
+                onclick='openClimateDailyEdit(${JSON.stringify(row)})'
                 Editar
               </button>
               <button type="button" class="btn-danger"
@@ -304,8 +304,7 @@
   }
 };
 
-  window.openClimateDailyEdit = function openClimateDailyEdit(rowJson) {
-  const row = JSON.parse(rowJson);
+  window.openClimateDailyEdit = function openClimateDailyEdit(row) {
   currentClimateEditId = row.id;
 
   document.getElementById("clDate").value = row.date || "";
