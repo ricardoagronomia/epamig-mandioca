@@ -413,8 +413,7 @@ function renderPage(page) {
 }
 
   if (page === "climate") {
-  if (typeof renderClimatePage === "function") {
-    renderClimatePage(container);
+  renderClimatePage(container);
   } else {
     container.innerHTML = '<div class="card"><p>Página de dados climáticos não carregada.</p></div>';
   }
@@ -809,6 +808,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
