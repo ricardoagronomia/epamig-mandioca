@@ -322,15 +322,14 @@
 
     if (error) throw error;
 
-    // ordem fixa de meses do experimento: nov/2025 a out/2026 + nov/2026
+    // ordem fixa de meses do experimento: nov/2025 a nov/2026 (13 meses)
     const monthSlots = [];
-    for (let i = 0; i < 12; i++) {
-      // começa em nov/2025 (mês 10, pois é 0‑based)
-      const base = new Date(2025, 10, 1);
+    for (let i = 0; i < 13; i++) {          // <<< 13 em vez de 12
+      const base = new Date(2025, 10, 1);   // nov/2025
       const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
       monthSlots.push({
         year: d.getFullYear(),
-        month: d.getMonth(), // 0‑11
+        month: d.getMonth(),
         rainSum: 0,
         tmaxSum: 0,
         tmaxCount: 0,
