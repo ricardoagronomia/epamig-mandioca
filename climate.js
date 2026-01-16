@@ -223,10 +223,12 @@ console.log("climate_daily data:", data, "error:", error);
 
   window.loadClimateDailyReadings = async function loadClimateDailyReadings() {
   console.log("loadClimateDailyReadings: chamada ao entrar na página de clima");
+
   if (typeof s === "undefined") {
     console.warn("Supabase client não disponível.");
     return;
   }
+
   const tbody = document.querySelector("#climateDailyTableBody");
   if (!tbody) return;
 
@@ -236,13 +238,15 @@ console.log("climate_daily data:", data, "error:", error);
       .select("id, date, rain_mm, tmax_c, tmin_c, rh_mean")
       .order("date", { ascending: true });
 
-    if (error) throw error;
+    console.log("climate_daily data:", data, "error:", error);
 
-    const formatDate = iso => {
+    const formatDate = (iso) => {
       if (!iso) return "";
       const [y, m, d] = iso.split("-");
       return `${d}-${m}-${y}`;
     };
+
+    if (error) throw error;
 
     if (!data || data.length === 0) {
       tbody.innerHTML = `
@@ -256,7 +260,8 @@ console.log("climate_daily data:", data, "error:", error);
     }
 
     tbody.innerHTML = data
-      .map(row => `
+      .map(
+        (row) => `
         <tr>
           <td>${formatDate(row.date)}</td>
           <td>${row.rain_mm != null ? row.rain_mm.toFixed(1) : "–"}</td>
@@ -278,7 +283,8 @@ console.log("climate_daily data:", data, "error:", error);
             </div>
           </td>
         </tr>
-      `)
+      `,
+      )
       .join("");
   } catch (err) {
     console.error("Erro ao carregar registros climáticos diários:", err);
