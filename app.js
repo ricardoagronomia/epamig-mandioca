@@ -258,6 +258,10 @@ function showApp() {
   // Mapa DBC: liberado para todas as roles (inclusive visitor)
   const elDbc = document.querySelector('[data-page="dbc-map"]');
   if (elDbc) elDbc.classList.remove("disabled");
+  
+  // Clima: liberado para todas as roles (somente leitura para visitor)
+  const elClimate = document.querySelector('[data-page="climate"]');
+  if (elClimate) elClimate.classList.remove("disabled");
 
   // Experimentos: admin + pesquisador
   if (currentRole === "admin" || currentRole === "collaborator") {
@@ -267,7 +271,7 @@ function showApp() {
     if (elNew) elNew.classList.remove("disabled");
   }
 
- // Monitoramento / Colheita / Intervenções / Clima: admin + pesquisador
+ // Monitoramento / Colheita / Intervenções: admin + pesquisador
 if (currentRole === "admin" || currentRole === "collaborator") {
   const elMonitoring = document.querySelector('[data-page="monitoring"]');
   if (elMonitoring) elMonitoring.classList.remove("disabled");
@@ -280,9 +284,6 @@ if (currentRole === "admin" || currentRole === "collaborator") {
 
   const elInterventions = document.querySelector('[data-page="interventions"]');
   if (elInterventions) elInterventions.classList.remove("disabled");
-
-  const elClimate = document.querySelector('[data-page="climate"]');
-  if (elClimate) elClimate.classList.remove("disabled");
 
   const elCharts = document.querySelector('[data-page="charts"]');
   if (elCharts) elCharts.classList.remove("disabled");
@@ -823,6 +824,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
