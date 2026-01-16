@@ -196,6 +196,13 @@
     const { error } = await s.from("climate_daily").insert(payload);
     if (error) throw error;
 
+    const { data, error } = await s
+  .from("climate_daily")
+  .select("id, date, rain_mm, tmax_c, tmin_c, rh_mean")
+  .order("date", { ascending: true });
+
+console.log("climate_daily data:", data, "error:", error);
+
     // limpa campos
     document.getElementById("clRain").value = "";
     document.getElementById("clTmax").value = "";
