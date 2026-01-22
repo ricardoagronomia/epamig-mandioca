@@ -602,28 +602,44 @@
     if (bio && bio.has_sprouted === false && !currentPlantStatuses[pos]) {
       currentPlantStatuses[pos] = 'not_sprouted';
     }
+    
+    // Se não tem informação de brotação na biometria, mantém como 'not_sprouted'
+    if (bio && bio.has_sprouted === null && !currentPlantStatuses[pos]) {
+      currentPlantStatuses[pos] = 'not_sprouted';
+    }
   }
 
   const total = 9;
   const itemsHtml = Array.from({ length: total }).map((_, idx) => {
     const n = idx + 1;
-    const status = currentPlantStatuses[n] || 'not_sprouted';
     const bio = currentBiometrics[n];
+    let status = currentPlantStatuses[n] || 'not_sprouted';
+    
+    // FORÇAR cinza se não tem informação de brotação na biometria
+    if (!bio || bio.has_sprouted !== true) {
+      // Só permite status 'dead' ou 'not_sprouted' se não brotou
+      if (status === 'alive') {
+        status = 'not_sprouted';
+        currentPlantStatuses[n] = 'not_sprouted';
+      }
+    }
     
     let bg = '#e5e7eb'; // cinza - não brotou
     let color = '#374151';
-    let label = n;
+    let borderColor = '#d1d5db';
     
     if (status === 'alive') {
       bg = '#dcfce7'; // verde - viva
       color = '#065f46';
+      borderColor = '#10b981';
     } else if (status === 'dead') {
       bg = '#fee2e2'; // vermelho - morta
       color = '#7f1d1d';
+      borderColor = '#dc2626';
     }
 
     // Indicador se foi marcada como brotada na biometria
-    const sproutedMark = bio?.has_sprouted ? '<div style="font-size:9px;">🌱</div>' : '';
+    const sproutedMark = bio?.has_sprouted === true ? '<div style="font-size:9px;">🌱</div>' : '';
 
     return `
       <button type="button"
@@ -632,7 +648,7 @@
         onclick="togglePlantStatus(${n})"
         style="
           width:40px; height:40px; border-radius:999px;
-          border:2px solid ${status === 'alive' ? '#10b981' : status === 'dead' ? '#dc2626' : '#d1d5db'};
+          border:2px solid ${borderColor};
           background:${bg};
           color:${color};
           font-size:13px;
@@ -644,7 +660,7 @@
           cursor:pointer;
           position:relative;
         ">
-        <div>${label}</div>
+        <div>${n}</div>
         ${sproutedMark}
       </button>
     `;
@@ -660,7 +676,8 @@
     </div>
 
     <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-      Plantas brotadas aparecem automaticamente em <strong style="color:#10b981;">verde</strong>.
+      Plantas <strong>brotadas</strong> (🌱) aparecem em <strong style="color:#10b981;">verde</strong>.
+      <br>Plantas <strong>sem brotação indicada</strong> ficam em <strong style="color:#9ca3af;">cinza</strong>.
       <br>Clique para alternar: <strong style="color:#10b981;">Verde (viva)</strong> → <strong style="color:#dc2626;">Vermelho (morta)</strong> → <strong style="color:#9ca3af;">Cinza (não brotou)</strong>
     </div>
 
@@ -743,26 +760,28 @@
   const total = 9;
   const itemsHtml = Array.from({ length: total }).map((_, idx) => {
     const n = idx + 1;
-    const status = currentPlantStatuses[n] || 'not_sprouted';
     const bio = currentBiometrics[n];
+    const status = currentPlantStatuses[n] || 'not_sprouted';
     const isLodged = currentLodgingStatuses[n] || false;
     
-    // Só pode marcar tombamento se estiver viva
-    const canToggle = status === 'alive';
+    // Só pode marcar tombamento se brotou E está viva
+    const canToggle = (bio?.has_sprouted === true) && (status === 'alive');
     
     let bg = '#e5e7eb'; // cinza - não disponível
     let color = '#9ca3af';
     let cursor = 'not-allowed';
     let opacity = '0.5';
+    let borderColor = '#d1d5db';
     
     if (canToggle) {
       bg = isLodged ? '#fef3c7' : '#dcfce7'; // amarelo se tombada, verde se em pé
       color = isLodged ? '#92400e' : '#065f46';
+      borderColor = isLodged ? '#f59e0b' : '#10b981';
       cursor = 'pointer';
       opacity = '1';
     }
 
-    const sproutedMark = bio?.has_sprouted ? '<div style="font-size:9px;">🌱</div>' : '';
+    const sproutedMark = bio?.has_sprouted === true ? '<div style="font-size:9px;">🌱</div>' : '';
     const deadMark = status === 'dead' ? '<div style="font-size:9px;">❌</div>' : '';
 
     return `
@@ -772,7 +791,7 @@
         onclick="${canToggle ? `toggleLodging(${n})` : 'return false;'}"
         style="
           width:40px; height:40px; border-radius:999px;
-          border:2px solid ${canToggle ? (isLodged ? '#f59e0b' : '#10b981') : '#d1d5db'};
+          border:2px solid ${borderColor};
           background:${bg};
           color:${color};
           font-size:13px;
@@ -796,11 +815,12 @@
     </div>
 
     <div style="margin-bottom:10px; padding:8px; background:#f0fdf4; border-radius:8px; font-size:12px; color:#065f46;">
-      🌱 = Brotou · ❌ = Morta (não pode marcar tombamento)
+      🌱 = Brotou · ❌ = Morta · <span style="color:#9ca3af;">Cinza</span> = Não brotou ou morta
     </div>
 
     <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-      Apenas plantas <strong style="color:#10b981;">vivas</strong> podem ser marcadas.
+      Apenas plantas <strong style="color:#10b981;">brotadas e vivas</strong> (🌱 verde) podem ser marcadas.
+      <br>Plantas <strong>sem brotação</strong> ou <strong>mortas</strong> ficam em <strong style="color:#9ca3af;">cinza</strong>.
       <br>Clique para alternar: <strong style="color:#10b981;">Verde (em pé)</strong> ↔ <strong style="color:#f59e0b;">Amarelo (tombada)</strong>
     </div>
 
