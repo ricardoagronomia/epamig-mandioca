@@ -315,11 +315,11 @@
         .map(
           (row) => `
           <tr>
-            <td>${formatDate(row.intervention_date)}</td>  // <<< era row.date
+            <td>${formatDate(row.intervention_date)}</td>
             <td>${typeLabel(row.intervention_type)}</td>
             <td>${row.block_number ? "Bloco " + row.block_number : "Todos"}</td>
             <td>${row.plot_code || "–"}</td>
-            <td>${row.product || "–"}</td>  // <<< era row.product_name
+            <td>${row.product || "–"}</td>
             <td>${row.dosage || "–"}</td>
             <td>
               <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
