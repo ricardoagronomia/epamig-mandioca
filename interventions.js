@@ -271,7 +271,7 @@
         .from("interventions")
         .select("*")
         .eq("experiment_id", experiment.id)
-        .order("date", { ascending: false });
+        .order("date", { ascending: false })
 
       if (error) throw error;
 
