@@ -1,11 +1,14 @@
 // interventions.js
-// Página de Intervenções (diário de campo) – placeholder estático
+// Página de Intervenções (diário de campo)
 
 (function () {
+  let currentInterventionEditId = null;
+
   window.renderInterventionsPage = renderInterventionsPage;
 
   function renderInterventionsPage(container) {
     const experiment = window.currentExperiment || null;
+    const isVisitor = window.currentRole === "visitor";
 
     container.innerHTML = `
       <div class="content-header">
@@ -15,7 +18,7 @@
         </div>
       </div>
 
-      <!-- Header + botão Nova Intervenção -->
+      <!-- Header do experimento atual -->
       <div class="card">
         <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;">
           <div style="font-size:13px; color:#4b5563;">
@@ -35,13 +38,10 @@
             `
             }
           </div>
-          <button class="btn-primary" style="width:auto; padding-inline:18px;" disabled>
-            Nova intervenção (em desenvolvimento)
-          </button>
         </div>
       </div>
 
-      <!-- Card de estatísticas -->
+      <!-- Card de estatísticas rápidas -->
       <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
         <div style="
           width:48px; height:48px; border-radius:14px;
@@ -53,90 +53,89 @@
         </div>
         <div style="flex:1 1 220px;">
           <div style="font-size:14px; font-weight:600; color:#1f2937;">
-            Intervenções registradas
+            <span id="interventionCount">–</span> intervenções registradas
           </div>
           <div style="font-size:13px; color:#6b7280;">
-            Em breve: resumo por tipo de intervenção, blocos afetados e datas das últimas operações.
+            ${experiment ? `Experimento ${escapeHtml(experiment.code || "")}` : "Selecione um experimento"}
           </div>
         </div>
       </div>
 
-      <!-- Formulário mockado -->
+      <!-- Formulário de registro -->
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div style="font-size:14px; font-weight:600; color:#065f46;">
-            Registro de intervenção (em desenvolvimento)
+            Registro de intervenção
           </div>
-          <span style="font-size:12px; color:#6b7280;">
-            Layout do formulário para cadastro/edição de intervenções agrícolas.
-          </span>
         </div>
 
         <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151;">
           <div style="flex:1 1 160px;">
-            <label>Data</label>
-            <input type="date" disabled />
+            <label for="intDate">Data</label>
+            <input type="date" id="intDate" ${isVisitor ? "disabled" : ""} />
           </div>
 
           <div style="flex:1 1 200px;">
-            <label>Tipo de intervenção</label>
-            <select disabled>
-              <option>Adubação de cobertura</option>
-              <option>Adubação foliar</option>
-              <option>Controle de plantas daninhas</option>
-              <option>Controle de pragas</option>
-              <option>Controle de doenças</option>
-              <option>Irrigação</option>
-              <option>Capina manual</option>
-              <option>Amontoa</option>
-              <option>Outro</option>
+            <label for="intType">Tipo de intervenção</label>
+            <select id="intType" ${isVisitor ? "disabled" : ""}>
+              <option value="adubacao_cobertura">Adubação de cobertura</option>
+              <option value="adubacao_foliar">Adubação foliar</option>
+              <option value="controle_plantas_daninhas">Controle de plantas daninhas</option>
+              <option value="controle_pragas">Controle de pragas</option>
+              <option value="controle_doencas">Controle de doenças</option>
+              <option value="irrigacao">Irrigação</option>
+              <option value="capina_manual">Capina manual</option>
+              <option value="amontoa">Amontoa</option>
+              <option value="outro">Outro</option>
             </select>
           </div>
 
           <div style="flex:1 1 120px;">
-            <label>Bloco</label>
-            <select disabled>
-              <option>Todos</option>
-              <option>Bloco 1</option>
-              <option>Bloco 2</option>
-              <option>Bloco 3</option>
+            <label for="intBlock">Bloco</label>
+            <select id="intBlock" ${isVisitor ? "disabled" : ""}>
+              <option value="">Todos</option>
+              <option value="1">Bloco 1</option>
+              <option value="2">Bloco 2</option>
+              <option value="3">Bloco 3</option>
+              <option value="4">Bloco 4</option>
             </select>
           </div>
 
           <div style="flex:1 1 160px;">
-            <label>Parcela</label>
-            <select disabled>
-              <option>Todas</option>
-              <option>B1P1</option>
-              <option>B1P2</option>
-            </select>
+            <label for="intPlot">Parcela</label>
+            <input type="text" id="intPlot" placeholder="Ex: B1P1 ou vazio" ${isVisitor ? "disabled" : ""} />
           </div>
 
           <div style="flex:1 1 200px;">
-            <label>Produto/insumo</label>
-            <input type="text" placeholder="Nome comercial ou ingrediente ativo" disabled />
+            <label for="intProduct">Produto/insumo</label>
+            <input type="text" id="intProduct" placeholder="Nome comercial ou ingrediente" ${isVisitor ? "disabled" : ""} />
           </div>
 
           <div style="flex:1 1 180px;">
-            <label>Dosagem</label>
-            <input type="text" placeholder="Ex. 2 L/ha, 200 kg/ha" disabled />
+            <label for="intDosage">Dosagem</label>
+            <input type="text" id="intDosage" placeholder="Ex. 2 L/ha, 200 kg/ha" ${isVisitor ? "disabled" : ""} />
           </div>
 
           <div style="flex:1 1 180px;">
-            <label>Método de aplicação</label>
-            <input type="text" placeholder="Ex. costal, tratorizado, manual" disabled />
+            <label for="intMethod">Método de aplicação</label>
+            <input type="text" id="intMethod" placeholder="Ex. costal, tratorizado" ${isVisitor ? "disabled" : ""} />
           </div>
         </div>
 
         <div style="margin-top:8px;">
-          <label>Observações</label>
-          <textarea rows="3" style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;" disabled
-            placeholder="Detalhes da operação, condições climáticas, histórico da área, etc."></textarea>
+          <label for="intNotes">Observações</label>
+          <textarea id="intNotes" rows="3" 
+            style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+            placeholder="Detalhes da operação, condições climáticas, histórico da área, etc."
+            ${isVisitor ? "disabled" : ""}></textarea>
         </div>
 
         <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
-          <button class="btn-secondary" style="opacity:0.7; cursor:default;">Cancelar</button>
-          <button class="btn-primary" style="width:auto; padding-inline:18px; opacity:0.7; cursor:default;">
+          <button class="btn-secondary" onclick="clearInterventionForm()" ${isVisitor ? "disabled" : ""}>
+            Cancelar
+          </button>
+          <button class="btn-primary" style="width:auto; padding-inline:18px;" 
+            onclick="saveIntervention()" ${isVisitor ? "disabled" : ""}>
             Salvar intervenção
           </button>
         </div>
@@ -145,38 +144,286 @@
       <!-- Lista de intervenções -->
       <div class="card">
         <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Diário de campo (em desenvolvimento)
+          Diário de campo
         </div>
         <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Aqui serão listadas as intervenções registradas, com tipo, data, área alvo (todos / bloco / parcela),
-          produto e dosagem, além das ações de edição e exclusão (com controle por nível de acesso).
+          Intervenções registradas no experimento, com tipo, data, área alvo e dosagem.
         </p>
 
-        <div style="
-          border-radius:10px;
-          border:1px dashed #d1d5db;
-          padding:10px 12px;
-          font-size:13px;
-          color:#6b7280;
-          background:#f9fafb;
-        ">
-          Nenhuma intervenção registrada ainda.
-          <br>
-          <span style="font-size:12px;">
-            Após definir os detalhes com o orientador, esta página será ligada ao banco de dados,
-            timeline do experimento e auditoria de alterações.
-          </span>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Bloco</th>
+                <th>Parcela</th>
+                <th>Produto</th>
+                <th>Dosagem</th>
+                <th style="width:90px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="interventionsTableBody">
+              <!-- preenchido dinamicamente -->
+            </tbody>
+          </table>
         </div>
       </div>
     `;
+
+    if (typeof loadInterventions === "function") {
+      loadInterventions();
+    }
   }
+
+  window.saveIntervention = async function saveIntervention() {
+    if (window.currentRole === "visitor") {
+      alert("Visitantes têm acesso somente leitura.");
+      return;
+    }
+
+    if (typeof s === "undefined") {
+      alert("Cliente Supabase não disponível.");
+      return;
+    }
+
+    const experiment = window.currentExperiment;
+    if (!experiment || !experiment.id) {
+      alert("Nenhum experimento selecionado.");
+      return;
+    }
+
+    const date = document.getElementById("intDate")?.value || null;
+    const type = document.getElementById("intType")?.value || null;
+    const block = document.getElementById("intBlock")?.value || null;
+    const plot = document.getElementById("intPlot")?.value || null;
+    const product = document.getElementById("intProduct")?.value || null;
+    const dosage = document.getElementById("intDosage")?.value || null;
+    const method = document.getElementById("intMethod")?.value || null;
+    const notes = document.getElementById("intNotes")?.value || null;
+
+    if (!date || !type) {
+      alert("Informe ao menos a data e o tipo de intervenção.");
+      return;
+    }
+
+    const payload = {
+      experiment_id: experiment.id,
+      date,
+      intervention_type: type,
+      block_number: block || null,
+      plot_code: plot || null,
+      product_name: product || null,
+      dosage: dosage || null,
+      application_method: method || null,
+      notes: notes || null,
+    };
+
+    try {
+      if (currentInterventionEditId) {
+        const { error } = await s
+          .from("interventions")
+          .update(payload)
+          .eq("id", currentInterventionEditId);
+        if (error) throw error;
+      } else {
+        const { error } = await s.from("interventions").insert(payload);
+        if (error) throw error;
+      }
+
+      clearInterventionForm();
+      if (typeof loadInterventions === "function") {
+        loadInterventions();
+      }
+      alert("Intervenção salva com sucesso.");
+    } catch (err) {
+      console.error("Erro ao salvar intervenção:", err);
+      alert("Erro ao salvar intervenção.");
+    }
+  };
+
+  window.loadInterventions = async function loadInterventions() {
+    if (typeof s === "undefined") {
+      console.warn("Supabase client não disponível.");
+      return;
+    }
+
+    const experiment = window.currentExperiment;
+    const tbody = document.querySelector("#interventionsTableBody");
+    const countSpan = document.getElementById("interventionCount");
+
+    if (!tbody) return;
+
+    if (!experiment || !experiment.id) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center; font-size:13px; color:#6b7280;">
+            Nenhum experimento selecionado.
+          </td>
+        </tr>
+      `;
+      if (countSpan) countSpan.textContent = "–";
+      return;
+    }
+
+    try {
+      const { data, error } = await s
+        .from("interventions")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+
+      if (countSpan) countSpan.textContent = (data || []).length;
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center; font-size:13px; color:#6b7280;">
+              Nenhuma intervenção registrada ainda.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const formatDate = (iso) => {
+        if (!iso) return "";
+        const [y, m, d] = iso.split("-");
+        return `${d}/${m}/${y}`;
+      };
+
+      const typeLabel = (type) => {
+        const labels = {
+          adubacao_cobertura: "Adubação cobertura",
+          adubacao_foliar: "Adubação foliar",
+          controle_plantas_daninhas: "Controle daninhas",
+          controle_pragas: "Controle pragas",
+          controle_doencas: "Controle doenças",
+          irrigacao: "Irrigação",
+          capina_manual: "Capina manual",
+          amontoa: "Amontoa",
+          outro: "Outro",
+        };
+        return labels[type] || type;
+      };
+
+      const isVisitor = window.currentRole === "visitor";
+
+      tbody.innerHTML = data
+        .map(
+          (row) => `
+          <tr>
+            <td>${formatDate(row.date)}</td>
+            <td>${typeLabel(row.intervention_type)}</td>
+            <td>${row.block_number ? "Bloco " + row.block_number : "Todos"}</td>
+            <td>${row.plot_code || "–"}</td>
+            <td>${row.product_name || "–"}</td>
+            <td>${row.dosage || "–"}</td>
+            <td>
+              <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
+                ${
+                  isVisitor
+                    ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
+                    : `
+                      <button type="button" class="btn-secondary"
+                        style="font-size:12px; padding:4px 8px;"
+                        onclick='openInterventionEdit(${JSON.stringify(row)})'>
+                        Editar
+                      </button>
+                      <button type="button" class="btn-danger"
+                        style="font-size:12px; padding:4px 8px;"
+                        onclick="confirmDeleteIntervention('${row.id}')">
+                        Excluir
+                      </button>
+                    `
+                }
+              </div>
+            </td>
+          </tr>
+        `
+        )
+        .join("");
+    } catch (err) {
+      console.error("Erro ao carregar intervenções:", err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center; font-size:13px; color:#b91c1c;">
+            Erro ao carregar intervenções.
+          </td>
+        </tr>
+      `;
+    }
+  };
+
+  window.openInterventionEdit = function openInterventionEdit(row) {
+    if (window.currentRole === "visitor") return;
+
+    currentInterventionEditId = row.id;
+
+    document.getElementById("intDate").value = row.date || "";
+    document.getElementById("intType").value = row.intervention_type || "";
+    document.getElementById("intBlock").value = row.block_number || "";
+    document.getElementById("intPlot").value = row.plot_code || "";
+    document.getElementById("intProduct").value = row.product_name || "";
+    document.getElementById("intDosage").value = row.dosage || "";
+    document.getElementById("intMethod").value = row.application_method || "";
+    document.getElementById("intNotes").value = row.notes || "";
+
+    const btn = document.querySelector('button[onclick="saveIntervention()"]');
+    if (btn) btn.textContent = "Atualizar intervenção";
+  };
+
+  window.clearInterventionForm = function clearInterventionForm() {
+    currentInterventionEditId = null;
+
+    document.getElementById("intDate").value = "";
+    document.getElementById("intType").value = "adubacao_cobertura";
+    document.getElementById("intBlock").value = "";
+    document.getElementById("intPlot").value = "";
+    document.getElementById("intProduct").value = "";
+    document.getElementById("intDosage").value = "";
+    document.getElementById("intMethod").value = "";
+    document.getElementById("intNotes").value = "";
+
+    const btn = document.querySelector('button[onclick="saveIntervention()"]');
+    if (btn) btn.textContent = "Salvar intervenção";
+  };
+
+  window.confirmDeleteIntervention = async function confirmDeleteIntervention(id) {
+    if (window.currentRole === "visitor") {
+      alert("Visitantes não podem excluir intervenções.");
+      return;
+    }
+
+    if (!id) return;
+    if (!confirm("Deseja excluir esta intervenção?")) return;
+
+    if (typeof s === "undefined") {
+      alert("Cliente Supabase não disponível.");
+      return;
+    }
+
+    try {
+      const { error } = await s.from("interventions").delete().eq("id", id);
+      if (error) throw error;
+
+      if (typeof loadInterventions === "function") {
+        loadInterventions();
+      }
+    } catch (err) {
+      console.error("Erro ao excluir intervenção:", err);
+      alert("Erro ao excluir intervenção.");
+    }
+  };
 
   function escapeHtml(str) {
     if (!str) return "";
     return String(str)
       .replace(/&/g, "&amp;")
       .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;")
+      .replace(/'/g, "'")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
