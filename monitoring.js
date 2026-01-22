@@ -445,113 +445,138 @@
   };
 
   window.openPlantBiometricForm = function openPlantBiometricForm(position) {
-    const bio = currentBiometrics[position] || {};
+  const bio = currentBiometrics[position] || {};
 
-    const bodyHtml = `
-      <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:8px;">
-        Planta ${position}
+  const bodyHtml = `
+    <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:8px;">
+      Planta ${position}
+    </div>
+
+    <div style="margin-bottom:12px; padding:10px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
+      <div style="font-size:13px; font-weight:600; color:#065f46; margin-bottom:6px;">
+        Estágio fenológico
       </div>
-
-      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-        <div style="flex:1 1 140px;">
-          <label for="bioHeight">Altura (cm)</label>
-          <input type="number" step="0.1" id="bioHeight" value="${bio.height_cm || ""}" />
-        </div>
-        <div style="flex:1 1 120px;">
-          <label for="bioStems">Nº hastes</label>
-          <input type="number" id="bioStems" value="${bio.stem_count || ""}" />
-        </div>
-      </div>
-
-      <div style="margin-bottom:10px;">
-        <label style="font-size:13px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">
-          Diâmetro do caule (cm) - 3 medições
+      <div style="display:flex; gap:12px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
+          <input type="checkbox" id="bioSprouted" ${bio.has_sprouted ? 'checked' : ''} 
+            style="width:16px; height:16px; cursor:pointer;">
+          🌱 Brotou
         </label>
-        <div style="display:flex; gap:8px;">
-          <div style="flex:1;">
-            <input type="number" step="0.01" id="bioDiam1" placeholder="Medida 1" value="${bio.stem_diameter_1_cm || ""}" />
-          </div>
-          <div style="flex:1;">
-            <input type="number" step="0.01" id="bioDiam2" placeholder="Medida 2" value="${bio.stem_diameter_2_cm || ""}" />
-          </div>
-          <div style="flex:1;">
-            <input type="number" step="0.01" id="bioDiam3" placeholder="Medida 3" value="${bio.stem_diameter_3_cm || ""}" />
-          </div>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
+          <input type="checkbox" id="bioExpanded" ${bio.has_expanded_leaves ? 'checked' : ''} 
+            style="width:16px; height:16px; cursor:pointer;">
+          🍃 Expandiu folhas
+        </label>
+      </div>
+      <div style="font-size:11px; color:#6b7280; margin-top:4px;">
+        Deixe desmarcado se ainda não ocorreu
+      </div>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+      <div style="flex:1 1 140px;">
+        <label for="bioHeight">Altura (cm)</label>
+        <input type="number" step="0.1" id="bioHeight" value="${bio.height_cm || ""}" />
+      </div>
+      <div style="flex:1 1 120px;">
+        <label for="bioStems">Nº hastes</label>
+        <input type="number" id="bioStems" value="${bio.stem_count || ""}" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">
+        Diâmetro do caule (cm) - 3 medições
+      </label>
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1;">
+          <input type="number" step="0.01" id="bioDiam1" placeholder="Medida 1" value="${bio.stem_diameter_1_cm || ""}" />
+        </div>
+        <div style="flex:1;">
+          <input type="number" step="0.01" id="bioDiam2" placeholder="Medida 2" value="${bio.stem_diameter_2_cm || ""}" />
+        </div>
+        <div style="flex:1;">
+          <input type="number" step="0.01" id="bioDiam3" placeholder="Medida 3" value="${bio.stem_diameter_3_cm || ""}" />
         </div>
       </div>
+    </div>
 
-      <div style="margin-bottom:12px;">
-        <label for="bioSanity">Sanidade (1 a 5)</label>
-        <input type="number" min="1" max="5" id="bioSanity" value="${bio.sanity_score || ""}" />
-      </div>
+    <div style="margin-bottom:12px;">
+      <label for="bioSanity">Sanidade (1 a 5)</label>
+      <input type="number" min="1" max="5" id="bioSanity" value="${bio.sanity_score || ""}" />
+    </div>
 
-      <button class="btn-primary" style="width:100%;" onclick="savePlantBiometric(${position})">
-        Salvar dados da planta ${position}
-      </button>
-    `;
+    <button class="btn-primary" style="width:100%;" onclick="savePlantBiometric(${position})">
+      Salvar dados da planta ${position}
+    </button>
+  `;
 
-    if (typeof openModal === "function") {
-      openModal(`Biometria - Planta ${position}`, bodyHtml);
-    }
-  };
+  if (typeof openModal === "function") {
+    openModal(`Biometria - Planta ${position}`, bodyHtml);
+  }
+};
 
   window.savePlantBiometric = async function savePlantBiometric(position) {
-    if (!currentMonitoringId) {
-      alert("Inicie um monitoramento primeiro.");
-      return;
-    }
+  if (!currentMonitoringId) {
+    alert("Inicie um monitoramento primeiro.");
+    return;
+  }
 
-    const height = document.getElementById("bioHeight")?.value || null;
-    const stems = document.getElementById("bioStems")?.value || null;
-    const diam1 = document.getElementById("bioDiam1")?.value || null;
-    const diam2 = document.getElementById("bioDiam2")?.value || null;
-    const diam3 = document.getElementById("bioDiam3")?.value || null;
-    const sanity = document.getElementById("bioSanity")?.value || null;
+  const height = document.getElementById("bioHeight")?.value || null;
+  const stems = document.getElementById("bioStems")?.value || null;
+  const diam1 = document.getElementById("bioDiam1")?.value || null;
+  const diam2 = document.getElementById("bioDiam2")?.value || null;
+  const diam3 = document.getElementById("bioDiam3")?.value || null;
+  const sanity = document.getElementById("bioSanity")?.value || null;
+  const sprouted = document.getElementById("bioSprouted")?.checked || null;
+  const expanded = document.getElementById("bioExpanded")?.checked || null;
 
-    const payload = {
-      monitoring_event_id: currentMonitoringId,
-      plant_position: position,
-      height_cm: height ? Number(height) : null,
-      stem_count: stems ? Number(stems) : null,
-      stem_diameter_1_cm: diam1 ? Number(diam1) : null,
-      stem_diameter_2_cm: diam2 ? Number(diam2) : null,
-      stem_diameter_3_cm: diam3 ? Number(diam3) : null,
-      sanity_score: sanity ? Number(sanity) : null,
-    };
-
-    try {
-      // Verificar se já existe
-      const { data: existing } = await s
-        .from("plant_biometrics")
-        .select("id")
-        .eq("monitoring_event_id", currentMonitoringId)
-        .eq("plant_position", position)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await s
-          .from("plant_biometrics")
-          .update(payload)
-          .eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await s.from("plant_biometrics").insert(payload);
-        if (error) throw error;
-      }
-
-      // Atualizar cache local
-      currentBiometrics[position] = payload;
-
-      if (typeof closeModal === "function") closeModal();
-      
-      // Reabrir lista de plantas
-      setTimeout(() => openBiometricCollectionDialog(), 100);
-      
-    } catch (err) {
-      console.error("Erro ao salvar biometria da planta:", err);
-      alert("Erro ao salvar dados da planta.");
-    }
+  const payload = {
+    monitoring_event_id: currentMonitoringId,
+    plant_position: position,
+    height_cm: height ? Number(height) : null,
+    stem_count: stems ? Number(stems) : null,
+    stem_diameter_1_cm: diam1 ? Number(diam1) : null,
+    stem_diameter_2_cm: diam2 ? Number(diam2) : null,
+    stem_diameter_3_cm: diam3 ? Number(diam3) : null,
+    sanity_score: sanity ? Number(sanity) : null,
+    has_sprouted: sprouted,
+    has_expanded_leaves: expanded,
   };
+
+  try {
+    // Verificar se já existe
+    const { data: existing } = await s
+      .from("plant_biometrics")
+      .select("id")
+      .eq("monitoring_event_id", currentMonitoringId)
+      .eq("plant_position", position)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await s
+        .from("plant_biometrics")
+        .update(payload)
+        .eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await s.from("plant_biometrics").insert(payload);
+      if (error) throw error;
+    }
+
+    // Atualizar cache local
+    currentBiometrics[position] = payload;
+
+    if (typeof closeModal === "function") closeModal();
+    
+    // Reabrir lista de plantas
+    setTimeout(() => openBiometricCollectionDialog(), 100);
+    
+  } catch (err) {
+    console.error("Erro ao salvar biometria da planta:", err);
+    alert("Erro ao salvar dados da planta.");
+  }
+};
 
   window.openPlantStatusDialog = function openPlantStatusDialog() {
     if (window.currentRole === "visitor") return;
@@ -1096,33 +1121,39 @@
 
     // Gerar linhas da tabela (9 plantas)
     const rows = Array.from({ length: 9 }, (_, i) => {
-      const pos = i + 1;
-      const bio = bioMap[pos];
-      const status = statusMap[pos] || '-';
-      const isLodged = lodgingMap[pos] || false;
+    const pos = i + 1;
+    const bio = bioMap[pos];
+    const status = statusMap[pos] || '-';
+    const isLodged = lodgingMap[pos] || false;
 
-      // Labels de status
-      let statusLabel = '-';
-      if (status === 'not_sprouted') statusLabel = '🌱 Não brotou';
-      else if (status === 'alive') statusLabel = '✅ Viva';
-      else if (status === 'dead') statusLabel = '❌ Morta';
+    // Labels de status
+    let statusLabel = '-';
+    if (status === 'not_sprouted') statusLabel = '🌱 Não brotou';
+    else if (status === 'alive') statusLabel = '✅ Viva';
+    else if (status === 'dead') statusLabel = '❌ Morta';
 
-      const lodgingLabel = isLodged ? '⚠️ Sim' : '-';
+    const lodgingLabel = isLodged ? '⚠️ Sim' : '-';
+  
+    // Labels fenológicos
+    const sproutedLabel = bio?.has_sprouted ? '✅' : '-';
+    const expandedLabel = bio?.has_expanded_leaves ? '✅' : '-';
 
-      return `
-        <tr>
-          <td style="text-align:center; font-weight:600;">${pos}</td>
-          <td style="text-align:center;">${bio?.height_cm || '-'}</td>
-          <td style="text-align:center;">${bio?.stem_count || '-'}</td>
-          <td style="text-align:center;">${bio?.stem_diameter_1_cm || '-'}</td>
-          <td style="text-align:center;">${bio?.stem_diameter_2_cm || '-'}</td>
-          <td style="text-align:center;">${bio?.stem_diameter_3_cm || '-'}</td>
-          <td style="text-align:center;">${bio?.sanity_score || '-'}</td>
-          <td style="text-align:center;">${statusLabel}</td>
-          <td style="text-align:center;">${lodgingLabel}</td>
-        </tr>
-      `;
-    }).join("");
+    return `
+      <tr>
+        <td style="text-align:center; font-weight:600;">${pos}</td>
+        <td style="text-align:center;">${sproutedLabel}</td>
+        <td style="text-align:center;">${expandedLabel}</td>
+        <td style="text-align:center;">${bio?.height_cm || '-'}</td>
+        <td style="text-align:center;">${bio?.stem_count || '-'}</td>
+        <td style="text-align:center;">${bio?.stem_diameter_1_cm || '-'}</td>
+        <td style="text-align:center;">${bio?.stem_diameter_2_cm || '-'}</td>
+        <td style="text-align:center;">${bio?.stem_diameter_3_cm || '-'}</td>
+        <td style="text-align:center;">${bio?.sanity_score || '-'}</td>
+        <td style="text-align:center;">${statusLabel}</td>
+        <td style="text-align:center;">${lodgingLabel}</td>
+      </tr>
+    `;
+  }).join("");
 
     const bodyHtml = `
       <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:8px;">
@@ -1143,6 +1174,8 @@
           <thead style="position:sticky; top:0; background:#fff;">
             <tr>
               <th style="text-align:center;">Pos.</th>
+              <th style="text-align:center;">Brotou</th>
+              <th style="text-align:center;">Expandiu</th>
               <th style="text-align:center;">Altura<br>(cm)</th>
               <th style="text-align:center;">Hastes</th>
               <th style="text-align:center;">Diâm. 1<br>(cm)</th>
@@ -1153,6 +1186,7 @@
               <th style="text-align:center;">Tombada</th>
             </tr>
           </thead>
+
           <tbody>
             ${rows}
           </tbody>
