@@ -112,6 +112,26 @@
 
     if (!tabsEl || !contentEl) return;
 
+    // Detectar mudanças de bloco ou parcela e resetar formulário
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+
+    if (blockInput) {
+      blockInput.addEventListener("change", () => {
+        resetMonitoringForm();
+        const tab = tabsEl.querySelector("button.active")?.dataset.tab || "iniciar";
+        renderCurrentTab(tab);
+      });
+    }
+
+if (plotInput) {
+  plotInput.addEventListener("change", () => {
+    resetMonitoringForm();
+    const tab = tabsEl.querySelector("button.active")?.dataset.tab || "iniciar";
+    renderCurrentTab(tab);
+  });
+}
+
     const renderCurrentTab = async (tab) => {
       const state = getCurrentSelection();
       if (tab === "iniciar") {
@@ -144,6 +164,13 @@
 
     renderCurrentTab("iniciar");
   }
+  
+  function resetMonitoringForm() {
+  currentMonitoringId = null;
+  currentPlantStatuses = {};
+  currentLodgingStatuses = {};
+  currentBiometrics = {};
+}
 
   function renderMonitoringTabIniciar(container, experiment, selection) {
   const isVisitor = window.currentRole === "visitor";
@@ -320,68 +347,77 @@
 }
 
   window.saveMonitoringInit = async function saveMonitoringInit() {
-    if (window.currentRole === "visitor") {
-      alert("Visitantes têm acesso somente leitura.");
-      return;
-    }
+  if (window.currentRole === "visitor") {
+    alert("Visitantes têm acesso somente leitura.");
+    return;
+  }
 
-    if (typeof s === "undefined") {
-      alert("Cliente Supabase não disponível.");
-      return;
-    }
+  if (typeof s === "undefined") {
+    alert("Cliente Supabase não disponível.");
+    return;
+  }
 
-    const experiment = window.currentExperiment;
-    if (!experiment || !experiment.id) {
-      alert("Nenhum experimento selecionado.");
-      return;
-    }
+  const experiment = window.currentExperiment;
+  if (!experiment || !experiment.id) {
+    alert("Nenhum experimento selecionado.");
+    return;
+  }
 
-    const blockInput = document.getElementById("monitorBlock");
-    const plotInput = document.getElementById("monitorPlot");
-    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim();
+  const blockInput = document.getElementById("monitorBlock");
+  const plotInput = document.getElementById("monitorPlot");
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value.trim();
 
-    if (!plotCode) {
-      alert("Selecione uma parcela.");
-      return;
-    }
+  if (!plotCode) {
+    alert("Selecione uma parcela.");
+    return;
+  }
 
-    const date = document.getElementById("monDate")?.value || null;
-    const notes = document.getElementById("monNotes")?.value || null;
+  const date = document.getElementById("monDate")?.value || null;
+  const notes = document.getElementById("monNotes")?.value || null;
 
-    if (!date) {
-      alert("Informe a data do monitoramento.");
-      return;
-    }
+  if (!date) {
+    alert("Informe a data do monitoramento.");
+    return;
+  }
 
-    const payload = {
-      experiment_id: experiment.id,
-      plot_code: plotCode,
-      block_number: block,
-      monitoring_date: date,
-      notes: notes || null,
-    };
-
-    try {
-      if (currentMonitoringId) {
-        const { error } = await s
-          .from("monitoring_events")
-          .update(payload)
-          .eq("id", currentMonitoringId);
-        if (error) throw error;
-      } else {
-        const { data, error } = await s.from("monitoring_events").insert(payload).select();
-        if (error) throw error;
-        currentMonitoringId = data[0]?.id;
-      }
-
-      loadMonitoringList();
-      alert("Monitoramento iniciado com sucesso. Agora você pode coletar os dados biométricos na aba 'Biometria individual'.");
-    } catch (err) {
-      console.error("Erro ao salvar monitoramento:", err);
-      alert("Erro ao salvar monitoramento.");
-    }
+  const payload = {
+    experiment_id: experiment.id,
+    plot_code: plotCode,
+    block_number: block,
+    monitoring_date: date,
+    notes: notes || null,
   };
+
+  try {
+    const isEditing = !!currentMonitoringId; // Salva o estado ANTES de modificar
+    
+    if (currentMonitoringId) {
+      const { error } = await s
+        .from("monitoring_events")
+        .update(payload)
+        .eq("id", currentMonitoringId);
+      if (error) throw error;
+    } else {
+      const { data, error } = await s.from("monitoring_events").insert(payload).select();
+      if (error) throw error;
+      currentMonitoringId = data[0]?.id;
+    }
+
+    loadMonitoringList();
+
+    // Agora sim a mensagem correta
+    if (isEditing) {
+      alert("Monitoramento atualizado com sucesso.");
+    } else {
+      alert("Monitoramento iniciado com sucesso. Agora você pode coletar os dados biométricos na aba 'Biometria individual'.");
+    }
+    
+  } catch (err) {
+    console.error("Erro ao salvar monitoramento:", err);
+    alert("Erro ao salvar monitoramento.");
+  }
+};
 
   window.openBiometricCollectionDialog = function openBiometricCollectionDialog() {
     if (window.currentRole === "visitor") return;
