@@ -146,42 +146,42 @@
   }
 
   function renderMonitoringTabIniciar(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
+  const isVisitor = window.currentRole === "visitor";
 
-    container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-        ${selection.plotCode ? `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}` : "Selecione uma parcela para começar"}
+  container.innerHTML = `
+    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      ${selection.plotCode ? `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}` : "Selecione uma parcela para começar"}
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+      <div style="flex:0 0 180px;">
+        <label for="monDate">Data do monitoramento</label>
+        <input type="date" id="monDate" ${isVisitor ? "disabled" : ""} />
       </div>
+    </div>
 
-      <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-        <div style="flex:1 1 200px;">
-          <label for="monDate">Data do monitoramento</label>
-          <input type="date" id="monDate" ${isVisitor ? "disabled" : ""} />
-        </div>
-      </div>
+    <div style="margin-bottom:10px;">
+      <label for="monNotes">Observações gerais da parcela</label>
+      <textarea id="monNotes" rows="3" ${isVisitor ? "disabled" : ""}
+        style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+        placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
+    </div>
 
-      <div style="margin-bottom:10px;">
-        <label for="monNotes">Observações gerais da parcela</label>
-        <textarea id="monNotes" rows="3" ${isVisitor ? "disabled" : ""}
-          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
-          placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
-      </div>
+    <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+      Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
+    </div>
 
-      <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
-        Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
-      </div>
-
-      <button class="btn-primary" style="width:auto; padding-inline:18px;" 
-        onclick="saveMonitoringInit()" ${isVisitor ? "disabled" : ""}>
-        ${currentMonitoringId ? "Atualizar informações gerais" : "Iniciar monitoramento"}
+    <button class="btn-primary" style="width:auto; padding-inline:18px;" 
+      onclick="saveMonitoringInit()" ${isVisitor ? "disabled" : ""}>
+      ${currentMonitoringId ? "Atualizar informações gerais" : "Iniciar monitoramento"}
+    </button>
+    ${currentMonitoringId ? `
+      <button class="btn-secondary" style="margin-left:8px;" onclick="clearMonitoringForm()">
+        Cancelar edição
       </button>
-      ${currentMonitoringId ? `
-        <button class="btn-secondary" style="margin-left:8px;" onclick="clearMonitoringForm()">
-          Cancelar edição
-        </button>
-      ` : ""}
-    `;
-  }
+    ` : ""}
+  `;
+}
 
   async function renderMonitoringTabBiometria(container, experiment, selection) {
     const isVisitor = window.currentRole === "visitor";
