@@ -406,9 +406,21 @@ if (plotInput) {
 
     loadMonitoringList();
 
-    // Agora sim a mensagem correta
+    // ✅ ADICIONAR: Resetar formulário após edição
     if (isEditing) {
       alert("Monitoramento atualizado com sucesso.");
+      // Limpar estado e resetar formulário
+      resetMonitoringForm();
+      
+      // Re-renderizar a aba "Iniciar" com formulário limpo
+      const contentEl = document.getElementById("monitoringTabContent");
+      if (contentEl) {
+        renderMonitoringTabIniciar(contentEl, experiment, { block: 1, plotCode: "" });
+      }
+      
+      // Resetar os selects
+      if (blockInput) blockInput.value = "1";
+      if (plotInput) plotInput.value = "";
     } else {
       alert("Monitoramento iniciado com sucesso. Agora você pode coletar os dados biométricos na aba 'Biometria individual'.");
     }
