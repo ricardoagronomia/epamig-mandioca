@@ -958,10 +958,12 @@ await loadBiometricsData(currentMonitoringId);
 
   try {
     const { data, error } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("experiment_id", experiment.id)
-      .order("monitoring_date", { ascending: false });
+  .from("monitoring_events")
+  .select("*")
+  .eq("experiment_id", experiment.id)
+  .order("monitoring_date", { ascending: false })  // Data mais recente primeiro
+  .order("block_number", { ascending: true })       // Depois por bloco crescente
+  .order("plot_code", { ascending: true });         // Depois por parcela crescente
 
     if (error) throw error;
 
