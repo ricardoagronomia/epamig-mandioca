@@ -430,9 +430,12 @@ if (plotInput) {
     const total = 9;
     const itemsHtml = Array.from({ length: total }).map((_, idx) => {
       const n = idx + 1;
-      const hasBio = currentBiometrics[n];
-      const bg = hasBio ? '#dcfce7' : '#f3f4f6';
-      const color = hasBio ? '#065f46' : '#6b7280';
+      const bio = currentBiometrics[n];
+  
+      // ✅ Verde APENAS se brotou
+      const hasSprouted = bio?.has_sprouted === true;
+      const bg = hasSprouted ? '#dcfce7' : '#f3f4f6';
+      const color = hasSprouted ? '#065f46' : '#6b7280';
 
       return `
         <button type="button"
@@ -1022,18 +1025,22 @@ await loadBiometricsData(currentMonitoringId);
   </div>
 `;
 
-    // Carregar contagem de plantas medidas para cada monitoramento
+    // Carregar contagem de plantas BROTADAS para cada monitoramento
     data.forEach(async (row) => {
       const { data: bioData } = await s
         .from("plant_biometrics")
-        .select("id")
+        .select("*")
         .eq("monitoring_event_id", row.id);
-      
+  
+      // ✅ Contar apenas plantas que BROTARAM
+      const sproutedCount = (bioData || []).filter(b => b.has_sprouted === true).length;
+  
       const cell = document.getElementById(`plantCount_${row.id}`);
       if (cell) {
-        cell.textContent = `${(bioData || []).length}/9`;
+        cell.textContent = `${sproutedCount}/9`;
       }
     });
+
 
   } catch (err) {
     console.error("Erro ao carregar monitoramentos:", err);
