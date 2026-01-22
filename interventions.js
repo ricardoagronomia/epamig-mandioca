@@ -209,13 +209,13 @@
 
     const payload = {
       experiment_id: experiment.id,
-      .order("intervention_date", { ascending: false });  // <<< era "date"
+      intervention_date: date,  
       intervention_type: type,
       block_number: block || null,
       plot_code: plot || null,
-      product: product || null,  // <<< era "product_name"
+      product: product || null,
       dosage: dosage || null,
-      method: method || null,    // <<< era "application_method"
+      method: method || null,
       notes: notes || null,
     };
 
@@ -271,7 +271,7 @@
         .from("interventions")
         .select("*")
         .eq("experiment_id", experiment.id)
-        .order("date", { ascending: false })
+        .order("intervention_date", { ascending: false });
 
       if (error) throw error;
 
@@ -321,7 +321,7 @@
             <td>${row.plot_code || "–"}</td>
             <td>${row.product || "–"}</td>  // <<< era row.product_name
             <td>${row.dosage || "–"}</td>
-            <td>>
+            <td>
               <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
                 ${
                   isVisitor
