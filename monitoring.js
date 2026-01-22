@@ -761,114 +761,119 @@
   };
 
   async function loadMonitoringList() {
-    if (typeof s === "undefined") return;
+  if (typeof s === "undefined") return;
 
-    const experiment = window.currentExperiment;
-    if (!experiment || !experiment.id) return;
+  const experiment = window.currentExperiment;
+  if (!experiment || !experiment.id) return;
 
-    const listDiv = document.getElementById("monitoringList");
-    const counterSpan = document.getElementById("monitoringCounter");
+  const listDiv = document.getElementById("monitoringList");
+  const counterSpan = document.getElementById("monitoringCounter");
 
-    if (!listDiv) return;
+  if (!listDiv) return;
 
-    try {
-      const { data, error } = await s
-        .from("monitoring_events")
-        .select("*")
-        .eq("experiment_id", experiment.id)
-        .order("monitoring_date", { ascending: false });
+  try {
+    const { data, error } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("experiment_id", experiment.id)
+      .order("monitoring_date", { ascending: false });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      if (counterSpan) {
-        counterSpan.textContent = `${(data || []).length} monitoramentos registrados`;
-      }
+    if (counterSpan) {
+      counterSpan.textContent = `${(data || []).length} monitoramentos registrados`;
+    }
 
-      if (!data || data.length === 0) {
-        listDiv.innerHTML = `
-          <p style="font-size:13px; color:#6b7280;">
-            Nenhum monitoramento registrado ainda.
-          </p>
-        `;
-        return;
-      }
-
-      const formatDate = (iso) => {
-        if (!iso) return "";
-        const [y, m, d] = iso.split("-");
-        return `${d}/${m}/${y}`;
-      };
-
-      const isVisitor = window.currentRole === "visitor";
-
+    if (!data || data.length === 0) {
       listDiv.innerHTML = `
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Parcela</th>
-                <th>Bloco</th>
-                <th>Plantas medidas</th>
-                <th style="width:90px;">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${data.map((row) => `
-                <tr>
-                  <td>${formatDate(row.monitoring_date)}</td>
-                  <td>${row.plot_code}</td>
-                  <td>${row.block_number}</td>
-                  <td id="plantCount_${row.id}">...</td>
-                  <td>
-                    <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
-                      ${
-                        isVisitor
-                          ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
-                          : `
-                            <button type="button" class="btn-secondary"
-                              style="font-size:12px; padding:4px 8px;"
-                              onclick="editMonitoring('${row.id}')">
-                              Editar
-                            </button>
-                            <button type="button" class="btn-danger"
-                              style="font-size:12px; padding:4px 8px;"
-                              onclick="confirmDeleteMonitoring('${row.id}')">
-                              Excluir
-                            </button>
-                          `
-                      }
-                    </div>
-                  </td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      `;
-
-      // Carregar contagem de plantas medidas para cada monitoramento
-      data.forEach(async (row) => {
-        const { data: bioData } = await s
-          .from("plant_biometrics")
-          .select("id")
-          .eq("monitoring_event_id", row.id);
-        
-        const cell = document.getElementById(`plantCount_${row.id}`);
-        if (cell) {
-          cell.textContent = `${(bioData || []).length}/9`;
-        }
-      });
-
-    } catch (err) {
-      console.error("Erro ao carregar monitoramentos:", err);
-      listDiv.innerHTML = `
-        <p style="font-size:13px; color:#b91c1c;">
-          Erro ao carregar monitoramentos.
+        <p style="font-size:13px; color:#6b7280;">
+          Nenhum monitoramento registrado ainda.
         </p>
       `;
+      return;
     }
+
+    const formatDate = (iso) => {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    };
+
+    const isVisitor = window.currentRole === "visitor";
+
+    listDiv.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Parcela</th>
+              <th>Bloco</th>
+              <th>Plantas medidas</th>
+              <th style="width:150px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map((row) => `
+              <tr>
+                <td>${formatDate(row.monitoring_date)}</td>
+                <td>${row.plot_code}</td>
+                <td>${row.block_number}</td>
+                <td id="plantCount_${row.id}">...</td>
+                <td>
+                  <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
+                    <button type="button" class="btn-secondary"
+                      style="font-size:12px; padding:4px 8px;"
+                      onclick="viewPlantDetails('${row.id}')">
+                      👁️ Ver Plantas
+                    </button>
+                    ${
+                      isVisitor
+                        ? ``
+                        : `
+                          <button type="button" class="btn-secondary"
+                            style="font-size:12px; padding:4px 8px;"
+                            onclick="editMonitoring('${row.id}')">
+                            Editar
+                          </button>
+                          <button type="button" class="btn-danger"
+                            style="font-size:12px; padding:4px 8px;"
+                            onclick="confirmDeleteMonitoring('${row.id}')">
+                            Excluir
+                          </button>
+                        `
+                    }
+                  </div>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // Carregar contagem de plantas medidas para cada monitoramento
+    data.forEach(async (row) => {
+      const { data: bioData } = await s
+        .from("plant_biometrics")
+        .select("id")
+        .eq("monitoring_event_id", row.id);
+      
+      const cell = document.getElementById(`plantCount_${row.id}`);
+      if (cell) {
+        cell.textContent = `${(bioData || []).length}/9`;
+      }
+    });
+
+  } catch (err) {
+    console.error("Erro ao carregar monitoramentos:", err);
+    listDiv.innerHTML = `
+      <p style="font-size:13px; color:#b91c1c;">
+        Erro ao carregar monitoramentos.
+      </p>
+    `;
   }
+}
 
   async function loadLatestMonitoringForPlot(experimentId, plotCode) {
     if (!plotCode || !experimentId) return null;
@@ -1050,4 +1055,122 @@
     const [y, m, d] = iso.split("-");
     return `${d}/${m}/${y}`;
   }
+  window.viewPlantDetails = async function viewPlantDetails(monitoringId) {
+  try {
+    // Buscar dados do evento
+    const { data: event, error: eventError } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("id", monitoringId)
+      .single();
+
+    if (eventError) throw eventError;
+
+    // Buscar biometria individual
+    const { data: biometrics } = await s
+      .from("plant_biometrics")
+      .select("*")
+      .eq("monitoring_event_id", monitoringId)
+      .order("plant_position");
+
+    // Buscar status
+    const { data: statuses } = await s
+      .from("plant_status")
+      .select("*")
+      .eq("monitoring_event_id", monitoringId);
+
+    // Buscar acamamento
+    const { data: lodging } = await s
+      .from("plant_lodging")
+      .select("*")
+      .eq("monitoring_event_id", monitoringId);
+
+    // Criar mapas para acesso rápido
+    const bioMap = {};
+    const statusMap = {};
+    const lodgingMap = {};
+
+    (biometrics || []).forEach(b => bioMap[b.plant_position] = b);
+    (statuses || []).forEach(s => statusMap[s.plant_position] = s.status);
+    (lodging || []).forEach(l => lodgingMap[l.plant_position] = l.is_lodged);
+
+    // Gerar linhas da tabela (9 plantas)
+    const rows = Array.from({ length: 9 }, (_, i) => {
+      const pos = i + 1;
+      const bio = bioMap[pos];
+      const status = statusMap[pos] || '-';
+      const isLodged = lodgingMap[pos] || false;
+
+      // Labels de status
+      let statusLabel = '-';
+      if (status === 'not_sprouted') statusLabel = '🌱 Não brotou';
+      else if (status === 'alive') statusLabel = '✅ Viva';
+      else if (status === 'dead') statusLabel = '❌ Morta';
+
+      const lodgingLabel = isLodged ? '⚠️ Sim' : '-';
+
+      return `
+        <tr>
+          <td style="text-align:center; font-weight:600;">${pos}</td>
+          <td style="text-align:center;">${bio?.height_cm || '-'}</td>
+          <td style="text-align:center;">${bio?.stem_count || '-'}</td>
+          <td style="text-align:center;">${bio?.stem_diameter_1_cm || '-'}</td>
+          <td style="text-align:center;">${bio?.stem_diameter_2_cm || '-'}</td>
+          <td style="text-align:center;">${bio?.stem_diameter_3_cm || '-'}</td>
+          <td style="text-align:center;">${bio?.sanity_score || '-'}</td>
+          <td style="text-align:center;">${statusLabel}</td>
+          <td style="text-align:center;">${lodgingLabel}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const bodyHtml = `
+      <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:8px;">
+        <div style="font-size:13px; color:#374151;">
+          <strong>Parcela:</strong> ${escapeHtml(event.plot_code)} · 
+          <strong>Bloco:</strong> ${event.block_number} · 
+          <strong>Data:</strong> ${formatDateShort(event.monitoring_date)}
+        </div>
+        ${event.notes ? `
+          <div style="margin-top:6px; font-size:12px; color:#6b7280;">
+            <strong>Observações:</strong> ${escapeHtml(event.notes)}
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+        <table style="font-size:12px;">
+          <thead style="position:sticky; top:0; background:#fff;">
+            <tr>
+              <th style="text-align:center;">Pos.</th>
+              <th style="text-align:center;">Altura<br>(cm)</th>
+              <th style="text-align:center;">Hastes</th>
+              <th style="text-align:center;">Diâm. 1<br>(cm)</th>
+              <th style="text-align:center;">Diâm. 2<br>(cm)</th>
+              <th style="text-align:center;">Diâm. 3<br>(cm)</th>
+              <th style="text-align:center;">Sanidade<br>(1-5)</th>
+              <th style="text-align:center;">Status</th>
+              <th style="text-align:center;">Tombada</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+
+      <button class="btn-secondary" style="width:100%; margin-top:12px;" onclick="closeModal()">
+        Fechar
+      </button>
+    `;
+
+    if (typeof openModal === "function") {
+      openModal(`Dados individuais das plantas · ${event.plot_code}`, bodyHtml);
+    }
+
+  } catch (err) {
+    console.error("Erro ao carregar detalhes das plantas:", err);
+    alert("Erro ao carregar dados das plantas.");
+  }
+};
 })();
