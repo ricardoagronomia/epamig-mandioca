@@ -145,85 +145,95 @@
   }
 
   window.saveHarvest = async function saveHarvest() {
-    if (window.currentRole === "visitor") {
-      alert("Visitantes têm acesso somente leitura.");
-      return;
-    }
+  if (window.currentRole === "visitor") {
+    alert("Visitantes têm acesso somente leitura.");
+    return;
+  }
 
-    const experiment = window.currentExperiment;
-    if (!experiment || !experiment.id) {
-      alert("Nenhum experimento selecionado.");
-      return;
-    }
+  const experiment = window.currentExperiment;
+  if (!experiment || !experiment.id) {
+    alert("Nenhum experimento selecionado.");
+    return;
+  }
 
-    const block = parseInt(document.getElementById("harvestBlock")?.value, 10) || 1;
-    const plotCode = document.getElementById("harvestPlot")?.value.trim();
-    const date = document.getElementById("harvestDate")?.value || null;
-    const weight = document.getElementById("harvestWeight")?.value || null;
-    const roots = document.getElementById("harvestRoots")?.value || null;
-    const diameter = document.getElementById("harvestDiameter")?.value || null;
-    const quality = document.getElementById("harvestQuality")?.value || null;
-    const sample = document.getElementById("harvestSample")?.value.trim() || null;
-    const notes = document.getElementById("harvestNotes")?.value.trim() || null;
+  const block = parseInt(document.getElementById("harvestBlock")?.value, 10) || 1;
+  const plotCode = document.getElementById("harvestPlot")?.value.trim();
+  const date = document.getElementById("harvestDate")?.value || null;
+  const weight = document.getElementById("harvestWeight")?.value || null;
+  const roots = document.getElementById("harvestRoots")?.value || null;
+  const diameter = document.getElementById("harvestDiameter")?.value || null;
+  const quality = document.getElementById("harvestQuality")?.value || null;
+  const sample = document.getElementById("harvestSample")?.value.trim() || null;
+  const notes = document.getElementById("harvestNotes")?.value.trim() || null;
 
-    if (!plotCode) {
-      alert("Selecione uma parcela.");
-      return;
-    }
+  if (!plotCode) {
+    alert("Selecione uma parcela.");
+    return;
+  }
 
-    if (!date) {
-      alert("Informe a data da colheita.");
-      return;
-    }
+  if (!date) {
+    alert("Informe a data da colheita.");
+    return;
+  }
 
-    const payload = {
-      experiment_id: experiment.id,
-      plot_code: plotCode,
-      block_number: block,
-      harvest_date: date,
-      total_weight_kg: weight ? Number(weight) : null,
-      commercial_roots_count: roots ? Number(roots) : null,
-      mean_diameter_cm: diameter ? Number(diameter) : null,
-      quality_score: quality ? Number(quality) : null,
-      sample_code: sample,
-      notes: notes,
-    };
-
-    try {
-      const isEditing = !!currentHarvestId;
-
-      if (currentHarvestId) {
-        const { error } = await s
-          .from("harvest_records")
-          .update(payload)
-          .eq("id", currentHarvestId);
-        if (error) throw error;
-      } else {
-        const { error } = await s.from("harvest_records").insert(payload);
-        if (error) throw error;
-      }
-
-      loadHarvestList();
-
-      if (isEditing) {
-        alert("Colheita atualizada com sucesso.");
-        clearHarvestForm();
-      } else {
-        alert("Colheita registrada com sucesso.");
-        // Limpar apenas os campos, não o formulário todo
-        document.getElementById("harvestDate").value = "";
-        document.getElementById("harvestWeight").value = "";
-        document.getElementById("harvestRoots").value = "";
-        document.getElementById("harvestDiameter").value = "";
-        document.getElementById("harvestQuality").value = "";
-        document.getElementById("harvestSample").value = "";
-        document.getElementById("harvestNotes").value = "";
-      }
-    } catch (err) {
-      console.error("Erro ao salvar colheita:", err);
-      alert("Erro ao salvar colheita.");
-    }
+  const payload = {
+    experiment_id: experiment.id,
+    plot_code: plotCode,
+    block_number: block,
+    harvest_date: date,
+    total_weight_kg: weight ? Number(weight) : null,
+    commercial_roots_count: roots ? Number(roots) : null,
+    mean_diameter_cm: diameter ? Number(diameter) : null,
+    quality_score: quality ? Number(quality) : null,
+    sample_code: sample,
+    notes: notes,
   };
+
+  console.log("Payload:", payload); // ✅ Debug
+
+  try {
+    const isEditing = !!currentHarvestId;
+
+    if (currentHarvestId) {
+      const { data, error } = await s
+        .from("harvest_records")
+        .update(payload)
+        .eq("id", currentHarvestId)
+        .select(); // ✅ Adicionar select para ver resposta
+      
+      console.log("Update response:", { data, error }); // ✅ Debug
+      if (error) throw error;
+    } else {
+      const { data, error } = await s
+        .from("harvest_records")
+        .insert(payload)
+        .select(); // ✅ Adicionar select para ver resposta
+      
+      console.log("Insert response:", { data, error }); // ✅ Debug
+      if (error) throw error;
+    }
+
+    loadHarvestList();
+
+    if (isEditing) {
+      alert("Colheita atualizada com sucesso.");
+      clearHarvestForm();
+    } else {
+      alert("Colheita registrada com sucesso.");
+      // Limpar apenas os campos, não o formulário todo
+      document.getElementById("harvestDate").value = "";
+      document.getElementById("harvestWeight").value = "";
+      document.getElementById("harvestRoots").value = "";
+      document.getElementById("harvestDiameter").value = "";
+      document.getElementById("harvestQuality").value = "";
+      document.getElementById("harvestSample").value = "";
+      document.getElementById("harvestNotes").value = "";
+    }
+  } catch (err) {
+    console.error("Erro ao salvar colheita:", err); // ✅ Vai mostrar detalhes
+    alert(`Erro ao salvar colheita: ${err.message || JSON.stringify(err)}`);
+  }
+};
 
   async function loadHarvestList() {
     const experiment = window.currentExperiment;
