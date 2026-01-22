@@ -1,16 +1,16 @@
 // monitoring.js
-// Página de Monitoramento Manual (biometria, plantas úteis, plantas tombadas)
+// Página de Monitoramento Manual (biometria individual, plantas úteis, plantas tombadas)
 
 (function () {
   let currentMonitoringId = null;
   let currentPlantStatuses = {}; // { position: 'not_sprouted' | 'alive' | 'dead' }
   let currentLodgingStatuses = {}; // { position: true/false }
+  let currentBiometrics = {}; // { position: { height_cm, stem_count, diameters: [d1,d2,d3], sanity } }
 
   window.renderMonitoringPage = renderMonitoringPage;
 
   function renderMonitoringPage(container) {
     const experiment = window.currentExperiment;
-    const isVisitor = window.currentRole === "visitor";
 
     if (!experiment) {
       container.innerHTML = `
@@ -27,7 +27,7 @@
       <div class="content-header">
         <div class="content-title">Monitoramento manual</div>
         <div class="content-subtitle">
-          Registre medições biométricas e o estado das plantas úteis e tombadas em cada parcela.
+          Registre medições biométricas individuais e o estado das plantas úteis e tombadas em cada parcela.
         </div>
       </div>
 
@@ -37,7 +37,7 @@
             Experimento <strong>${escapeHtml(experiment.code || "")}</strong> · 
             ${escapeHtml(experiment.name || "Sem nome")}<br>
             <span style="font-size:12px; color:#6b7280;">
-              Selecione bloco e parcela para registrar medições.
+              Selecione bloco e parcela para registrar medições individuais por planta.
             </span>
           </div>
         </div>
@@ -61,50 +61,51 @@
   }
 
   function setupMonitoringTabs(container, experiment) {
-  const isVisitor = window.currentRole === "visitor";
+    const isVisitor = window.currentRole === "visitor";
 
-  container.innerHTML = `
-    <div style="margin-bottom:10px;">
-      <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-        Seleção de parcela
-      </div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:13px; color:#374151;">
-        <div style="flex:0 0 120px;">
-          <label for="monitorBlock">Bloco</label>
-          <select id="monitorBlock" ${isVisitor ? "disabled" : ""}>
-            <option value="1">Bloco 1</option>
-            <option value="2">Bloco 2</option>
-            <option value="3">Bloco 3</option>
-          </select>
+    container.innerHTML = `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+          Seleção de parcela
         </div>
-        <div style="flex:0 0 160px;">
-          <label for="monitorPlot">Parcela</label>
-          <select id="monitorPlot" ${isVisitor ? "disabled" : ""}>
-            <option value="">Selecione...</option>
-            <option value="T1">T1</option>
-            <option value="T2">T2</option>
-            <option value="T3">T3</option>
-            <option value="T4">T4</option>
-            <option value="T5">T5</option>
-            <option value="T6">T6</option>
-            <option value="T7">T7</option>
-            <option value="T8">T8</option>
-            <option value="T9">T9</option>
-            <option value="T10">T10</option>
-            <option value="T11">T11</option>
-            <option value="T12">T12</option>
-          </select>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:13px; color:#374151;">
+          <div style="flex:0 0 120px;">
+            <label for="monitorBlock">Bloco</label>
+            <select id="monitorBlock" ${isVisitor ? "disabled" : ""}>
+              <option value="1">Bloco 1</option>
+              <option value="2">Bloco 2</option>
+              <option value="3">Bloco 3</option>
+            </select>
+          </div>
+          <div style="flex:0 0 160px;">
+            <label for="monitorPlot">Parcela</label>
+            <select id="monitorPlot" ${isVisitor ? "disabled" : ""}>
+              <option value="">Selecione...</option>
+              <option value="T1">T1</option>
+              <option value="T2">T2</option>
+              <option value="T3">T3</option>
+              <option value="T4">T4</option>
+              <option value="T5">T5</option>
+              <option value="T6">T6</option>
+              <option value="T7">T7</option>
+              <option value="T8">T8</option>
+              <option value="T9">T9</option>
+              <option value="T10">T10</option>
+              <option value="T11">T11</option>
+              <option value="T12">T12</option>
+            </select>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="tabs" id="monitoringTabs">
-      <button data-tab="biometria" class="active">Biometria</button>
-      <button data-tab="uteis">Plantas úteis</button>
-      <button data-tab="tombadas">Plantas tombadas</button>
-    </div>
-    <div id="monitoringTabContent" style="margin-top:10px;"></div>
-  `;
+      <div class="tabs" id="monitoringTabs">
+        <button data-tab="iniciar" class="active">Iniciar monitoramento</button>
+        <button data-tab="biometria">Biometria individual</button>
+        <button data-tab="uteis">Plantas úteis</button>
+        <button data-tab="tombadas">Plantas tombadas</button>
+      </div>
+      <div id="monitoringTabContent" style="margin-top:10px;"></div>
+    `;
 
     const tabsEl = document.getElementById("monitoringTabs");
     const contentEl = document.getElementById("monitoringTabContent");
@@ -113,8 +114,10 @@
 
     const renderCurrentTab = async (tab) => {
       const state = getCurrentSelection();
-      if (tab === "biometria") {
-        renderMonitoringTabBiometria(contentEl, experiment, state);
+      if (tab === "iniciar") {
+        renderMonitoringTabIniciar(contentEl, experiment, state);
+      } else if (tab === "biometria") {
+        await renderMonitoringTabBiometria(contentEl, experiment, state);
       } else if (tab === "uteis") {
         await renderMonitoringTabPlantasUteis(contentEl, experiment, state);
       } else if (tab === "tombadas") {
@@ -139,49 +142,38 @@
       });
     });
 
-    renderCurrentTab("biometria");
+    renderCurrentTab("iniciar");
   }
 
-  function renderMonitoringTabBiometria(container, experiment, selection) {
+  function renderMonitoringTabIniciar(container, experiment, selection) {
     const isVisitor = window.currentRole === "visitor";
 
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        ${selection.plotCode ? `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}` : "Selecione uma parcela para começar"}
       </div>
 
       <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-        <div style="flex:1 1 160px;">
+        <div style="flex:1 1 200px;">
           <label for="monDate">Data do monitoramento</label>
           <input type="date" id="monDate" ${isVisitor ? "disabled" : ""} />
-        </div>
-        <div style="flex:1 1 140px;">
-          <label for="monHeight">Altura média (cm)</label>
-          <input type="number" step="0.01" id="monHeight" ${isVisitor ? "disabled" : ""} />
-        </div>
-        <div style="flex:1 1 140px;">
-          <label for="monStemCount">Número de hastes</label>
-          <input type="number" id="monStemCount" ${isVisitor ? "disabled" : ""} />
-        </div>
-        <div style="flex:1 1 140px;">
-          <label for="monStemDiameter">Diâmetro da haste (cm)</label>
-          <input type="number" step="0.1" id="monStemDiameter" ${isVisitor ? "disabled" : ""} />
-        </div>
-        <div style="flex:1 1 140px;">
-          <label for="monSanity">Sanidade (1–5)</label>
-          <input type="number" min="1" max="5" id="monSanity" ${isVisitor ? "disabled" : ""} />
         </div>
       </div>
 
       <div style="margin-bottom:10px;">
-        <label for="monNotes">Observações</label>
+        <label for="monNotes">Observações gerais da parcela</label>
         <textarea id="monNotes" rows="3" ${isVisitor ? "disabled" : ""}
-          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"></textarea>
+          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+          placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
+      </div>
+
+      <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+        Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
       </div>
 
       <button class="btn-primary" style="width:auto; padding-inline:18px;" 
-        onclick="saveMonitoringBiometria()" ${isVisitor ? "disabled" : ""}>
-        Salvar biometria
+        onclick="saveMonitoringInit()" ${isVisitor ? "disabled" : ""}>
+        ${currentMonitoringId ? "Atualizar informações gerais" : "Iniciar monitoramento"}
       </button>
       ${currentMonitoringId ? `
         <button class="btn-secondary" style="margin-left:8px;" onclick="clearMonitoringForm()">
@@ -191,10 +183,9 @@
     `;
   }
 
-  async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
+  async function renderMonitoringTabBiometria(container, experiment, selection) {
     const isVisitor = window.currentRole === "visitor";
 
-    // Buscar último monitoramento desta parcela
     const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
     
     if (!latest) {
@@ -204,16 +195,67 @@
         </div>
         <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
           Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Salve primeiro a <strong>biometria</strong> (aba Biometria) antes de registrar o status das plantas.
+          <br>Inicie um monitoramento na aba <strong>"Iniciar monitoramento"</strong> primeiro.
         </p>
       `;
       return;
     }
 
-    // Usar esse monitoramento como contexto
     currentMonitoringId = latest.id;
+    await loadBiometricsData(latest.id);
 
-    // Carregar dados de plantas desse monitoramento
+    // Calcular progresso
+    const totalPlants = 9;
+    const filled = Object.keys(currentBiometrics).length;
+    const progress = Math.round((filled / totalPlants) * 100);
+
+    container.innerHTML = `
+      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
+      </div>
+
+      <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:10px;">
+        <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">
+          Progresso: <strong>${filled}/${totalPlants} plantas</strong> (${progress}%)
+        </div>
+        <div style="width:100%; height:8px; background:#e5e7eb; border-radius:4px; overflow:hidden;">
+          <div style="width:${progress}%; height:100%; background:#10b981; transition:width 0.3s;"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+        <button class="btn-secondary" onclick="openBiometricCollectionDialog()" ${isVisitor ? "disabled" : ""}>
+          Coletar dados biométricos (grade 3×3)
+        </button>
+      </div>
+
+      <div style="font-size:12px; color:#6b7280;">
+        Clique no botão acima para abrir a grade de plantas e registrar:
+        <strong>altura (cm)</strong>, <strong>nº hastes</strong>, <strong>3 medidas de diâmetro (cm)</strong> e <strong>sanidade (1-5)</strong> para cada planta.
+      </div>
+    `;
+  }
+
+  async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
+    const isVisitor = window.currentRole === "visitor";
+
+    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
+    
+    if (!latest) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        </div>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+          Nenhum monitoramento registrado ainda para esta parcela.
+          <br>Inicie um monitoramento primeiro.
+        </p>
+      `;
+      return;
+    }
+
+    currentMonitoringId = latest.id;
     await loadPlantDataForEdit(latest.id);
 
     container.innerHTML = `
@@ -247,7 +289,7 @@
         </div>
         <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
           Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Salve primeiro a <strong>biometria</strong> antes de registrar tombamento.
+          <br>Inicie um monitoramento primeiro.
         </p>
       `;
       return;
@@ -274,7 +316,7 @@
     `;
   }
 
-  window.saveMonitoringBiometria = async function saveMonitoringBiometria() {
+  window.saveMonitoringInit = async function saveMonitoringInit() {
     if (window.currentRole === "visitor") {
       alert("Visitantes têm acesso somente leitura.");
       return;
@@ -294,13 +336,14 @@
     const blockInput = document.getElementById("monitorBlock");
     const plotInput = document.getElementById("monitorPlot");
     const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || `B${block}P1`;
+    const plotCode = plotInput?.value.trim();
+
+    if (!plotCode) {
+      alert("Selecione uma parcela.");
+      return;
+    }
 
     const date = document.getElementById("monDate")?.value || null;
-    const height = document.getElementById("monHeight")?.value || null;
-    const stemCount = document.getElementById("monStemCount")?.value || null;
-    const stemDiameter = document.getElementById("monStemDiameter")?.value || null;
-    const sanity = document.getElementById("monSanity")?.value || null;
     const notes = document.getElementById("monNotes")?.value || null;
 
     if (!date) {
@@ -313,10 +356,6 @@
       plot_code: plotCode,
       block_number: block,
       monitoring_date: date,
-      height_m: height ? Number(height) : null,
-      stem_count: stemCount ? Number(stemCount) : null,
-      stem_diameter_cm: stemDiameter ? Number(stemDiameter) : null,
-      sanity_score: sanity ? Number(sanity) : null,
       notes: notes || null,
     };
 
@@ -333,12 +372,184 @@
         currentMonitoringId = data[0]?.id;
       }
 
-      clearMonitoringForm();
       loadMonitoringList();
-      alert("Biometria salva com sucesso.");
+      alert("Monitoramento iniciado com sucesso. Agora você pode coletar os dados biométricos na aba 'Biometria individual'.");
     } catch (err) {
       console.error("Erro ao salvar monitoramento:", err);
       alert("Erro ao salvar monitoramento.");
+    }
+  };
+
+  window.openBiometricCollectionDialog = function openBiometricCollectionDialog() {
+    if (window.currentRole === "visitor") return;
+
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+    const plotCode = plotInput?.value.trim() || "";
+
+    const total = 9;
+    const itemsHtml = Array.from({ length: total }).map((_, idx) => {
+      const n = idx + 1;
+      const hasBio = currentBiometrics[n];
+      const bg = hasBio ? '#dcfce7' : '#f3f4f6';
+      const color = hasBio ? '#065f46' : '#6b7280';
+
+      return `
+        <button type="button"
+          class="plant-circle"
+          onclick="openPlantBiometricForm(${n})"
+          style="
+            width:42px; height:42px; border-radius:999px;
+            border:2px solid ${hasBio ? '#10b981' : '#d1d5db'};
+            background:${bg};
+            color:${color};
+            font-size:14px;
+            font-weight:600;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer;
+          ">
+          ${n}
+        </button>
+      `;
+    }).join("");
+
+    const bodyHtml = `
+      <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
+        Biometria individual – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+      </div>
+
+      <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
+        Clique em cada planta para registrar: <strong>altura, hastes, 3 diâmetros, sanidade</strong>.
+        Plantas com dados preenchidos ficam verdes.
+      </div>
+
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap:10px;
+        justify-items:center;
+        margin-bottom:12px;
+      ">
+        ${itemsHtml}
+      </div>
+
+      <button class="btn-secondary" style="width:100%;" onclick="closeModal()">
+        Fechar
+      </button>
+    `;
+
+    if (typeof openModal === "function") {
+      openModal("Biometria individual das plantas", bodyHtml);
+    }
+  };
+
+  window.openPlantBiometricForm = function openPlantBiometricForm(position) {
+    const bio = currentBiometrics[position] || {};
+
+    const bodyHtml = `
+      <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:8px;">
+        Planta ${position}
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+        <div style="flex:1 1 140px;">
+          <label for="bioHeight">Altura (cm)</label>
+          <input type="number" step="0.1" id="bioHeight" value="${bio.height_cm || ""}" />
+        </div>
+        <div style="flex:1 1 120px;">
+          <label for="bioStems">Nº hastes</label>
+          <input type="number" id="bioStems" value="${bio.stem_count || ""}" />
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label style="font-size:13px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">
+          Diâmetro do caule (cm) - 3 medições
+        </label>
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1;">
+            <input type="number" step="0.01" id="bioDiam1" placeholder="Medida 1" value="${bio.stem_diameter_1_cm || ""}" />
+          </div>
+          <div style="flex:1;">
+            <input type="number" step="0.01" id="bioDiam2" placeholder="Medida 2" value="${bio.stem_diameter_2_cm || ""}" />
+          </div>
+          <div style="flex:1;">
+            <input type="number" step="0.01" id="bioDiam3" placeholder="Medida 3" value="${bio.stem_diameter_3_cm || ""}" />
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label for="bioSanity">Sanidade (1 a 5)</label>
+        <input type="number" min="1" max="5" id="bioSanity" value="${bio.sanity_score || ""}" />
+      </div>
+
+      <button class="btn-primary" style="width:100%;" onclick="savePlantBiometric(${position})">
+        Salvar dados da planta ${position}
+      </button>
+    `;
+
+    if (typeof openModal === "function") {
+      openModal(`Biometria - Planta ${position}`, bodyHtml);
+    }
+  };
+
+  window.savePlantBiometric = async function savePlantBiometric(position) {
+    if (!currentMonitoringId) {
+      alert("Inicie um monitoramento primeiro.");
+      return;
+    }
+
+    const height = document.getElementById("bioHeight")?.value || null;
+    const stems = document.getElementById("bioStems")?.value || null;
+    const diam1 = document.getElementById("bioDiam1")?.value || null;
+    const diam2 = document.getElementById("bioDiam2")?.value || null;
+    const diam3 = document.getElementById("bioDiam3")?.value || null;
+    const sanity = document.getElementById("bioSanity")?.value || null;
+
+    const payload = {
+      monitoring_event_id: currentMonitoringId,
+      plant_position: position,
+      height_cm: height ? Number(height) : null,
+      stem_count: stems ? Number(stems) : null,
+      stem_diameter_1_cm: diam1 ? Number(diam1) : null,
+      stem_diameter_2_cm: diam2 ? Number(diam2) : null,
+      stem_diameter_3_cm: diam3 ? Number(diam3) : null,
+      sanity_score: sanity ? Number(sanity) : null,
+    };
+
+    try {
+      // Verificar se já existe
+      const { data: existing } = await s
+        .from("plant_biometrics")
+        .select("id")
+        .eq("monitoring_event_id", currentMonitoringId)
+        .eq("plant_position", position)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await s
+          .from("plant_biometrics")
+          .update(payload)
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await s.from("plant_biometrics").insert(payload);
+        if (error) throw error;
+      }
+
+      // Atualizar cache local
+      currentBiometrics[position] = payload;
+
+      if (typeof closeModal === "function") closeModal();
+      
+      // Reabrir lista de plantas
+      setTimeout(() => openBiometricCollectionDialog(), 100);
+      
+    } catch (err) {
+      console.error("Erro ao salvar biometria da planta:", err);
+      alert("Erro ao salvar dados da planta.");
     }
   };
 
@@ -348,7 +559,7 @@
     const blockInput = document.getElementById("monitorBlock");
     const plotInput = document.getElementById("monitorPlot");
     const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || `B${block}P1`;
+    const plotCode = plotInput?.value.trim() || "";
 
     const total = 9;
     const itemsHtml = Array.from({ length: total }).map((_, idx) => {
@@ -427,15 +638,13 @@
 
   window.savePlantStatuses = async function savePlantStatuses() {
     if (!currentMonitoringId) {
-      alert("Salve primeiro a biometria antes de registrar status das plantas.");
+      alert("Inicie um monitoramento primeiro.");
       return;
     }
 
     try {
-      // Apagar registros antigos
       await s.from("plant_status").delete().eq("monitoring_event_id", currentMonitoringId);
 
-      // Inserir novos
       const records = Object.entries(currentPlantStatuses).map(([pos, status]) => ({
         monitoring_event_id: currentMonitoringId,
         plant_position: Number(pos),
@@ -461,7 +670,7 @@
     const blockInput = document.getElementById("monitorBlock");
     const plotInput = document.getElementById("monitorPlot");
     const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || `B${block}P1`;
+    const plotCode = plotInput?.value.trim() || "";
 
     const total = 9;
     const itemsHtml = Array.from({ length: total }).map((_, idx) => {
@@ -525,7 +734,7 @@
 
   window.savePlantLodging = async function savePlantLodging() {
     if (!currentMonitoringId) {
-      alert("Salve primeiro a biometria antes de registrar tombamento.");
+      alert("Inicie um monitoramento primeiro.");
       return;
     }
 
@@ -600,9 +809,7 @@
                 <th>Data</th>
                 <th>Parcela</th>
                 <th>Bloco</th>
-                <th>Altura (cm)</th>
-                <th>Hastes</th>
-                <th>Sanidade</th>
+                <th>Plantas medidas</th>
                 <th style="width:90px;">Ações</th>
               </tr>
             </thead>
@@ -612,9 +819,7 @@
                   <td>${formatDate(row.monitoring_date)}</td>
                   <td>${row.plot_code}</td>
                   <td>${row.block_number}</td>
-                  <td>${row.height_m != null ? row.height_m.toFixed(1) : "–"}</td>
-                  <td>${row.stem_count || "–"}</td>
-                  <td>${row.sanity_score || "–"}</td>
+                  <td id="plantCount_${row.id}">...</td>
                   <td>
                     <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
                       ${
@@ -629,7 +834,7 @@
                             <button type="button" class="btn-danger"
                               style="font-size:12px; padding:4px 8px;"
                               onclick="confirmDeleteMonitoring('${row.id}')">
-                            Excluir
+                              Excluir
                             </button>
                           `
                       }
@@ -641,6 +846,20 @@
           </table>
         </div>
       `;
+
+      // Carregar contagem de plantas medidas para cada monitoramento
+      data.forEach(async (row) => {
+        const { data: bioData } = await s
+          .from("plant_biometrics")
+          .select("id")
+          .eq("monitoring_event_id", row.id);
+        
+        const cell = document.getElementById(`plantCount_${row.id}`);
+        if (cell) {
+          cell.textContent = `${(bioData || []).length}/9`;
+        }
+      });
+
     } catch (err) {
       console.error("Erro ao carregar monitoramentos:", err);
       listDiv.innerHTML = `
@@ -662,9 +881,9 @@
         .eq("plot_code", plotCode)
         .order("monitoring_date", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+      if (error && error.code !== 'PGRST116') throw error;
       return data || null;
     } catch (err) {
       console.error("Erro ao buscar último monitoramento:", err);
@@ -672,76 +891,78 @@
     }
   }
 
-  window.editMonitoring = async function editMonitoring(id) {
-  if (window.currentRole === "visitor") return;
+  async function loadBiometricsData(monitoringId) {
+    try {
+      const { data } = await s
+        .from("plant_biometrics")
+        .select("*")
+        .eq("monitoring_event_id", monitoringId);
 
-  try {
-    const { data: row, error } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error) throw error;
-    if (!row) {
-      alert("Monitoramento não encontrado.");
-      return;
+      currentBiometrics = {};
+      (data || []).forEach((b) => {
+        currentBiometrics[b.plant_position] = b;
+      });
+    } catch (err) {
+      console.error("Erro ao carregar dados biométricos:", err);
     }
-
-    currentMonitoringId = row.id;
-
-    // Carregar plant_status e plant_lodging
-    await loadPlantDataForEdit(row.id);
-
-    // PRIMEIRO: Voltar para aba biometria e renderizar
-    const tabsEl = document.getElementById("monitoringTabs");
-    if (tabsEl) {
-      tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-      tabsEl.querySelector('[data-tab="biometria"]')?.classList.add("active");
-      
-      const experiment = window.currentExperiment;
-      const block = parseInt(row.block_number, 10) || 1;
-      const plotCode = row.plot_code || "";
-      
-      renderMonitoringTabBiometria(
-        document.getElementById("monitoringTabContent"),
-        experiment,
-        { block, plotCode }
-      );
-    }
-
-    // DEPOIS: Preencher os campos (usar setTimeout para garantir que o DOM foi atualizado)
-    setTimeout(() => {
-      const blockSelect = document.getElementById("monitorBlock");
-      const plotSelect = document.getElementById("monitorPlot");
-      
-      if (blockSelect) blockSelect.value = String(row.block_number || 1);
-      if (plotSelect) plotSelect.value = row.plot_code || "";
-      
-      const dateInput = document.getElementById("monDate");
-      if (dateInput) dateInput.value = row.monitoring_date || "";
-      
-      const heightInput = document.getElementById("monHeight");
-      if (heightInput) heightInput.value = row.height_m || "";
-      
-      const stemCountInput = document.getElementById("monStemCount");
-      if (stemCountInput) stemCountInput.value = row.stem_count || "";
-      
-      const stemDiameterInput = document.getElementById("monStemDiameter");
-      if (stemDiameterInput) stemDiameterInput.value = row.stem_diameter_cm || "";
-      
-      const sanityInput = document.getElementById("monSanity");
-      if (sanityInput) sanityInput.value = row.sanity_score || "";
-      
-      const notesInput = document.getElementById("monNotes");
-      if (notesInput) notesInput.value = row.notes || "";
-    }, 50);
-
-  } catch (err) {
-    console.error("Erro ao carregar monitoramento para edição:", err);
-    alert("Erro ao carregar monitoramento.");
   }
-};
+
+  window.editMonitoring = async function editMonitoring(id) {
+    if (window.currentRole === "visitor") return;
+
+    try {
+      const { data: row, error } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+      if (!row) {
+        alert("Monitoramento não encontrado.");
+        return;
+      }
+
+      currentMonitoringId = row.id;
+
+      await loadPlantDataForEdit(row.id);
+      await loadBiometricsData(row.id);
+
+      const tabsEl = document.getElementById("monitoringTabs");
+      if (tabsEl) {
+        tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+        tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add("active");
+        
+        const experiment = window.currentExperiment;
+        const block = parseInt(row.block_number, 10) || 1;
+        const plotCode = row.plot_code || "";
+        
+        renderMonitoringTabIniciar(
+          document.getElementById("monitoringTabContent"),
+          experiment,
+          { block, plotCode }
+        );
+      }
+
+      setTimeout(() => {
+        const blockSelect = document.getElementById("monitorBlock");
+        const plotSelect = document.getElementById("monitorPlot");
+        
+        if (blockSelect) blockSelect.value = String(row.block_number || 1);
+        if (plotSelect) plotSelect.value = row.plot_code || "";
+        
+        const dateInput = document.getElementById("monDate");
+        if (dateInput) dateInput.value = row.monitoring_date || "";
+        
+        const notesInput = document.getElementById("monNotes");
+        if (notesInput) notesInput.value = row.notes || "";
+      }, 50);
+
+    } catch (err) {
+      console.error("Erro ao carregar monitoramento para edição:", err);
+      alert("Erro ao carregar monitoramento.");
+    }
+  };
 
   async function loadPlantDataForEdit(monitoringId) {
     try {
@@ -774,23 +995,18 @@
     currentMonitoringId = null;
     currentPlantStatuses = {};
     currentLodgingStatuses = {};
+    currentBiometrics = {};
 
-    document.getElementById("monitorBlock").value = 1;
+    document.getElementById("monitorBlock").value = "1";
     document.getElementById("monitorPlot").value = "";
     document.getElementById("monDate").value = "";
-    document.getElementById("monHeight").value = "";
-    document.getElementById("monStemCount").value = "";
-    document.getElementById("monStemDiameter").value = "";
-    document.getElementById("monSanity").value = "";
     document.getElementById("monNotes").value = "";
 
     const experiment = window.currentExperiment;
-    const block = 1;
-    const plotCode = "";
-    renderMonitoringTabBiometria(
+    renderMonitoringTabIniciar(
       document.getElementById("monitoringTabContent"),
       experiment,
-      { block, plotCode }
+      { block: 1, plotCode: "" }
     );
   };
 
@@ -801,7 +1017,7 @@
     }
 
     if (!id) return;
-    if (!confirm("Deseja excluir este monitoramento?")) return;
+    if (!confirm("Deseja excluir este monitoramento e todos os dados biométricos associados?")) return;
 
     if (typeof s === "undefined") {
       alert("Cliente Supabase não disponível.");
