@@ -156,7 +156,7 @@
           <input type="date" id="monDate" ${isVisitor ? "disabled" : ""} />
         </div>
         <div style="flex:1 1 140px;">
-          <label for="monHeight">Altura média (m)</label>
+          <label for="monHeight">Altura média (cm)</label>
           <input type="number" step="0.01" id="monHeight" ${isVisitor ? "disabled" : ""} />
         </div>
         <div style="flex:1 1 140px;">
@@ -600,7 +600,7 @@
                 <th>Data</th>
                 <th>Parcela</th>
                 <th>Bloco</th>
-                <th>Altura (m)</th>
+                <th>Altura (cm)</th>
                 <th>Hastes</th>
                 <th>Sanidade</th>
                 <th style="width:90px;">Ações</th>
@@ -612,7 +612,7 @@
                   <td>${formatDate(row.monitoring_date)}</td>
                   <td>${row.plot_code}</td>
                   <td>${row.block_number}</td>
-                  <td>${row.height_m != null ? row.height_m.toFixed(2) : "–"}</td>
+                  <td>${row.height_m != null ? row.height_m.toFixed(1) : "–"}</td>
                   <td>${row.stem_count || "–"}</td>
                   <td>${row.sanity_score || "–"}</td>
                   <td>
