@@ -61,32 +61,50 @@
   }
 
   function setupMonitoringTabs(container, experiment) {
-    const isVisitor = window.currentRole === "visitor";
+  const isVisitor = window.currentRole === "visitor";
 
-    container.innerHTML = `
-      <div style="margin-bottom:10px;">
-        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Seleção de parcela
+  container.innerHTML = `
+    <div style="margin-bottom:10px;">
+      <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+        Seleção de parcela
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:13px; color:#374151;">
+        <div style="flex:0 0 120px;">
+          <label for="monitorBlock">Bloco</label>
+          <select id="monitorBlock" ${isVisitor ? "disabled" : ""}>
+            <option value="1">Bloco 1</option>
+            <option value="2">Bloco 2</option>
+            <option value="3">Bloco 3</option>
+          </select>
         </div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:13px; color:#374151;">
-          <div style="flex:0 0 120px;">
-            <label for="monitorBlock">Bloco</label>
-            <input type="number" id="monitorBlock" min="1" value="1" ${isVisitor ? "disabled" : ""} />
-          </div>
-          <div style="flex:0 0 160px;">
-            <label for="monitorPlot">Parcela</label>
-            <input type="text" id="monitorPlot" placeholder="Ex. B1P3" ${isVisitor ? "disabled" : ""} />
-          </div>
+        <div style="flex:0 0 160px;">
+          <label for="monitorPlot">Parcela</label>
+          <select id="monitorPlot" ${isVisitor ? "disabled" : ""}>
+            <option value="">Selecione...</option>
+            <option value="T1">T1</option>
+            <option value="T2">T2</option>
+            <option value="T3">T3</option>
+            <option value="T4">T4</option>
+            <option value="T5">T5</option>
+            <option value="T6">T6</option>
+            <option value="T7">T7</option>
+            <option value="T8">T8</option>
+            <option value="T9">T9</option>
+            <option value="T10">T10</option>
+            <option value="T11">T11</option>
+            <option value="T12">T12</option>
+          </select>
         </div>
       </div>
+    </div>
 
-      <div class="tabs" id="monitoringTabs">
-        <button data-tab="biometria" class="active">Biometria</button>
-        <button data-tab="uteis">Plantas úteis</button>
-        <button data-tab="tombadas">Plantas tombadas</button>
-      </div>
-      <div id="monitoringTabContent" style="margin-top:10px;"></div>
-    `;
+    <div class="tabs" id="monitoringTabs">
+      <button data-tab="biometria" class="active">Biometria</button>
+      <button data-tab="uteis">Plantas úteis</button>
+      <button data-tab="tombadas">Plantas tombadas</button>
+    </div>
+    <div id="monitoringTabContent" style="margin-top:10px;"></div>
+  `;
 
     const tabsEl = document.getElementById("monitoringTabs");
     const contentEl = document.getElementById("monitoringTabContent");
@@ -108,7 +126,7 @@
       const blockInput = document.getElementById("monitorBlock");
       const plotInput = document.getElementById("monitorPlot");
       const block = blockInput && blockInput.value ? parseInt(blockInput.value, 10) : 1;
-      const plotCode = (plotInput && plotInput.value.trim()) || `B${block}P1`;
+      const plotCode = (plotInput && plotInput.value.trim()) || "";
       return { block, plotCode };
     };
 
@@ -655,39 +673,39 @@
   }
 
   window.editMonitoring = function editMonitoring(row) {
-    if (window.currentRole === "visitor") return;
+  if (window.currentRole === "visitor") return;
 
-    currentMonitoringId = row.id;
+  currentMonitoringId = row.id;
 
-    document.getElementById("monitorBlock").value = row.block_number || 1;
-    document.getElementById("monitorPlot").value = row.plot_code || "";
-    document.getElementById("monDate").value = row.monitoring_date || "";
-    document.getElementById("monHeight").value = row.height_m || "";
-    document.getElementById("monStemCount").value = row.stem_count || "";
-    document.getElementById("monStemDiameter").value = row.stem_diameter_cm || "";
-    document.getElementById("monSanity").value = row.sanity_score || "";
-    document.getElementById("monNotes").value = row.notes || "";
+  document.getElementById("monitorBlock").value = String(row.block_number || 1);
+  document.getElementById("monitorPlot").value = row.plot_code || "";
+  document.getElementById("monDate").value = row.monitoring_date || "";
+  document.getElementById("monHeight").value = row.height_m || "";
+  document.getElementById("monStemCount").value = row.stem_count || "";
+  document.getElementById("monStemDiameter").value = row.stem_diameter_cm || "";
+  document.getElementById("monSanity").value = row.sanity_score || "";
+  document.getElementById("monNotes").value = row.notes || "";
 
-    // Carregar plant_status e plant_lodging
-    loadPlantDataForEdit(row.id);
+  // Carregar plant_status e plant_lodging
+  loadPlantDataForEdit(row.id);
 
-    // Re-render aba biometria para mostrar botão cancelar
-    const tabsEl = document.getElementById("monitoringTabs");
-    if (tabsEl) {
-      tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-      tabsEl.querySelector('[data-tab="biometria"]')?.classList.add("active");
-      const experiment = window.currentExperiment;
-      const blockInput = document.getElementById("monitorBlock");
-      const plotInput = document.getElementById("monitorPlot");
-      const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-      const plotCode = plotInput?.value.trim() || "";
-      renderMonitoringTabBiometria(
-        document.getElementById("monitoringTabContent"),
-        experiment,
-        { block, plotCode }
-      );
-    }
-  };
+  // Re-render aba biometria para mostrar botão cancelar
+  const tabsEl = document.getElementById("monitoringTabs");
+  if (tabsEl) {
+    tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+    tabsEl.querySelector('[data-tab="biometria"]')?.classList.add("active");
+    const experiment = window.currentExperiment;
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+    const plotCode = plotInput?.value.trim() || "";
+    renderMonitoringTabBiometria(
+      document.getElementById("monitoringTabContent"),
+      experiment,
+      { block, plotCode }
+    );
+  }
+};
 
   async function loadPlantDataForEdit(monitoringId) {
     try {
