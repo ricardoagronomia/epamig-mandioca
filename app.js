@@ -692,7 +692,6 @@ window.openInviteModal = function () {
     <label for="inviteRole">Role</label>
     <select id="inviteRole">
       <option value="collaborator">Pesquisador</option>
-      <option value="visitor">Visitante</option>
       <option value="admin">Administrador</option>
     </select>
     <button class="btn-primary" style="margin-top:4px;" onclick="sendInvite()">Enviar convite</button>
@@ -824,6 +823,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
