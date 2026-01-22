@@ -690,32 +690,53 @@
 
     currentMonitoringId = row.id;
 
-    document.getElementById("monitorBlock").value = String(row.block_number || 1);
-    document.getElementById("monitorPlot").value = row.plot_code || "";
-    document.getElementById("monDate").value = row.monitoring_date || "";
-    document.getElementById("monHeight").value = row.height_m || "";
-    document.getElementById("monStemCount").value = row.stem_count || "";
-    document.getElementById("monStemDiameter").value = row.stem_diameter_cm || "";
-    document.getElementById("monSanity").value = row.sanity_score || "";
-    document.getElementById("monNotes").value = row.notes || "";
-
     // Carregar plant_status e plant_lodging
     await loadPlantDataForEdit(row.id);
 
-    // Re-render aba biometria para mostrar botão cancelar
+    // PRIMEIRO: Voltar para aba biometria e renderizar
     const tabsEl = document.getElementById("monitoringTabs");
     if (tabsEl) {
       tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
       tabsEl.querySelector('[data-tab="biometria"]')?.classList.add("active");
+      
       const experiment = window.currentExperiment;
       const block = parseInt(row.block_number, 10) || 1;
       const plotCode = row.plot_code || "";
+      
       renderMonitoringTabBiometria(
         document.getElementById("monitoringTabContent"),
         experiment,
         { block, plotCode }
       );
     }
+
+    // DEPOIS: Preencher os campos (usar setTimeout para garantir que o DOM foi atualizado)
+    setTimeout(() => {
+      const blockSelect = document.getElementById("monitorBlock");
+      const plotSelect = document.getElementById("monitorPlot");
+      
+      if (blockSelect) blockSelect.value = String(row.block_number || 1);
+      if (plotSelect) plotSelect.value = row.plot_code || "";
+      
+      const dateInput = document.getElementById("monDate");
+      if (dateInput) dateInput.value = row.monitoring_date || "";
+      
+      const heightInput = document.getElementById("monHeight");
+      if (heightInput) heightInput.value = row.height_m || "";
+      
+      const stemCountInput = document.getElementById("monStemCount");
+      if (stemCountInput) stemCountInput.value = row.stem_count || "";
+      
+      const stemDiameterInput = document.getElementById("monStemDiameter");
+      if (stemDiameterInput) stemDiameterInput.value = row.stem_diameter_cm || "";
+      
+      const sanityInput = document.getElementById("monSanity");
+      if (sanityInput) sanityInput.value = row.sanity_score || "";
+      
+      const notesInput = document.getElementById("monNotes");
+      if (notesInput) notesInput.value = row.notes || "";
+    }, 50);
+
   } catch (err) {
     console.error("Erro ao carregar monitoramento para edição:", err);
     alert("Erro ao carregar monitoramento.");
