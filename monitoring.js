@@ -623,13 +623,13 @@
                           : `
                             <button type="button" class="btn-secondary"
                               style="font-size:12px; padding:4px 8px;"
-                              onclick='editMonitoring(${JSON.stringify(row)})'>
+                              onclick="editMonitoring('${row.id}')">
                               Editar
                             </button>
                             <button type="button" class="btn-danger"
                               style="font-size:12px; padding:4px 8px;"
                               onclick="confirmDeleteMonitoring('${row.id}')">
-                              Excluir
+                            Excluir
                             </button>
                           `
                       }
@@ -672,38 +672,53 @@
     }
   }
 
-  window.editMonitoring = function editMonitoring(row) {
+  window.editMonitoring = async function editMonitoring(id) {
   if (window.currentRole === "visitor") return;
 
-  currentMonitoringId = row.id;
+  try {
+    const { data: row, error } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  document.getElementById("monitorBlock").value = String(row.block_number || 1);
-  document.getElementById("monitorPlot").value = row.plot_code || "";
-  document.getElementById("monDate").value = row.monitoring_date || "";
-  document.getElementById("monHeight").value = row.height_m || "";
-  document.getElementById("monStemCount").value = row.stem_count || "";
-  document.getElementById("monStemDiameter").value = row.stem_diameter_cm || "";
-  document.getElementById("monSanity").value = row.sanity_score || "";
-  document.getElementById("monNotes").value = row.notes || "";
+    if (error) throw error;
+    if (!row) {
+      alert("Monitoramento não encontrado.");
+      return;
+    }
 
-  // Carregar plant_status e plant_lodging
-  loadPlantDataForEdit(row.id);
+    currentMonitoringId = row.id;
 
-  // Re-render aba biometria para mostrar botão cancelar
-  const tabsEl = document.getElementById("monitoringTabs");
-  if (tabsEl) {
-    tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-    tabsEl.querySelector('[data-tab="biometria"]')?.classList.add("active");
-    const experiment = window.currentExperiment;
-    const blockInput = document.getElementById("monitorBlock");
-    const plotInput = document.getElementById("monitorPlot");
-    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || "";
-    renderMonitoringTabBiometria(
-      document.getElementById("monitoringTabContent"),
-      experiment,
-      { block, plotCode }
-    );
+    document.getElementById("monitorBlock").value = String(row.block_number || 1);
+    document.getElementById("monitorPlot").value = row.plot_code || "";
+    document.getElementById("monDate").value = row.monitoring_date || "";
+    document.getElementById("monHeight").value = row.height_m || "";
+    document.getElementById("monStemCount").value = row.stem_count || "";
+    document.getElementById("monStemDiameter").value = row.stem_diameter_cm || "";
+    document.getElementById("monSanity").value = row.sanity_score || "";
+    document.getElementById("monNotes").value = row.notes || "";
+
+    // Carregar plant_status e plant_lodging
+    await loadPlantDataForEdit(row.id);
+
+    // Re-render aba biometria para mostrar botão cancelar
+    const tabsEl = document.getElementById("monitoringTabs");
+    if (tabsEl) {
+      tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+      tabsEl.querySelector('[data-tab="biometria"]')?.classList.add("active");
+      const experiment = window.currentExperiment;
+      const block = parseInt(row.block_number, 10) || 1;
+      const plotCode = row.plot_code || "";
+      renderMonitoringTabBiometria(
+        document.getElementById("monitoringTabContent"),
+        experiment,
+        { block, plotCode }
+      );
+    }
+  } catch (err) {
+    console.error("Erro ao carregar monitoramento para edição:", err);
+    alert("Erro ao carregar monitoramento.");
   }
 };
 
