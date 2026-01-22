@@ -213,7 +213,7 @@ if (plotInput) {
   async function renderMonitoringTabBiometria(container, experiment, selection) {
     const isVisitor = window.currentRole === "visitor";
 
-    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
+    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block); // ✅ adicionar selection.block
     
     if (!latest) {
       container.innerHTML = `
@@ -267,7 +267,7 @@ if (plotInput) {
   async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
   const isVisitor = window.currentRole === "visitor";
 
-  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
+  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block); // ✅ adicionar selection.block
   
   if (!latest) {
     container.innerHTML = `
@@ -308,8 +308,8 @@ if (plotInput) {
   async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
   const isVisitor = window.currentRole === "visitor";
 
-  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
-  
+  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block); // ✅ adicionar selection.block
+    
   if (!latest) {
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
@@ -1028,26 +1028,27 @@ if (plotInput) {
   }
 }
 
-  async function loadLatestMonitoringForPlot(experimentId, plotCode) {
-    if (!plotCode || !experimentId) return null;
+  async function loadLatestMonitoringForPlot(experimentId, plotCode, blockNumber) {
+  if (!plotCode || !experimentId || !blockNumber) return null;
 
-    try {
-      const { data, error } = await s
-        .from("monitoring_events")
-        .select("*")
-        .eq("experiment_id", experimentId)
-        .eq("plot_code", plotCode)
-        .order("monitoring_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  try {
+    const { data, error } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("experiment_id", experimentId)
+      .eq("plot_code", plotCode)
+      .eq("block_number", blockNumber)  // ✅ ADICIONAR ESTA LINHA
+      .order("monitoring_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      return data || null;
-    } catch (err) {
-      console.error("Erro ao buscar último monitoramento:", err);
-      return null;
-    }
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || null;
+  } catch (err) {
+    console.error("Erro ao buscar último monitoramento:", err);
+    return null;
   }
+}
 
   async function loadBiometricsData(monitoringId) {
     try {
