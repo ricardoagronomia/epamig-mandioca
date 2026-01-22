@@ -613,6 +613,17 @@ if (plotInput) {
 
     if (typeof closeModal === "function") closeModal();
     
+    // Atualizar cache local
+currentBiometrics[position] = {
+  ...payload,
+  has_sprouted: sprouted,  // Garantir que está salvo corretamente
+  has_expanded_leaves: expanded
+};
+
+// ✅ ADICIONAR: Forçar reload dos dados do banco
+await loadBiometricsData(currentMonitoringId);
+
+    
     // Reabrir lista de plantas
     setTimeout(() => openBiometricCollectionDialog(), 100);
     
@@ -633,19 +644,19 @@ if (plotInput) {
   // Sincronizar status com dados de brotação da biometria
   for (let pos = 1; pos <= 9; pos++) {
     const bio = currentBiometrics[pos];
-    
+  
     // Se planta brotou na biometria e ainda não tem status definido, marca como 'alive'
     if (bio && bio.has_sprouted === true && !currentPlantStatuses[pos]) {
-      currentPlantStatuses[pos] = 'alive';
+    currentPlantStatuses[pos] = 'alive';
     }
-    
-    // Se não brotou e não tem status, marca como 'not_sprouted'
+  
+    // Se EXPLICITAMENTE não brotou (false) e não tem status, marca como 'not_sprouted'
     if (bio && bio.has_sprouted === false && !currentPlantStatuses[pos]) {
       currentPlantStatuses[pos] = 'not_sprouted';
     }
-    
-    // Se não tem informação de brotação na biometria, mantém como 'not_sprouted'
-    if (bio && bio.has_sprouted === null && !currentPlantStatuses[pos]) {
+  
+    // Se não tem dados ou é null, marca como 'not_sprouted'
+    if ((!bio || bio.has_sprouted === null || bio.has_sprouted === undefined) && !currentPlantStatuses[pos]) {
       currentPlantStatuses[pos] = 'not_sprouted';
     }
   }
@@ -656,8 +667,9 @@ if (plotInput) {
     const bio = currentBiometrics[n];
     let status = currentPlantStatuses[n] || 'not_sprouted';
     
-    // FORÇAR cinza se não tem informação de brotação na biometria
+    // FORÇAR cinza se não brotou (false) ou não tem dados (null/undefined)
     if (!bio || bio.has_sprouted !== true) {
+
       // Só permite status 'dead' ou 'not_sprouted' se não brotou
       if (status === 'alive') {
         status = 'not_sprouted';
@@ -1269,8 +1281,8 @@ if (plotInput) {
     const lodgingLabel = isLodged ? '⚠️ Sim' : '-';
   
     // Labels fenológicos
-    const sproutedLabel = bio?.has_sprouted ? '✅' : '-';
-    const expandedLabel = bio?.has_expanded_leaves ? '✅' : '-';
+    const sproutedLabel = bio?.has_sprouted === true ? '✅' : '-';
+    const expandedLabel = bio?.has_expanded_leaves === true ? '✅' : '-';
 
     return `
       <tr>
