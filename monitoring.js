@@ -567,8 +567,13 @@ if (plotInput) {
   const diam2 = document.getElementById("bioDiam2")?.value || null;
   const diam3 = document.getElementById("bioDiam3")?.value || null;
   const sanity = document.getElementById("bioSanity")?.value || null;
-  const sprouted = document.getElementById("bioSprouted")?.checked || null;
-  const expanded = document.getElementById("bioExpanded")?.checked || null;
+  
+  // ✅ CORRIGIDO: usar checked diretamente, não OR null
+  const sproutedCheckbox = document.getElementById("bioSprouted");
+  const expandedCheckbox = document.getElementById("bioExpanded");
+  
+  const sprouted = sproutedCheckbox ? sproutedCheckbox.checked : false;
+  const expanded = expandedCheckbox ? expandedCheckbox.checked : false;
 
   const payload = {
     monitoring_event_id: currentMonitoringId,
@@ -579,8 +584,8 @@ if (plotInput) {
     stem_diameter_2_cm: diam2 ? Number(diam2) : null,
     stem_diameter_3_cm: diam3 ? Number(diam3) : null,
     sanity_score: sanity ? Number(sanity) : null,
-    has_sprouted: sprouted,
-    has_expanded_leaves: expanded,
+    has_sprouted: sprouted,  // ✅ Agora salva true/false corretamente
+    has_expanded_leaves: expanded,  // ✅ Agora salva true/false corretamente
   };
 
   try {
