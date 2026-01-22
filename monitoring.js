@@ -955,55 +955,55 @@ if (plotInput) {
     const isVisitor = window.currentRole === "visitor";
 
     listDiv.innerHTML = `
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Parcela</th>
-              <th>Bloco</th>
-              <th>Plantas medidas</th>
-              <th style="width:150px;">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.map((row) => `
-              <tr>
-                <td>${formatDate(row.monitoring_date)}</td>
-                <td>${row.plot_code}</td>
-                <td>${row.block_number}</td>
-                <td id="plantCount_${row.id}">...</td>
-                <td>
-                  <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
-                    <button type="button" class="btn-secondary"
-                      style="font-size:12px; padding:4px 8px;"
-                      onclick="viewPlantDetails('${row.id}')">
-                      👁️ Ver Plantas
-                    </button>
-                    ${
-                      isVisitor
-                        ? ``
-                        : `
-                          <button type="button" class="btn-secondary"
-                            style="font-size:12px; padding:4px 8px;"
-                            onclick="editMonitoring('${row.id}')">
-                            Editar
-                          </button>
-                          <button type="button" class="btn-danger"
-                            style="font-size:12px; padding:4px 8px;"
-                            onclick="confirmDeleteMonitoring('${row.id}')">
-                            Excluir
-                          </button>
-                        `
-                    }
-                  </div>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Parcela</th>
+          <th>Bloco</th>
+          <th>Plantas medidas</th>
+          <th style="width:180px;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map((row) => `
+          <tr>
+            <td>${formatDate(row.monitoring_date)}</td>
+            <td>${row.plot_code}</td>
+            <td>${row.block_number}</td>
+            <td id="plantCount_${row.id}">...</td>
+            <td>
+              <div style="display:flex; gap:4px; align-items:center; justify-content:flex-start;">
+                <button type="button" class="btn-secondary"
+                  style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                  onclick="viewPlantDetails('${row.id}')">
+                  👁️ Ver
+                </button>
+                ${
+                  isVisitor
+                    ? ``
+                    : `
+                      <button type="button" class="btn-secondary"
+                        style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                        onclick="editMonitoring('${row.id}')">
+                        ✏️ Editar
+                      </button>
+                      <button type="button" class="btn-danger"
+                        style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                        onclick="confirmDeleteMonitoring('${row.id}')">
+                        🗑️ Excluir
+                      </button>
+                    `
+                }
+              </div>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  </div>
+`;
 
     // Carregar contagem de plantas medidas para cada monitoramento
     data.forEach(async (row) => {
