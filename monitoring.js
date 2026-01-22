@@ -93,14 +93,14 @@
 
     if (!tabsEl || !contentEl) return;
 
-    const renderCurrentTab = (tab) => {
+    const renderCurrentTab = async (tab) => {
       const state = getCurrentSelection();
       if (tab === "biometria") {
         renderMonitoringTabBiometria(contentEl, experiment, state);
       } else if (tab === "uteis") {
-        renderMonitoringTabPlantasUteis(contentEl, experiment, state);
+        await renderMonitoringTabPlantasUteis(contentEl, experiment, state);
       } else if (tab === "tombadas") {
-        renderMonitoringTabPlantasTombadas(contentEl, experiment, state);
+        await renderMonitoringTabPlantasTombadas(contentEl, experiment, state);
       }
     };
 
@@ -173,12 +173,35 @@
     `;
   }
 
-  function renderMonitoringTabPlantasUteis(container, experiment, selection) {
+  async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
     const isVisitor = window.currentRole === "visitor";
+
+    // Buscar último monitoramento desta parcela
+    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
+    
+    if (!latest) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        </div>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+          Nenhum monitoramento registrado ainda para esta parcela.
+          <br>Salve primeiro a <strong>biometria</strong> (aba Biometria) antes de registrar o status das plantas.
+        </p>
+      `;
+      return;
+    }
+
+    // Usar esse monitoramento como contexto
+    currentMonitoringId = latest.id;
+
+    // Carregar dados de plantas desse monitoramento
+    await loadPlantDataForEdit(latest.id);
 
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
         <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
       </div>
 
       <div style="margin-bottom:10px; font-size:13px; color:#374151;">
@@ -194,12 +217,31 @@
     `;
   }
 
-  function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
+  async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
     const isVisitor = window.currentRole === "visitor";
+
+    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
+    
+    if (!latest) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        </div>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+          Nenhum monitoramento registrado ainda para esta parcela.
+          <br>Salve primeiro a <strong>biometria</strong> antes de registrar tombamento.
+        </p>
+      `;
+      return;
+    }
+
+    currentMonitoringId = latest.id;
+    await loadPlantDataForEdit(latest.id);
 
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
         <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
       </div>
 
       <div style="margin-bottom:10px; font-size:13px; color:#374151;">
@@ -591,6 +633,27 @@
     }
   }
 
+  async function loadLatestMonitoringForPlot(experimentId, plotCode) {
+    if (!plotCode || !experimentId) return null;
+
+    try {
+      const { data, error } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("experiment_id", experimentId)
+        .eq("plot_code", plotCode)
+        .order("monitoring_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+      return data || null;
+    } catch (err) {
+      console.error("Erro ao buscar último monitoramento:", err);
+      return null;
+    }
+  }
+
   window.editMonitoring = function editMonitoring(row) {
     if (window.currentRole === "visitor") return;
 
@@ -710,5 +773,11 @@
       .replace(/'/g, "'")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+  }
+
+  function formatDateShort(iso) {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
   }
 })();
