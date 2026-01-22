@@ -209,13 +209,13 @@
 
     const payload = {
       experiment_id: experiment.id,
-      date,
+      .order("intervention_date", { ascending: false });  // <<< era "date"
       intervention_type: type,
       block_number: block || null,
       plot_code: plot || null,
-      product_name: product || null,
+      product: product || null,  // <<< era "product_name"
       dosage: dosage || null,
-      application_method: method || null,
+      method: method || null,    // <<< era "application_method"
       notes: notes || null,
     };
 
@@ -315,13 +315,13 @@
         .map(
           (row) => `
           <tr>
-            <td>${formatDate(row.date)}</td>
+            <td>${formatDate(row.intervention_date)}</td>  // <<< era row.date
             <td>${typeLabel(row.intervention_type)}</td>
             <td>${row.block_number ? "Bloco " + row.block_number : "Todos"}</td>
             <td>${row.plot_code || "–"}</td>
-            <td>${row.product_name || "–"}</td>
+            <td>${row.product || "–"}</td>  // <<< era row.product_name
             <td>${row.dosage || "–"}</td>
-            <td>
+            <td>>
               <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
                 ${
                   isVisitor
@@ -364,13 +364,13 @@
 
     currentInterventionEditId = row.id;
 
-    document.getElementById("intDate").value = row.date || "";
+    document.getElementById("intDate").value = row.intervention_date || "";  // <<< era row.date
     document.getElementById("intType").value = row.intervention_type || "";
     document.getElementById("intBlock").value = row.block_number || "";
     document.getElementById("intPlot").value = row.plot_code || "";
-    document.getElementById("intProduct").value = row.product_name || "";
+    document.getElementById("intProduct").value = row.product || "";  // <<< era row.product_name
     document.getElementById("intDosage").value = row.dosage || "";
-    document.getElementById("intMethod").value = row.application_method || "";
+    document.getElementById("intMethod").value = row.method || "";  // <<< era row.application_method
     document.getElementById("intNotes").value = row.notes || "";
 
     const btn = document.querySelector('button[onclick="saveIntervention()"]');
