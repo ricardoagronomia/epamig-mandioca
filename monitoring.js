@@ -443,7 +443,7 @@ if (plotInput) {
           onclick="openPlantBiometricForm(${n})"
           style="
             width:42px; height:42px; border-radius:999px;
-            border:2px solid ${hasBio ? '#10b981' : '#d1d5db'};
+            border:2px solid ${hasSprouted ? '#10b981' : '#d1d5db'};  // ✅ Corrigido!
             background:${bg};
             color:${color};
             font-size:14px;
