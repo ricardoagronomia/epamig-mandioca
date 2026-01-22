@@ -181,35 +181,29 @@
     plot_code: plotCode,
     block_number: block,
     harvest_date: date,
-    total_weight_kg: weight ? Number(weight) : null,
-    commercial_roots_count: roots ? Number(roots) : null,
+    total_weight: weight ? Number(weight) : null,  // ✅ Corrigido
+    commercial_roots: roots ? Number(roots) : null,  // ✅ Corrigido
     mean_diameter_cm: diameter ? Number(diameter) : null,
     quality_score: quality ? Number(quality) : null,
     sample_code: sample,
     notes: notes,
   };
 
-  console.log("Payload:", payload); // ✅ Debug
-
   try {
     const isEditing = !!currentHarvestId;
 
     if (currentHarvestId) {
-      const { data, error } = await s
+      const { error } = await s
         .from("harvest_records")
         .update(payload)
-        .eq("id", currentHarvestId)
-        .select(); // ✅ Adicionar select para ver resposta
+        .eq("id", currentHarvestId);
       
-      console.log("Update response:", { data, error }); // ✅ Debug
       if (error) throw error;
     } else {
-      const { data, error } = await s
+      const { error } = await s
         .from("harvest_records")
-        .insert(payload)
-        .select(); // ✅ Adicionar select para ver resposta
+        .insert(payload);
       
-      console.log("Insert response:", { data, error }); // ✅ Debug
       if (error) throw error;
     }
 
@@ -220,7 +214,7 @@
       clearHarvestForm();
     } else {
       alert("Colheita registrada com sucesso.");
-      // Limpar apenas os campos, não o formulário todo
+      // Limpar apenas os campos
       document.getElementById("harvestDate").value = "";
       document.getElementById("harvestWeight").value = "";
       document.getElementById("harvestRoots").value = "";
@@ -230,8 +224,8 @@
       document.getElementById("harvestNotes").value = "";
     }
   } catch (err) {
-    console.error("Erro ao salvar colheita:", err); // ✅ Vai mostrar detalhes
-    alert(`Erro ao salvar colheita: ${err.message || JSON.stringify(err)}`);
+    console.error("Erro ao salvar colheita:", err);
+    alert(`Erro ao salvar colheita: ${err.message || "Erro desconhecido"}`);
   }
 };
 
@@ -305,8 +299,8 @@
                   <td>${formatDate(row.harvest_date)}</td>
                   <td>${row.plot_code}</td>
                   <td>${row.block_number}</td>
-                  <td>${row.total_weight_kg || "-"}</td>
-                  <td>${row.commercial_roots_count || "-"}</td>
+                  <td>${row.total_weight || "-"}</td>
+                  <td>${row.commercial_roots || "-"}</td>
                   <td>${row.mean_diameter_cm || "-"}</td>
                   <td>${row.quality_score || "-"}</td>
                   <td>${row.sample_code || "-"}</td>
@@ -367,8 +361,8 @@
         document.getElementById("harvestBlock").value = String(row.block_number || 1);
         document.getElementById("harvestPlot").value = row.plot_code || "";
         document.getElementById("harvestDate").value = row.harvest_date || "";
-        document.getElementById("harvestWeight").value = row.total_weight_kg || "";
-        document.getElementById("harvestRoots").value = row.commercial_roots_count || "";
+        document.getElementById("harvestWeight").value = row.total_weight || "";
+        document.getElementById("harvestRoots").value = row.commercial_roots || "";
         document.getElementById("harvestDiameter").value = row.mean_diameter_cm || "";
         document.getElementById("harvestQuality").value = row.quality_score || "";
         document.getElementById("harvestSample").value = row.sample_code || "";
