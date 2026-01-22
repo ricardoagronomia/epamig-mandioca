@@ -238,83 +238,86 @@
   }
 
   async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
+  const isVisitor = window.currentRole === "visitor";
 
-    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
-    
-    if (!latest) {
-      container.innerHTML = `
-        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Inicie um monitoramento primeiro.
-        </p>
-      `;
-      return;
-    }
-
-    currentMonitoringId = latest.id;
-    await loadPlantDataForEdit(latest.id);
-
+  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
+  
+  if (!latest) {
     container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
         <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
       </div>
-
-      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
-        <button class="btn-secondary" onclick="openPlantStatusDialog()" ${isVisitor ? "disabled" : ""}>
-          Marcar brotação e mortalidade por planta
-        </button>
-      </div>
-
-      <div style="font-size:12px; color:#6b7280;">
-        Use o botão acima para abrir a grade visual de plantas (3×3).
-        Cada clique alterna entre: <strong>cinza</strong> (não brotou) → <strong>verde</strong> (brotou/viva) → <strong>vermelho</strong> (morta).
-      </div>
+      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+        Nenhum monitoramento registrado ainda para esta parcela.
+        <br>Inicie um monitoramento primeiro.
+      </p>
     `;
+    return;
   }
+
+  currentMonitoringId = latest.id;
+  await loadPlantDataForEdit(latest.id);
+  await loadBiometricsData(latest.id);
+
+  container.innerHTML = `
+    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
+    </div>
+
+    <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+      <button class="btn-secondary" onclick="openPlantStatusDialog()" ${isVisitor ? "disabled" : ""}>
+        Marcar mortalidade
+      </button>
+    </div>
+
+    <div style="font-size:12px; color:#6b7280;">
+      As plantas marcadas como <strong>"Brotou"</strong> na aba Biometria aparecem automaticamente como <strong>vivas</strong> (verde).
+      <br>Clique no botão para marcar plantas que morreram (ficarão vermelhas).
+    </div>
+  `;
+}
 
   async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
+  const isVisitor = window.currentRole === "visitor";
 
-    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
-    
-    if (!latest) {
-      container.innerHTML = `
-        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Inicie um monitoramento primeiro.
-        </p>
-      `;
-      return;
-    }
-
-    currentMonitoringId = latest.id;
-    await loadPlantDataForEdit(latest.id);
-
+  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode);
+  
+  if (!latest) {
     container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
         <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
       </div>
-
-      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
-        <button class="btn-secondary" onclick="openPlantLodgingDialog()" ${isVisitor ? "disabled" : ""}>
-          Marcar plantas tombadas
-        </button>
-      </div>
-
-      <div style="font-size:12px; color:#6b7280;">
-        Somente plantas <strong>brotadas e vivas</strong> podem ser marcadas como tombadas.
-      </div>
+      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+        Nenhum monitoramento registrado ainda para esta parcela.
+        <br>Inicie um monitoramento primeiro.
+      </p>
     `;
+    return;
   }
+
+  currentMonitoringId = latest.id;
+  await loadPlantDataForEdit(latest.id);
+  await loadBiometricsData(latest.id);
+
+  container.innerHTML = `
+    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
+    </div>
+
+    <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+      <button class="btn-secondary" onclick="openPlantLodgingDialog()" ${isVisitor ? "disabled" : ""}>
+        Marcar plantas tombadas
+      </button>
+    </div>
+
+    <div style="font-size:12px; color:#6b7280;">
+      Somente plantas <strong>brotadas e vivas</strong> podem ser marcadas como tombadas.
+      <br>Plantas aparecem automaticamente baseadas nos dados de biometria e mortalidade.
+    </div>
+  `;
+}
 
   window.saveMonitoringInit = async function saveMonitoringInit() {
     if (window.currentRole === "visitor") {
@@ -579,75 +582,107 @@
 };
 
   window.openPlantStatusDialog = function openPlantStatusDialog() {
-    if (window.currentRole === "visitor") return;
+  if (window.currentRole === "visitor") return;
 
-    const blockInput = document.getElementById("monitorBlock");
-    const plotInput = document.getElementById("monitorPlot");
-    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || "";
+  const blockInput = document.getElementById("monitorBlock");
+  const plotInput = document.getElementById("monitorPlot");
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value.trim() || "";
 
-    const total = 9;
-    const itemsHtml = Array.from({ length: total }).map((_, idx) => {
-      const n = idx + 1;
-      const status = currentPlantStatuses[n] || 'not_sprouted';
-      let bg = '#e5e7eb';
-      let color = '#374151';
-      if (status === 'alive') {
-        bg = '#dcfce7';
-        color = '#065f46';
-      } else if (status === 'dead') {
-        bg = '#fee2e2';
-        color = '#7f1d1d';
-      }
+  // Sincronizar status com dados de brotação da biometria
+  for (let pos = 1; pos <= 9; pos++) {
+    const bio = currentBiometrics[pos];
+    
+    // Se planta brotou na biometria e ainda não tem status definido, marca como 'alive'
+    if (bio && bio.has_sprouted === true && !currentPlantStatuses[pos]) {
+      currentPlantStatuses[pos] = 'alive';
+    }
+    
+    // Se não brotou e não tem status, marca como 'not_sprouted'
+    if (bio && bio.has_sprouted === false && !currentPlantStatuses[pos]) {
+      currentPlantStatuses[pos] = 'not_sprouted';
+    }
+  }
 
-      return `
-        <button type="button"
-          class="plant-circle"
-          data-index="${n}"
-          onclick="togglePlantStatus(${n})"
-          style="
-            width:34px; height:34px; border-radius:999px;
-            border:1px solid #d1d5db;
-            background:${bg};
-            color:${color};
-            font-size:13px;
-            display:flex; align-items:center; justify-content:center;
-            cursor:pointer;
-          ">
-          ${n}
-        </button>
-      `;
-    }).join("");
+  const total = 9;
+  const itemsHtml = Array.from({ length: total }).map((_, idx) => {
+    const n = idx + 1;
+    const status = currentPlantStatuses[n] || 'not_sprouted';
+    const bio = currentBiometrics[n];
+    
+    let bg = '#e5e7eb'; // cinza - não brotou
+    let color = '#374151';
+    let label = n;
+    
+    if (status === 'alive') {
+      bg = '#dcfce7'; // verde - viva
+      color = '#065f46';
+    } else if (status === 'dead') {
+      bg = '#fee2e2'; // vermelho - morta
+      color = '#7f1d1d';
+    }
 
-    const bodyHtml = `
-      <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-        Marcar brotação e mortalidade – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
-      </div>
+    // Indicador se foi marcada como brotada na biometria
+    const sproutedMark = bio?.has_sprouted ? '<div style="font-size:9px;">🌱</div>' : '';
 
-      <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-        Clique em cada planta para alternar:
-        <strong>cinza</strong> (não brotou) → <strong>verde</strong> (brotou/viva) → <strong>vermelho</strong> (morta).
-      </div>
-
-      <div style="
-        display:grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap:8px;
-        justify-items:center;
-        margin-bottom:12px;
-      ">
-        ${itemsHtml}
-      </div>
-
-      <button class="btn-primary" style="width:100%;" onclick="savePlantStatuses()">
-        Salvar brotação/mortalidade
+    return `
+      <button type="button"
+        class="plant-circle"
+        data-index="${n}"
+        onclick="togglePlantStatus(${n})"
+        style="
+          width:40px; height:40px; border-radius:999px;
+          border:2px solid ${status === 'alive' ? '#10b981' : status === 'dead' ? '#dc2626' : '#d1d5db'};
+          background:${bg};
+          color:${color};
+          font-size:13px;
+          font-weight:600;
+          display:flex; 
+          flex-direction:column;
+          align-items:center; 
+          justify-content:center;
+          cursor:pointer;
+          position:relative;
+        ">
+        <div>${label}</div>
+        ${sproutedMark}
       </button>
     `;
+  }).join("");
 
-    if (typeof openModal === "function") {
-      openModal("Plantas úteis – brotação/mortalidade", bodyHtml);
-    }
-  };
+  const bodyHtml = `
+    <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
+      Marcar mortalidade – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+    </div>
+
+    <div style="margin-bottom:10px; padding:8px; background:#f0fdf4; border-radius:8px; font-size:12px; color:#065f46;">
+      🌱 = Planta marcada como brotada na biometria
+    </div>
+
+    <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
+      Plantas brotadas aparecem automaticamente em <strong style="color:#10b981;">verde</strong>.
+      <br>Clique para alternar: <strong style="color:#10b981;">Verde (viva)</strong> → <strong style="color:#dc2626;">Vermelho (morta)</strong> → <strong style="color:#9ca3af;">Cinza (não brotou)</strong>
+    </div>
+
+    <div style="
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      justify-items:center;
+      margin-bottom:12px;
+    ">
+      ${itemsHtml}
+    </div>
+
+    <button class="btn-primary" style="width:100%;" onclick="savePlantStatuses()">
+      Salvar mortalidade
+    </button>
+  `;
+
+  if (typeof openModal === "function") {
+    openModal("Plantas úteis – mortalidade", bodyHtml);
+  }
+};
 
   window.togglePlantStatus = function togglePlantStatus(position) {
     const current = currentPlantStatuses[position] || 'not_sprouted';
@@ -690,67 +725,104 @@
   };
 
   window.openPlantLodgingDialog = function openPlantLodgingDialog() {
-    if (window.currentRole === "visitor") return;
+  if (window.currentRole === "visitor") return;
 
-    const blockInput = document.getElementById("monitorBlock");
-    const plotInput = document.getElementById("monitorPlot");
-    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || "";
+  const blockInput = document.getElementById("monitorBlock");
+  const plotInput = document.getElementById("monitorPlot");
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value.trim() || "";
 
-    const total = 9;
-    const itemsHtml = Array.from({ length: total }).map((_, idx) => {
-      const n = idx + 1;
-      const isLodged = currentLodgingStatuses[n] || false;
-      const bg = isLodged ? '#fef3c7' : '#dcfce7';
-      const color = isLodged ? '#92400e' : '#065f46';
+  // Sincronizar status com dados de brotação
+  for (let pos = 1; pos <= 9; pos++) {
+    const bio = currentBiometrics[pos];
+    if (bio && bio.has_sprouted === true && !currentPlantStatuses[pos]) {
+      currentPlantStatuses[pos] = 'alive';
+    }
+  }
 
-      return `
-        <button type="button"
-          class="plant-circle"
-          data-index="${n}"
-          onclick="toggleLodging(${n})"
-          style="
-            width:34px; height:34px; border-radius:999px;
-            border:1px solid #d1d5db;
-            background:${bg};
-            color:${color};
-            font-size:13px;
-            display:flex; align-items:center; justify-content:center;
-            cursor:pointer;
-          ">
-          ${n}
-        </button>
-      `;
-    }).join("");
+  const total = 9;
+  const itemsHtml = Array.from({ length: total }).map((_, idx) => {
+    const n = idx + 1;
+    const status = currentPlantStatuses[n] || 'not_sprouted';
+    const bio = currentBiometrics[n];
+    const isLodged = currentLodgingStatuses[n] || false;
+    
+    // Só pode marcar tombamento se estiver viva
+    const canToggle = status === 'alive';
+    
+    let bg = '#e5e7eb'; // cinza - não disponível
+    let color = '#9ca3af';
+    let cursor = 'not-allowed';
+    let opacity = '0.5';
+    
+    if (canToggle) {
+      bg = isLodged ? '#fef3c7' : '#dcfce7'; // amarelo se tombada, verde se em pé
+      color = isLodged ? '#92400e' : '#065f46';
+      cursor = 'pointer';
+      opacity = '1';
+    }
 
-    const bodyHtml = `
-      <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-        Marcar plantas tombadas – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
-      </div>
+    const sproutedMark = bio?.has_sprouted ? '<div style="font-size:9px;">🌱</div>' : '';
+    const deadMark = status === 'dead' ? '<div style="font-size:9px;">❌</div>' : '';
 
-      <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-        Clique para alternar entre <strong>em pé</strong> (verde) e <strong>tombada</strong> (amarelo).
-      </div>
-
-      <div style="
-        display:grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap:8px;
-        justify-items:center;
-        margin-bottom:12px;
-      ">
-        ${itemsHtml}
-      </div>
-
-      <button class="btn-primary" style="width:100%;" onclick="savePlantLodging()">
-        Salvar tombamento
+    return `
+      <button type="button"
+        class="plant-circle"
+        data-index="${n}"
+        onclick="${canToggle ? `toggleLodging(${n})` : 'return false;'}"
+        style="
+          width:40px; height:40px; border-radius:999px;
+          border:2px solid ${canToggle ? (isLodged ? '#f59e0b' : '#10b981') : '#d1d5db'};
+          background:${bg};
+          color:${color};
+          font-size:13px;
+          font-weight:600;
+          display:flex; 
+          flex-direction:column;
+          align-items:center; 
+          justify-content:center;
+          cursor:${cursor};
+          opacity:${opacity};
+        ">
+        <div>${n}</div>
+        ${sproutedMark}${deadMark}
       </button>
     `;
+  }).join("");
 
-    if (typeof openModal === "function") {
-      openModal("Plantas tombadas", bodyHtml);
-    }
-  };
+  const bodyHtml = `
+    <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
+      Marcar plantas tombadas – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+    </div>
+
+    <div style="margin-bottom:10px; padding:8px; background:#f0fdf4; border-radius:8px; font-size:12px; color:#065f46;">
+      🌱 = Brotou · ❌ = Morta (não pode marcar tombamento)
+    </div>
+
+    <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
+      Apenas plantas <strong style="color:#10b981;">vivas</strong> podem ser marcadas.
+      <br>Clique para alternar: <strong style="color:#10b981;">Verde (em pé)</strong> ↔ <strong style="color:#f59e0b;">Amarelo (tombada)</strong>
+    </div>
+
+    <div style="
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      justify-items:center;
+      margin-bottom:12px;
+    ">
+      ${itemsHtml}
+    </div>
+
+    <button class="btn-primary" style="width:100%;" onclick="savePlantLodging()">
+      Salvar tombamento
+    </button>
+  `;
+
+  if (typeof openModal === "function") {
+    openModal("Plantas tombadas", bodyHtml);
+  }
+};
 
   window.toggleLodging = function toggleLodging(position) {
     currentLodgingStatuses[position] = !currentLodgingStatuses[position];
