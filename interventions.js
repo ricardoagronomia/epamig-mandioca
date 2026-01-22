@@ -345,16 +345,18 @@
         `
         )
         .join("");
-    } catch (err) {
-      console.error("Erro ao carregar intervenções:", err);
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" style="text-align:center; font-size:13px; color:#b91c1c;">
-            Erro ao carregar intervenções.
-          </td>
-        </tr>
-      `;
-    }
+     } catch (err) {
+    console.error("Erro ao carregar intervenções:", err);
+    console.error("Detalhes do erro:", err.message, err.details, err.hint);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center; font-size:13px; color:#b91c1c;">
+          Erro ao carregar intervenções: ${err.message || "Erro desconhecido"}
+        </td>
+      </tr>
+    `;
+  }
+
   };
 
   window.openInterventionEdit = function openInterventionEdit(row) {
