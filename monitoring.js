@@ -10,55 +10,242 @@
   window.renderMonitoringPage = renderMonitoringPage;
 
   function renderMonitoringPage(container) {
-    const experiment = window.currentExperiment;
+  const experiment = window.currentExperiment;
 
-    if (!experiment) {
-      container.innerHTML = `
-        <div class="card">
-          <p style="color:#6b7280;">
-            Nenhum experimento selecionado. Selecione um experimento na página "Experimentos" para registrar monitoramentos.
-          </p>
+  if (!experiment) {
+    container.innerHTML = `
+      <div class="card">
+        <p style="color:#6b7280;">
+          Nenhum experimento selecionado. Selecione um experimento na página "Experimentos" para registrar monitoramentos.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="content-header">
+      <div class="content-title">Monitoramento manual</div>
+      <div class="content-subtitle">
+        Registre medições biométricas individuais e o estado das plantas úteis e tombadas em cada parcela.
+      </div>
+    </div>
+
+    <div class="card" id="monitoringHeaderCard">
+      <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center;">
+        <div style="font-size:14px; color:#4b5563;">
+          Experimento <strong>${escapeHtml(experiment.code || "")}</strong> · 
+          ${escapeHtml(experiment.name || "Sem nome")}<br>
+          <span style="font-size:12px; color:#6b7280;">
+            Selecione bloco e parcela para registrar medições individuais por planta.
+          </span>
         </div>
+      </div>
+      <div style="margin-top:10px; font-size:13px; color:#6b7280;">
+        <span id="monitoringCounter">– monitoramentos registrados</span>
+      </div>
+    </div>
+
+    <!-- Card de estatísticas -->
+    <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+      <div style="width:48px; height:48px; border-radius:14px; background:#dcfce7; display:flex; align-items:center; justify-content:center; color:#065f46; font-size:24px;">
+        🌱
+      </div>
+      <div style="flex:1 1 180px;">
+        <div style="font-size:14px; font-weight:600; color:#1f2937;">Estatísticas do experimento</div>
+        <div id="monitoringSummary" style="font-size:13px; color:#6b7280;">
+          Carregando estatísticas...
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="monitoringTabsCard"></div>
+
+    <div class="card" id="monitoringListCard">
+      <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+        Registros anteriores
+      </div>
+      <div id="monitoringList"></div>
+    </div>
+  `;
+
+  setupMonitoringTabs(document.getElementById("monitoringTabsCard"), experiment);
+  loadMonitoringList();
+  loadMonitoringSummary(experiment.id); // ✅ Nova função
+}
+  // --- Resumo estatístico do monitoramento manual ---
+async function loadMonitoringSummary(experimentId) {
+  if (typeof s === "undefined") return;
+
+  const summaryEl = document.getElementById("monitoringSummary");
+  if (!summaryEl) return;
+
+  summaryEl.textContent = "Carregando estatísticas...";
+
+  try {
+    // 1) Contar total de monitoramentos
+    const { count: monitoringCount, error: countError } = await s
+      .from("monitoring_events")
+      .select("*", { count: "exact", head: true })
+      .eq("experiment_id", experimentId);
+
+    if (countError) {
+      console.error("Erro ao contar monitoramentos:", countError);
+    }
+
+    // 2) Buscar todas as biometrias do experimento
+    const { data: allMonitorings, error: monError } = await s
+      .from("monitoring_events")
+      .select("id")
+      .eq("experiment_id", experimentId);
+
+    if (monError) {
+      console.error("Erro ao buscar monitoramentos:", monError);
+    }
+
+    const monitoringIds = (allMonitorings || []).map(m => m.id);
+
+    if (!monitoringIds.length) {
+      summaryEl.innerHTML = `
+        Nenhum monitoramento registrado ainda.<br>
+        <span style="font-size:12px;">Use as abas acima para iniciar o primeiro monitoramento.</span>
       `;
       return;
     }
 
-    container.innerHTML = `
-      <div class="content-header">
-        <div class="content-title">Monitoramento manual</div>
-        <div class="content-subtitle">
-          Registre medições biométricas individuais e o estado das plantas úteis e tombadas em cada parcela.
-        </div>
-      </div>
+    // 3) Buscar todas as biometrias
+    const { data: biometrics, error: bioError } = await s
+      .from("plant_biometrics")
+      .select("*")
+      .in("monitoring_event_id", monitoringIds);
 
-      <div class="card" id="monitoringHeaderCard">
-        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center;">
-          <div style="font-size:14px; color:#4b5563;">
-            Experimento <strong>${escapeHtml(experiment.code || "")}</strong> · 
-            ${escapeHtml(experiment.name || "Sem nome")}<br>
-            <span style="font-size:12px; color:#6b7280;">
-              Selecione bloco e parcela para registrar medições individuais por planta.
-            </span>
+    if (bioError) {
+      console.error("Erro ao buscar biometrias:", bioError);
+    }
+
+    // 4) Buscar status das plantas
+    const { data: statuses, error: statusError } = await s
+      .from("plant_status")
+      .select("*")
+      .in("monitoring_event_id", monitoringIds);
+
+    if (statusError) {
+      console.error("Erro ao buscar status:", statusError);
+    }
+
+    const totalMonitorings = typeof monitoringCount === "number" ? monitoringCount : 0;
+    const bioData = biometrics || [];
+    const statusData = statuses || [];
+
+    // Calcular plantas brotadas e vivas
+    const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
+    const totalPlants = bioData.length || 1; // Evitar divisão por zero
+    
+    // Contar plantas vivas (status 'alive')
+    const alivePlants = statusData.filter(s => s.status === 'alive').length;
+    const alivePercentage = sproutedPlants.length > 0 
+      ? ((alivePlants / sproutedPlants.length) * 100).toFixed(1)
+      : "0.0";
+
+    // Calcular médias apenas de plantas brotadas
+    const plantsWithHeight = sproutedPlants.filter(b => b.height_cm != null);
+    const avgHeight = plantsWithHeight.length > 0
+      ? (plantsWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / plantsWithHeight.length).toFixed(1)
+      : "–";
+
+    // Diâmetro médio (média dos 3 diâmetros)
+    const plantsWithDiameter = sproutedPlants.filter(b => 
+      b.stem_diameter_1_cm != null || b.stem_diameter_2_cm != null || b.stem_diameter_3_cm != null
+    );
+    
+    let avgDiameter = "–";
+    if (plantsWithDiameter.length > 0) {
+      let totalDiameters = 0;
+      let diameterCount = 0;
+      
+      plantsWithDiameter.forEach(b => {
+        if (b.stem_diameter_1_cm) { totalDiameters += b.stem_diameter_1_cm; diameterCount++; }
+        if (b.stem_diameter_2_cm) { totalDiameters += b.stem_diameter_2_cm; diameterCount++; }
+        if (b.stem_diameter_3_cm) { totalDiameters += b.stem_diameter_3_cm; diameterCount++; }
+      });
+      
+      if (diameterCount > 0) {
+        avgDiameter = (totalDiameters / diameterCount).toFixed(2);
+      }
+    }
+
+    // Sanidade média
+    const plantsWithSanity = sproutedPlants.filter(b => b.sanity_score != null);
+    const avgSanity = plantsWithSanity.length > 0
+      ? (plantsWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / plantsWithSanity.length).toFixed(1)
+      : "–";
+
+    summaryEl.innerHTML = `
+      <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin-top:4px;">
+
+        <!-- Bloco: Total de monitoramentos -->
+        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#f0fdf4; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#dcfce7; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            📋
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#111827;">${totalMonitorings}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Coletas</div>
           </div>
         </div>
-        <div style="margin-top:10px; font-size:13px; color:#6b7280;">
-          <span id="monitoringCounter">– monitoramentos registrados</span>
-        </div>
-      </div>
 
-      <div class="card" id="monitoringTabsCard"></div>
-
-      <div class="card" id="monitoringListCard">
-        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Registros anteriores
+        <!-- Bloco: Plantas vivas -->
+        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#ecfdf3; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#bbf7d0; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            🌿
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#14532d;">${alivePercentage}%</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas</div>
+          </div>
         </div>
-        <div id="monitoringList"></div>
+
+        <!-- Bloco: Altura média -->
+        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fefce8; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#fef3c7; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            📏
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#713f12;">${avgHeight}${avgHeight !== "–" ? " cm" : ""}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Altura</div>
+          </div>
+        </div>
+
+        <!-- Bloco: Diâmetro médio -->
+        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#dbeafe; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            ⭕
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#1e3a8a;">${avgDiameter}${avgDiameter !== "–" ? " cm" : ""}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Diâmetro</div>
+          </div>
+        </div>
+
+        <!-- Bloco: Sanidade média -->
+        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fef2f2; display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:999px; background:#fecaca; display:flex; align-items:center; justify-content:center; font-size:16px;">
+            ❤️
+          </div>
+          <div>
+            <div style="font-size:18px; font-weight:600; color:#7f1d1d;">${avgSanity}${avgSanity !== "–" ? "/5" : ""}</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Sanidade</div>
+          </div>
+        </div>
+
       </div>
     `;
 
-    setupMonitoringTabs(document.getElementById("monitoringTabsCard"), experiment);
-    loadMonitoringList();
+  } catch (err) {
+    console.error("Erro inesperado ao carregar estatísticas:", err);
+    summaryEl.textContent = "Erro ao carregar estatísticas.";
   }
+}
 
   function setupMonitoringTabs(container, experiment) {
     const isVisitor = window.currentRole === "visitor";
@@ -957,128 +1144,127 @@ await loadBiometricsData(currentMonitoringId);
   if (!listDiv) return;
 
   try {
-  const { data, error } = await s
-    .from("monitoring_events")
-    .select("*")
-    .eq("experiment_id", experiment.id)
-    .order("monitoring_date", { ascending: false });  // Só ordenar por data aqui
+    const { data, error } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("experiment_id", experiment.id)
+      .order("monitoring_date", { ascending: false });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  // ✅ ADICIONAR: Ordenar por bloco e parcela numericamente no JavaScript
-  const sortedData = (data || []).sort((a, b) => {
-    // Primeiro por data (mais recente primeiro)
-    if (a.monitoring_date !== b.monitoring_date) {
-      return b.monitoring_date.localeCompare(a.monitoring_date);
+    // Ordenar por data, bloco e parcela numericamente
+    const sortedData = (data || []).sort((a, b) => {
+      if (a.monitoring_date !== b.monitoring_date) {
+        return b.monitoring_date.localeCompare(a.monitoring_date);
+      }
+      if (a.block_number !== b.block_number) {
+        return a.block_number - b.block_number;
+      }
+      const numA = parseInt(a.plot_code.replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(b.plot_code.replace(/\D/g, ''), 10) || 0;
+      return numA - numB;
+    });
+
+    if (counterSpan) {
+      counterSpan.textContent = `${sortedData.length} monitoramentos registrados`;
     }
-    
-    // Depois por bloco (crescente)
-    if (a.block_number !== b.block_number) {
-      return a.block_number - b.block_number;
+
+    if (!sortedData || sortedData.length === 0) {
+      listDiv.innerHTML = `
+        <p style="font-size:13px; color:#6b7280;">
+          Nenhum monitoramento registrado ainda.
+        </p>
+      `;
+      // Atualizar estatísticas mesmo sem dados
+      loadMonitoringSummary(experiment.id);
+      return;
     }
-    
-    // Por último por parcela (extrair número de T1, T2, etc)
-    const numA = parseInt(a.plot_code.replace(/\D/g, ''), 10) || 0;
-    const numB = parseInt(b.plot_code.replace(/\D/g, ''), 10) || 0;
-    return numA - numB;
-  });
 
-  if (counterSpan) {
-    counterSpan.textContent = `${sortedData.length} monitoramentos registrados`;
-  }
+    const formatDate = (iso) => {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    };
 
-  if (!sortedData || sortedData.length === 0) {
+    const isVisitor = window.currentRole === "visitor";
+
     listDiv.innerHTML = `
-      <p style="font-size:13px; color:#6b7280;">
-        Nenhum monitoramento registrado ainda.
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Parcela</th>
+              <th>Bloco</th>
+              <th>Plantas medidas</th>
+              <th style="width:180px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedData.map((row) => `
+              <tr>
+                <td>${formatDate(row.monitoring_date)}</td>
+                <td>${row.plot_code}</td>
+                <td>${row.block_number}</td>
+                <td id="plantCount_${row.id}">...</td>
+                <td>
+                  <div style="display:flex; gap:4px; align-items:center; justify-content:flex-start;">
+                    <button type="button" class="btn-secondary"
+                      style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                      onclick="viewPlantDetails('${row.id}')">
+                      👁️ Ver
+                    </button>
+                    ${
+                      isVisitor
+                        ? ``
+                        : `
+                          <button type="button" class="btn-secondary"
+                            style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                            onclick="editMonitoring('${row.id}')">
+                            ✏️ Editar
+                          </button>
+                          <button type="button" class="btn-danger"
+                            style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                            onclick="confirmDeleteMonitoring('${row.id}')">
+                            🗑️ Excluir
+                          </button>
+                        `
+                    }
+                  </div>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // Carregar contagem de plantas BROTADAS para cada monitoramento
+    sortedData.forEach(async (row) => {
+      const { data: bioData } = await s
+        .from("plant_biometrics")
+        .select("*")
+        .eq("monitoring_event_id", row.id);
+      
+      const sproutedCount = (bioData || []).filter(b => b.has_sprouted === true).length;
+      
+      const cell = document.getElementById(`plantCount_${row.id}`);
+      if (cell) {
+        cell.textContent = `${sproutedCount}/9`;
+      }
+    });
+
+    // Atualizar estatísticas após carregar lista
+    loadMonitoringSummary(experiment.id);
+
+  } catch (err) {
+    console.error("Erro ao carregar monitoramentos:", err);
+    listDiv.innerHTML = `
+      <p style="font-size:13px; color:#b91c1c;">
+        Erro ao carregar monitoramentos.
       </p>
     `;
-    return;
   }
-
-  const formatDate = (iso) => {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    return `${d}/${m}/${y}`;
-  };
-
-  const isVisitor = window.currentRole === "visitor";
-
-  listDiv.innerHTML = `
-    <div style="overflow-x:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Parcela</th>
-            <th>Bloco</th>
-            <th>Plantas medidas</th>
-            <th style="width:180px;">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sortedData.map((row) => `
-            <tr>
-              <td>${formatDate(row.monitoring_date)}</td>
-              <td>${row.plot_code}</td>
-              <td>${row.block_number}</td>
-              <td id="plantCount_${row.id}">...</td>
-              <td>
-                <div style="display:flex; gap:4px; align-items:center; justify-content:flex-start;">
-                  <button type="button" class="btn-secondary"
-                    style="font-size:11px; padding:4px 6px; white-space:nowrap;"
-                    onclick="viewPlantDetails('${row.id}')">
-                    👁️ Ver
-                  </button>
-                  ${
-                    isVisitor
-                      ? ``
-                      : `
-                        <button type="button" class="btn-secondary"
-                          style="font-size:11px; padding:4px 6px; white-space:nowrap;"
-                          onclick="editMonitoring('${row.id}')">
-                          ✏️ Editar
-                        </button>
-                        <button type="button" class="btn-danger"
-                          style="font-size:11px; padding:4px 6px; white-space:nowrap;"
-                          onclick="confirmDeleteMonitoring('${row.id}')">
-                          🗑️ Excluir
-                        </button>
-                      `
-                  }
-                </div>
-              </td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  // Carregar contagem de plantas BROTADAS para cada monitoramento
-  sortedData.forEach(async (row) => {
-    const { data: bioData } = await s
-      .from("plant_biometrics")
-      .select("*")
-      .eq("monitoring_event_id", row.id);
-    
-    // Contar apenas plantas que BROTARAM
-    const sproutedCount = (bioData || []).filter(b => b.has_sprouted === true).length;
-    
-    const cell = document.getElementById(`plantCount_${row.id}`);
-    if (cell) {
-      cell.textContent = `${sproutedCount}/9`;
-    }
-  });
-
-} catch (err) {
-  console.error("Erro ao carregar monitoramentos:", err);
-  listDiv.innerHTML = `
-    <p style="font-size:13px; color:#b91c1c;">
-      Erro ao carregar monitoramentos.
-    </p>
-  `;
-}
 }
 
   async function loadLatestMonitoringForPlot(experimentId, plotCode, blockNumber) {
