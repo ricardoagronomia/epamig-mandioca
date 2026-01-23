@@ -170,7 +170,7 @@
     }
   }
 
-    // Gráfico 1: Evolução da altura ao longo do tempo
+      // Gráfico 1: Evolução da altura ao longo do tempo
   function generateHeightChart(monitorings, biometrics) {
     const ctx = document.getElementById('chartHeight');
     if (!ctx) return;
@@ -230,12 +230,24 @@
       '#84cc16', '#f43f5e'
     ];
 
-    // Ordenar tratamentos alfabeticamente
+    // Ordenar tratamentos numericamente
     const sortedTreatments = Object.keys(finalData).sort((a, b) => {
-  const numA = parseInt(a.replace(/\D/g, '')) || 0;
-  const numB = parseInt(b.replace(/\D/g, '')) || 0;
-  return numA - numB;
-});
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+
+    const datasets = sortedTreatments.map((treatment, idx) => {
+      return {
+        label: treatment,
+        data: finalData[treatment].map(d => ({ x: d.date, y: d.height })),
+        borderColor: colors[idx % colors.length],
+        backgroundColor: colors[idx % colors.length] + '20',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: false
+      };
+    });
 
     chartInstances.height = new Chart(ctx, {
       type: 'line',
@@ -266,74 +278,6 @@
     });
   }
 
-  // Gráfico 2: Taxa de sobrevivência por tratamento
-  function generateSurvivalChart(latestByPlot, biometrics, statuses) {
-    const ctx = document.getElementById('chartSurvival');
-    if (!ctx) return;
-
-    const statusMap = {};
-    statuses.forEach(s => {
-      const key = `${s.monitoring_event_id}_${s.plant_position}`;
-      statusMap[key] = s.status;
-    });
-
-    const survivalData = [];
-
-    Object.values(latestByPlot).forEach(mon => {
-      const plotLabel = `${mon.plot_code} (B${mon.block_number})`;
-      
-      const plantsBio = biometrics.filter(b => b.monitoring_event_id === mon.id);
-      const sproutedPlants = plantsBio.filter(b => b.has_sprouted === true);
-      
-      const alivePlants = sproutedPlants.filter(b => {
-        const key = `${b.monitoring_event_id}_${b.plant_position}`;
-        const status = statusMap[key];
-        return !status || status === 'alive';
-      }).length;
-
-      const totalPlants = 9;
-      const survivalRate = (alivePlants / totalPlants) * 100;
-
-      survivalData.push({ label: plotLabel, rate: survivalRate });
-    });
-
-    // Ordenar por taxa
-    survivalData.sort((a, b) => b.rate - a.rate);
-
-    chartInstances.survival = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: survivalData.map(d => d.label),
-        datasets: [{
-          label: 'Taxa de sobrevivência (%)',
-          data: survivalData.map(d => d.rate),
-          backgroundColor: survivalData.map(d => 
-            d.rate >= 80 ? '#10b981' : d.rate >= 60 ? '#f59e0b' : '#ef4444'
-          ),
-          borderRadius: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { 
-            beginAtZero: true, 
-            max: 100,
-            title: { display: true, text: 'Sobrevivência (%)' }
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (context) => `${context.parsed.y.toFixed(1)}%`
-            }
-          }
-        }
-      }
-    });
-  }
 
   // Gráfico 3: Sanidade média
   function generateSanityChart(latestByPlot, biometrics, statuses) {
