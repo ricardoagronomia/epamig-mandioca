@@ -93,19 +93,18 @@ async function loadMonitoringSummary(experimentId) {
       console.error("Erro ao contar monitoramentos:", countError);
     }
 
-    // 2) Buscar todos os IDs de monitoramentos
+    // 2) Buscar TODOS os monitoramentos com suas datas
     const { data: allMonitorings, error: monError } = await s
       .from("monitoring_events")
-      .select("id")
-      .eq("experiment_id", experimentId);
+      .select("id, plot_code, block_number, monitoring_date")
+      .eq("experiment_id", experimentId)
+      .order("monitoring_date", { ascending: false });
 
     if (monError) {
       console.error("Erro ao buscar monitoramentos:", monError);
     }
 
-    const monitoringIds = (allMonitorings || []).map(m => m.id);
-
-    if (!monitoringIds.length) {
+    if (!allMonitorings || !allMonitorings.length) {
       summaryEl.innerHTML = `
         Nenhum monitoramento registrado ainda.<br>
         <span style="font-size:12px;">Use as abas acima para iniciar o primeiro monitoramento.</span>
@@ -113,21 +112,35 @@ async function loadMonitoringSummary(experimentId) {
       return;
     }
 
-    // 3) Buscar todas as biometrias
+    // ✅ CORRIGIDO: Pegar apenas o último monitoramento de cada parcela/bloco
+    const latestByPlot = {};
+    allMonitorings.forEach(m => {
+      const key = `${m.block_number}_${m.plot_code}`;
+      if (!latestByPlot[key]) {
+        latestByPlot[key] = m;
+      }
+    });
+
+    const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
+
+    console.log("📊 Total de monitoramentos:", allMonitorings.length);
+    console.log("📊 Últimos monitoramentos únicos:", latestMonitoringIds.length);
+
+    // 3) Buscar biometrias APENAS dos últimos monitoramentos
     const { data: biometrics, error: bioError } = await s
       .from("plant_biometrics")
       .select("*")
-      .in("monitoring_event_id", monitoringIds);
+      .in("monitoring_event_id", latestMonitoringIds);
 
     if (bioError) {
       console.error("Erro ao buscar biometrias:", bioError);
     }
 
-    // 4) Buscar status das plantas
+    // 4) Buscar status APENAS dos últimos monitoramentos
     const { data: statuses, error: statusError } = await s
       .from("plant_status")
       .select("*")
-      .in("monitoring_event_id", monitoringIds);
+      .in("monitoring_event_id", latestMonitoringIds);
 
     if (statusError) {
       console.error("Erro ao buscar status:", statusError);
@@ -137,7 +150,9 @@ async function loadMonitoringSummary(experimentId) {
     const bioData = biometrics || [];
     const statusData = statuses || [];
 
-    // ✅ CORRIGIDO: Criar mapa de status por monitoring_event_id + plant_position
+    console.log("🌱 Biometrias dos últimos monitoramentos:", bioData.length);
+
+    // Criar mapa de status
     const statusMap = {};
     statusData.forEach(s => {
       const key = `${s.monitoring_event_id}_${s.plant_position}`;
@@ -148,12 +163,10 @@ async function loadMonitoringSummary(experimentId) {
     const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
     const totalSprouted = sproutedPlants.length;
     
-    // ✅ CORRIGIDO: Contar plantas vivas = brotadas E NÃO marcadas como mortas
+    // Contar plantas vivas = brotadas E NÃO marcadas como mortas
     const alivePlants = sproutedPlants.filter(b => {
       const key = `${b.monitoring_event_id}_${b.plant_position}`;
       const status = statusMap[key];
-      // Se não tem status OU status é 'alive', considera viva
-      // Se status é 'dead', considera morta
       return !status || status === 'alive';
     }).length;
     
