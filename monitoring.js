@@ -112,7 +112,7 @@ async function loadMonitoringSummary(experimentId) {
       return;
     }
 
-    // ✅ CORRIGIDO: Pegar apenas o último monitoramento de cada parcela/bloco
+    // Pegar apenas o último monitoramento de cada parcela/bloco
     const latestByPlot = {};
     allMonitorings.forEach(m => {
       const key = `${m.block_number}_${m.plot_code}`;
@@ -122,9 +122,6 @@ async function loadMonitoringSummary(experimentId) {
     });
 
     const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
-
-    console.log("📊 Total de monitoramentos:", allMonitorings.length);
-    console.log("📊 Últimos monitoramentos únicos:", latestMonitoringIds.length);
 
     // 3) Buscar biometrias APENAS dos últimos monitoramentos
     const { data: biometrics, error: bioError } = await s
@@ -150,7 +147,9 @@ async function loadMonitoringSummary(experimentId) {
     const bioData = biometrics || [];
     const statusData = statuses || [];
 
-    console.log("🌱 Biometrias dos últimos monitoramentos:", bioData.length);
+    // ✅ CORRIGIDO: Calcular total de plantas = número de parcelas × 9
+    const totalPlots = Object.keys(latestByPlot).length;
+    const totalPlants = totalPlots * 9;
 
     // Criar mapa de status
     const statusMap = {};
@@ -170,8 +169,9 @@ async function loadMonitoringSummary(experimentId) {
       return !status || status === 'alive';
     }).length;
     
-    const alivePercentage = totalSprouted > 0 
-      ? ((alivePlants / totalSprouted) * 100).toFixed(1)
+    // ✅ CORRIGIDO: Porcentagem sobre TOTAL de plantas plantadas
+    const alivePercentage = totalPlants > 0 
+      ? ((alivePlants / totalPlants) * 100).toFixed(1)
       : "0.0";
 
     // Altura média (apenas plantas VIVAS com altura preenchida)
@@ -256,7 +256,7 @@ async function loadMonitoringSummary(experimentId) {
           </div>
           <div>
             <div style="font-size:18px; font-weight:600; color:#14532d;">${alivePercentage}%</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas (${alivePlants}/${totalSprouted})</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas (${alivePlants}/${totalPlants})</div>
           </div>
         </div>
 
