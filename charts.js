@@ -363,9 +363,12 @@
   }
 
     // Gráfico 3: Sanidade média por tratamento
-  function generateSanityChart(latestByPlot, biometrics, statuses) {
-    const ctx = document.getElementById('chartSanity');
-    if (!ctx) return;
+function generateSanityChart(latestByPlot, biometrics, statuses) {
+  console.log('🩺 SANIDADE CHAMADA - latestByPlot:', Object.keys(latestByPlot).length, 'biometrics:', biometrics.length, 'statuses:', statuses.length);
+  
+  const ctx = document.getElementById('chartSanity');
+  console.log('🩺 SANIDADE - ctx encontrado?', ctx);
+  if (!ctx) return;
 
     const statusMap = {};
     statuses.forEach(s => {
@@ -446,9 +449,12 @@
   }
 
   // Gráfico 4: Diâmetro médio por tratamento
-  function generateDiameterChart(latestByPlot, biometrics, statuses) {
-    const ctx = document.getElementById('chartDiameter');
-    if (!ctx) return;
+function generateDiameterChart(latestByPlot, biometrics, statuses) {
+  console.log('📏 DIÂMETRO CHAMADA - latestByPlot:', Object.keys(latestByPlot).length, 'biometrics:', biometrics.length, 'statuses:', statuses.length);
+  
+  const ctx = document.getElementById('chartDiameter');
+  console.log('📏 DIÂMETRO - ctx encontrado?', ctx);
+  if (!ctx) return;
 
     const statusMap = {};
     statuses.forEach(s => {
