@@ -5,6 +5,7 @@
   window.renderChartsPage = renderChartsPage;
 
   let chartInstances = {}; // Armazena instâncias dos gráficos para destruir ao re-renderizar
+  let cachedData = null; // Cache dos dados para não recarregar ao trocar filtros
 
   function renderChartsPage(container) {
     const experiment = window.currentExperiment || null;
@@ -55,7 +56,7 @@
             📏 Evolução da altura média por tratamento
           </div>
           <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-            Altura média das plantas ao longo do tempo, agrupada por parcela (tratamento).
+            Altura média das plantas ao longo do tempo, agrupada por tratamento.
           </p>
           <div style="position:relative; height:300px;">
             <canvas id="chartHeight"></canvas>
@@ -68,7 +69,7 @@
             🌿 Taxa de sobrevivência por tratamento
           </div>
           <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-            Percentual de plantas vivas em relação ao total plantado, por parcela.
+            Percentual de plantas vivas em relação ao total plantado.
           </p>
           <div style="position:relative; height:300px;">
             <canvas id="chartSurvival"></canvas>
@@ -84,7 +85,7 @@
               ❤️ Sanidade média por tratamento
             </div>
             <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-              Nota média de sanidade (1-5) das plantas por parcela.
+              Nota média de sanidade (1-5) das plantas.
             </p>
             <div style="position:relative; height:260px;">
               <canvas id="chartSanity"></canvas>
@@ -97,7 +98,7 @@
               ⭕ Diâmetro médio do caule
             </div>
             <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-              Média dos três diâmetros medidos, por tratamento.
+              Média dos três diâmetros medidos.
             </p>
             <div style="position:relative; height:260px;">
               <canvas id="chartDiameter"></canvas>
@@ -105,11 +106,72 @@
           </div>
 
         </div>
+
+        <!-- Gráfico combinado personalizável -->
+        <div class="card" style="margin-top:16px;">
+          <div style="font-size:16px; font-weight:700; color:#065f46; margin-bottom:12px;">
+            🌦️ Gráfico combinado: Planta × Clima
+          </div>
+          
+          <!-- Seletores -->
+          <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; align-items:end;">
+            <div style="flex:1 1 200px;">
+              <label style="font-size:13px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">
+                Métrica da planta
+              </label>
+              <select id="selectPlantMetric" style="width:100%; padding:8px; border-radius:8px; border:1px solid #d1d5db; font-size:14px;">
+                <option value="height">📏 Altura média (cm)</option>
+                <option value="survival">🌿 Taxa de sobrevivência (%)</option>
+                <option value="sanity">❤️ Sanidade (1-5)</option>
+                <option value="diameter">⭕ Diâmetro do caule (cm)</option>
+              </select>
+            </div>
+
+            <div style="flex:1 1 200px;">
+              <label style="font-size:13px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">
+                Variável climática
+              </label>
+              <select id="selectClimateVar" style="width:100%; padding:8px; border-radius:8px; border:1px solid #d1d5db; font-size:14px;">
+                <option value="precip_accum">🌧️ Precipitação acumulada (mm)</option>
+                <option value="temp_avg">🌡️ Temperatura média (°C)</option>
+                <option value="temp_max">🔥 Temperatura máxima (°C)</option>
+                <option value="temp_min">❄️ Temperatura mínima (°C)</option>
+                <option value="humidity">💧 Umidade relativa média (%)</option>
+              </select>
+            </div>
+
+            <button id="btnUpdateComboChart" class="btn-primary" style="width:auto; padding:8px 20px; height:38px;">
+              Atualizar gráfico
+            </button>
+          </div>
+
+          <!-- Canvas do gráfico combinado -->
+          <div style="position:relative; height:350px;">
+            <canvas id="chartCombo"></canvas>
+          </div>
+        </div>
+
       ` : ''}
     `;
 
     if (experiment) {
       loadChartsData(experiment.id);
+      
+      // Event listener para atualizar gráfico combinado
+      const btnUpdate = document.getElementById('btnUpdateComboChart');
+      if (btnUpdate) {
+        btnUpdate.addEventListener('click', () => {
+          if (cachedData) {
+            generateComboChart(
+              cachedData.latestByPlot,
+              cachedData.biometrics,
+              cachedData.statuses,
+              cachedData.allMonitorings,
+              cachedData.experimentId
+            );
+          }
+        });
+      }
     }
   }
 
@@ -159,27 +221,36 @@
 
       if (statusError) throw statusError;
 
+      // Cachear dados
+      cachedData = {
+        latestByPlot,
+        biometrics,
+        statuses,
+        allMonitorings,
+        experimentId
+      };
+
       // Processar dados
       generateHeightChart(allMonitorings, biometrics);
       generateSurvivalChart(latestByPlot, biometrics, statuses);
       generateSanityChart(latestByPlot, biometrics, statuses);
       generateDiameterChart(latestByPlot, biometrics, statuses);
+      generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId);
 
     } catch (err) {
       console.error("Erro ao carregar dados dos gráficos:", err);
     }
   }
 
-      // Gráfico 1: Evolução da altura ao longo do tempo
+  // Gráfico 1: Evolução da altura ao longo do tempo
   function generateHeightChart(monitorings, biometrics) {
     const ctx = document.getElementById('chartHeight');
     if (!ctx) return;
 
-    // Agrupar por TRATAMENTO (plot_code) e data, ignorando blocos
     const dataByTreatment = {};
 
     monitorings.forEach(mon => {
-      const treatmentKey = mon.plot_code; // Apenas o código do tratamento
+      const treatmentKey = mon.plot_code;
       
       if (!dataByTreatment[treatmentKey]) {
         dataByTreatment[treatmentKey] = {};
@@ -195,7 +266,6 @@
       if (plantsBio.length > 0) {
         const avgHeight = plantsBio.reduce((sum, b) => sum + b.height_cm, 0) / plantsBio.length;
         
-        // Agrupar por data (mesmo tratamento, mesma data, diferentes blocos)
         if (!dataByTreatment[treatmentKey][mon.monitoring_date]) {
           dataByTreatment[treatmentKey][mon.monitoring_date] = [];
         }
@@ -203,7 +273,6 @@
       }
     });
 
-    // Calcular média entre blocos para cada tratamento e data
     const finalData = {};
     
     Object.keys(dataByTreatment).forEach(treatment => {
@@ -219,18 +288,15 @@
         });
       });
       
-      // Ordenar por data
       finalData[treatment].sort((a, b) => new Date(a.date) - new Date(b.date));
     });
 
-    // Preparar datasets (cores variadas)
     const colors = [
       '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
       '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
       '#84cc16', '#f43f5e'
     ];
 
-    // Ordenar tratamentos numericamente
     const sortedTreatments = Object.keys(finalData).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
@@ -277,6 +343,7 @@
       }
     });
   }
+
   // Gráfico 2: Taxa de sobrevivência por tratamento
   function generateSurvivalChart(latestByPlot, biometrics, statuses) {
     const ctx = document.getElementById('chartSurvival');
@@ -288,7 +355,6 @@
       statusMap[key] = s.status;
     });
 
-    // Agrupar por tratamento
     const dataByTreatment = {};
 
     Object.values(latestByPlot).forEach(mon => {
@@ -308,10 +374,9 @@
       }).length;
 
       dataByTreatment[treatment].alive += alivePlants;
-      dataByTreatment[treatment].total += 9; // 9 plantas por parcela
+      dataByTreatment[treatment].total += 9;
     });
 
-    // Calcular taxa de sobrevivência por tratamento
     const survivalData = [];
 
     Object.keys(dataByTreatment).forEach(treatment => {
@@ -320,7 +385,6 @@
       survivalData.push({ label: treatment, rate: survivalRate });
     });
 
-    // Ordenar numericamente
     survivalData.sort((a, b) => {
       const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
@@ -362,21 +426,11 @@
     });
   }
 
-    // Gráfico 3: Sanidade média por tratamento
-function generateSanityChart(latestByPlot, biometrics, statuses) {
-  console.log('🩺 SANIDADE CHAMADA - latestByPlot:', Object.keys(latestByPlot).length, 'biometrics:', biometrics.length, 'statuses:', statuses.length);
-  
-  const ctx = document.getElementById('chartSanity');
-  console.log('🩺 SANIDADE - ctx encontrado?', ctx);
-  if (!ctx) return;
+  // Gráfico 3: Sanidade média por tratamento
+  function generateSanityChart(latestByPlot, biometrics, statuses) {
+    const ctx = document.getElementById('chartSanity');
+    if (!ctx) return;
 
-    const statusMap = {};
-    statuses.forEach(s => {
-      const key = `${s.monitoring_event_id}_${s.plant_position}`;
-      statusMap[key] = s.status;
-    });
-
-    // Agrupar por tratamento
     const dataByTreatment = {};
 
     Object.values(latestByPlot).forEach(mon => {
@@ -388,22 +442,17 @@ function generateSanityChart(latestByPlot, biometrics, statuses) {
 
       const plantsBio = biometrics.filter(b => 
         b.monitoring_event_id === mon.id &&
-        b.has_sprouted === true
+        b.has_sprouted === true &&
+        b.sanity_score != null &&
+        b.sanity_score > 0
       );
 
-      const alivePlants = plantsBio.filter(b => {
-        const key = `${b.monitoring_event_id}_${b.plant_position}`;
-        const status = statusMap[key];
-        return (!status || status === 'alive') && b.sanity_score != null && b.sanity_score > 0;
-      });
-
-      if (alivePlants.length > 0) {
-        const avgSanity = alivePlants.reduce((sum, b) => sum + b.sanity_score, 0) / alivePlants.length;
+      if (plantsBio.length > 0) {
+        const avgSanity = plantsBio.reduce((sum, b) => sum + b.sanity_score, 0) / plantsBio.length;
         dataByTreatment[treatment].push(avgSanity);
       }
     });
 
-    // Calcular média entre blocos
     const sanityData = [];
     Object.keys(dataByTreatment).forEach(treatment => {
       const values = dataByTreatment[treatment];
@@ -413,12 +462,13 @@ function generateSanityChart(latestByPlot, biometrics, statuses) {
       }
     });
 
-    // Ordenar numericamente
     sanityData.sort((a, b) => {
       const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
       return numA - numB;
     });
+
+    if (sanityData.length === 0) return;
 
     chartInstances.sanity = new Chart(ctx, {
       type: 'bar',
@@ -449,20 +499,10 @@ function generateSanityChart(latestByPlot, biometrics, statuses) {
   }
 
   // Gráfico 4: Diâmetro médio por tratamento
-function generateDiameterChart(latestByPlot, biometrics, statuses) {
-  console.log('📏 DIÂMETRO CHAMADA - latestByPlot:', Object.keys(latestByPlot).length, 'biometrics:', biometrics.length, 'statuses:', statuses.length);
-  
-  const ctx = document.getElementById('chartDiameter');
-  console.log('📏 DIÂMETRO - ctx encontrado?', ctx);
-  if (!ctx) return;
+  function generateDiameterChart(latestByPlot, biometrics, statuses) {
+    const ctx = document.getElementById('chartDiameter');
+    if (!ctx) return;
 
-    const statusMap = {};
-    statuses.forEach(s => {
-      const key = `${s.monitoring_event_id}_${s.plant_position}`;
-      statusMap[key] = s.status;
-    });
-
-    // Agrupar por tratamento
     const dataByTreatment = {};
 
     Object.values(latestByPlot).forEach(mon => {
@@ -474,24 +514,19 @@ function generateDiameterChart(latestByPlot, biometrics, statuses) {
 
       const plantsBio = biometrics.filter(b => 
         b.monitoring_event_id === mon.id &&
-        b.has_sprouted === true
-      );
-
-      const alivePlants = plantsBio.filter(b => {
-        const key = `${b.monitoring_event_id}_${b.plant_position}`;
-        const status = statusMap[key];
-        return (!status || status === 'alive') && (
+        b.has_sprouted === true &&
+        (
           (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
           (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
           (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
-        );
-      });
+        )
+      );
 
-      if (alivePlants.length > 0) {
+      if (plantsBio.length > 0) {
         let totalDiameters = 0;
         let diameterCount = 0;
         
-        alivePlants.forEach(b => {
+        plantsBio.forEach(b => {
           if (b.stem_diameter_1_cm && b.stem_diameter_1_cm > 0) { 
             totalDiameters += b.stem_diameter_1_cm; 
             diameterCount++; 
@@ -513,7 +548,6 @@ function generateDiameterChart(latestByPlot, biometrics, statuses) {
       }
     });
 
-    // Calcular média entre blocos
     const diameterData = [];
     Object.keys(dataByTreatment).forEach(treatment => {
       const values = dataByTreatment[treatment];
@@ -523,12 +557,13 @@ function generateDiameterChart(latestByPlot, biometrics, statuses) {
       }
     });
 
-    // Ordenar numericamente
     diameterData.sort((a, b) => {
       const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
       return numA - numB;
     });
+
+    if (diameterData.length === 0) return;
 
     chartInstances.diameter = new Chart(ctx, {
       type: 'bar',
@@ -557,6 +592,334 @@ function generateDiameterChart(latestByPlot, biometrics, statuses) {
     });
   }
 
+  // Gráfico 5: Combinado personalizável
+  async function generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId) {
+    const ctx = document.getElementById('chartCombo');
+    if (!ctx) return;
+
+    // Destruir gráfico anterior
+    if (chartInstances.combo) {
+      chartInstances.combo.destroy();
+    }
+
+    const plantMetric = document.getElementById('selectPlantMetric')?.value || 'height';
+    const climateVar = document.getElementById('selectClimateVar')?.value || 'precip_accum';
+
+    // 1) Obter dados da planta
+    const plantData = getPlantMetricData(plantMetric, latestByPlot, biometrics, statuses, allMonitorings);
+    if (!plantData || plantData.length === 0) return;
+
+    // 2) Obter dados climáticos
+    const climateData = await getClimateData(climateVar, experimentId);
+
+    // 3) Configurar eixos e labels
+    const config = getMetricConfig(plantMetric, climateVar);
+
+    // 4) Criar datasets
+    const datasets = [
+      {
+        type: 'bar',
+        label: config.plantLabel,
+        data: plantData.map(d => d.value),
+        backgroundColor: config.plantColor,
+        borderRadius: 6,
+        yAxisID: 'y'
+      }
+    ];
+
+    if (climateData !== null) {
+      datasets.push({
+        type: 'line',
+        label: config.climateLabel,
+        data: plantData.map(() => climateData),
+        borderColor: config.climateColor,
+        backgroundColor: 'transparent',
+        borderWidth: 3,
+        tension: 0.3,
+        yAxisID: 'y1',
+        pointRadius: 5,
+        pointBackgroundColor: config.climateColor
+      });
+    }
+
+    // 5) Criar gráfico
+    chartInstances.combo = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: plantData.map(d => d.label),
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            beginAtZero: config.plantBeginAtZero,
+            max: config.plantMax,
+            title: { display: true, text: config.plantAxisLabel }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            beginAtZero: config.climateBeginAtZero,
+            title: { display: true, text: config.climateAxisLabel },
+            grid: { drawOnChartArea: false }
+          }
+        },
+        plugins: {
+          legend: { display: true, position: 'top' }
+        }
+      }
+    });
+  }
+
+  // Helper: Obter dados da métrica da planta
+  function getPlantMetricData(metric, latestByPlot, biometrics, statuses, allMonitorings) {
+    const dataByTreatment = {};
+
+    if (metric === 'height') {
+      // Média da última altura por tratamento
+      Object.values(latestByPlot).forEach(mon => {
+        const treatment = mon.plot_code;
+        if (!dataByTreatment[treatment]) dataByTreatment[treatment] = [];
+
+        const plantsBio = biometrics.filter(b => 
+          b.monitoring_event_id === mon.id &&
+          b.has_sprouted === true &&
+          b.height_cm != null &&
+          b.height_cm > 0
+        );
+
+        if (plantsBio.length > 0) {
+          const avg = plantsBio.reduce((sum, b) => sum + b.height_cm, 0) / plantsBio.length;
+          dataByTreatment[treatment].push(avg);
+        }
+      });
+
+    } else if (metric === 'survival') {
+      // Taxa de sobrevivência
+      const statusMap = {};
+      statuses.forEach(s => {
+        const key = `${s.monitoring_event_id}_${s.plant_position}`;
+        statusMap[key] = s.status;
+      });
+
+      Object.values(latestByPlot).forEach(mon => {
+        const treatment = mon.plot_code;
+        if (!dataByTreatment[treatment]) dataByTreatment[treatment] = { alive: 0, total: 0 };
+
+        const plantsBio = biometrics.filter(b => b.monitoring_event_id === mon.id);
+        const sproutedPlants = plantsBio.filter(b => b.has_sprouted === true);
+        
+        const alivePlants = sproutedPlants.filter(b => {
+          const key = `${b.monitoring_event_id}_${b.plant_position}`;
+          const status = statusMap[key];
+          return !status || status === 'alive';
+        }).length;
+
+        dataByTreatment[treatment].alive += alivePlants;
+        dataByTreatment[treatment].total += 9;
+      });
+
+    } else if (metric === 'sanity') {
+      // Sanidade média
+      Object.values(latestByPlot).forEach(mon => {
+        const treatment = mon.plot_code;
+        if (!dataByTreatment[treatment]) dataByTreatment[treatment] = [];
+
+        const plantsBio = biometrics.filter(b => 
+          b.monitoring_event_id === mon.id &&
+          b.has_sprouted === true &&
+          b.sanity_score != null &&
+          b.sanity_score > 0
+        );
+
+        if (plantsBio.length > 0) {
+          const avg = plantsBio.reduce((sum, b) => sum + b.sanity_score, 0) / plantsBio.length;
+          dataByTreatment[treatment].push(avg);
+        }
+      });
+
+    } else if (metric === 'diameter') {
+      // Diâmetro médio
+      Object.values(latestByPlot).forEach(mon => {
+        const treatment = mon.plot_code;
+        if (!dataByTreatment[treatment]) dataByTreatment[treatment] = [];
+
+        const plantsBio = biometrics.filter(b => 
+          b.monitoring_event_id === mon.id &&
+          b.has_sprouted === true &&
+          (
+            (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
+            (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
+            (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
+          )
+        );
+
+        if (plantsBio.length > 0) {
+          let totalDiameters = 0;
+          let diameterCount = 0;
+          
+          plantsBio.forEach(b => {
+            if (b.stem_diameter_1_cm && b.stem_diameter_1_cm > 0) { 
+              totalDiameters += b.stem_diameter_1_cm; 
+              diameterCount++; 
+            }
+            if (b.stem_diameter_2_cm && b.stem_diameter_2_cm > 0) { 
+              totalDiameters += b.stem_diameter_2_cm; 
+              diameterCount++; 
+            }
+            if (b.stem_diameter_3_cm && b.stem_diameter_3_cm > 0) { 
+              totalDiameters += b.stem_diameter_3_cm; 
+              diameterCount++; 
+            }
+          });
+
+          if (diameterCount > 0) {
+            dataByTreatment[treatment].push(totalDiameters / diameterCount);
+          }
+        }
+      });
+    }
+
+    // Converter para array
+    const result = [];
+    Object.keys(dataByTreatment).forEach(treatment => {
+      const values = dataByTreatment[treatment];
+      
+      if (metric === 'survival') {
+        const { alive, total } = values;
+        const rate = (alive / total) * 100;
+        result.push({ label: treatment, value: rate });
+      } else if (Array.isArray(values) && values.length > 0) {
+        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+        result.push({ label: treatment, value: avg });
+      }
+    });
+
+    // Ordenar
+    result.sort((a, b) => {
+      const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+
+    return result;
+  }
+
+  // Helper: Obter dados climáticos
+  async function getClimateData(climateVar, experimentId) {
+    try {
+      const { data, error } = await s
+        .from("climate_data")
+        .select("observation_date, precipitation_mm, temp_max_c, temp_min_c, humidity_percent")
+        .eq("experiment_id", experimentId)
+        .order("observation_date", { ascending: true });
+
+      if (error || !data || data.length === 0) return null;
+
+      if (climateVar === 'precip_accum') {
+        return data.reduce((sum, d) => sum + (d.precipitation_mm || 0), 0);
+      } else if (climateVar === 'temp_avg') {
+        const temps = data.map(d => ((d.temp_max_c || 0) + (d.temp_min_c || 0)) / 2);
+        return temps.reduce((sum, t) => sum + t, 0) / temps.length;
+      } else if (climateVar === 'temp_max') {
+        const temps = data.map(d => d.temp_max_c || 0).filter(t => t > 0);
+        return temps.reduce((sum, t) => sum + t, 0) / temps.length;
+      } else if (climateVar === 'temp_min') {
+        const temps = data.map(d => d.temp_min_c || 0).filter(t => t > 0);
+        return temps.reduce((sum, t) => sum + t, 0) / temps.length;
+      } else if (climateVar === 'humidity') {
+        const humidity = data.map(d => d.humidity_percent || 0).filter(h => h > 0);
+        return humidity.reduce((sum, h) => sum + h, 0) / humidity.length;
+      }
+
+      return null;
+    } catch (err) {
+      console.error("Erro ao buscar dados climáticos:", err);
+      return null;
+    }
+  }
+
+  // Helper: Configuração de labels e cores
+  function getMetricConfig(plantMetric, climateVar) {
+    const configs = {
+      height: {
+        plantLabel: 'Altura média (cm)',
+        plantAxisLabel: 'Altura (cm)',
+        plantColor: '#10b981',
+        plantBeginAtZero: true,
+        plantMax: null
+      },
+      survival: {
+        plantLabel: 'Taxa de sobrevivência (%)',
+        plantAxisLabel: 'Sobrevivência (%)',
+        plantColor: '#10b981',
+        plantBeginAtZero: true,
+        plantMax: 100
+      },
+      sanity: {
+        plantLabel: 'Sanidade média',
+        plantAxisLabel: 'Sanidade (1-5)',
+        plantColor: '#ec4899',
+        plantBeginAtZero: true,
+        plantMax: 5
+      },
+      diameter: {
+        plantLabel: 'Diâmetro médio (cm)',
+        plantAxisLabel: 'Diâmetro (cm)',
+        plantColor: '#3b82f6',
+        plantBeginAtZero: true,
+        plantMax: null
+      }
+    };
+
+    const climateConfigs = {
+      precip_accum: {
+        climateLabel: 'Precipitação acumulada (mm)',
+        climateAxisLabel: 'Precipitação (mm)',
+        climateColor: '#3b82f6',
+        climateBeginAtZero: true
+      },
+      temp_avg: {
+        climateLabel: 'Temperatura média (°C)',
+        climateAxisLabel: 'Temperatura (°C)',
+        climateColor: '#f59e0b',
+        climateBeginAtZero: false
+      },
+      temp_max: {
+        climateLabel: 'Temperatura máxima (°C)',
+        climateAxisLabel: 'Temp. máxima (°C)',
+        climateColor: '#ef4444',
+        climateBeginAtZero: false
+      },
+      temp_min: {
+        climateLabel: 'Temperatura mínima (°C)',
+        climateAxisLabel: 'Temp. mínima (°C)',
+        climateColor: '#06b6d4',
+        climateBeginAtZero: false
+      },
+      humidity: {
+        climateLabel: 'Umidade relativa média (%)',
+        climateAxisLabel: 'Umidade (%)',
+        climateColor: '#8b5cf6',
+        climateBeginAtZero: true
+      }
+    };
+
+    return {
+      ...configs[plantMetric],
+      ...climateConfigs[climateVar]
+    };
+  }
 
   function escapeHtml(str) {
     if (!str) return "";
