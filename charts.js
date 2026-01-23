@@ -1,11 +1,21 @@
 // charts.js
-// Página de Gráficos – visão geral do experimento (placeholder)
+// Página de Gráficos – visualizações interativas do experimento
 
 (function () {
   window.renderChartsPage = renderChartsPage;
 
+  let chartInstances = {}; // Armazena instâncias dos gráficos para destruir ao re-renderizar
+
   function renderChartsPage(container) {
     const experiment = window.currentExperiment || null;
+
+    // Destruir gráficos antigos
+    Object.values(chartInstances).forEach(chart => {
+      if (chart && typeof chart.destroy === 'function') {
+        chart.destroy();
+      }
+    });
+    chartInstances = {};
 
     container.innerHTML = `
       <div class="content-header">
@@ -25,7 +35,7 @@
               Experimento <strong>${escapeHtml(experiment.code || "")}</strong> ·
               ${escapeHtml(experiment.name || "Sem nome")}<br>
               <span style="font-size:12px; color:#6b7280;">
-                Use os filtros abaixo para combinar métricas de monitoramento manual, drone, colheita e clima.
+                Gráficos gerados automaticamente a partir dos dados de monitoramento manual, drone e clima.
               </span>
             `
                 : `
@@ -35,157 +45,424 @@
             `
             }
           </div>
-          <button class="btn-primary" style="width:auto; padding-inline:18px;" disabled>
-            Exportar gráficos (em desenvolvimento)
-          </button>
         </div>
       </div>
 
-      <!-- Filtros principais -->
-      <div class="card">
-        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:8px;">
-          Filtros de visualização (em desenvolvimento)
-        </div>
-
-        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:13px; color:#374151;">
-          <div style="flex:1 1 180px;">
-            <label>Métrica principal</label>
-            <select disabled>
-              <option>Altura média</option>
-              <option>Índice de cobertura</option>
-              <option>Sanidade (notas)</option>
-              <option>Plantas brotadas/vivas</option>
-              <option>Plantas tombadas</option>
-              <option>Peso de colheita (kg)</option>
-              <option>Nº raízes comerciais</option>
-              <option>NDVI (drone)</option>
-              <option>Precipitação / temperatura</option>
-            </select>
+      ${experiment ? `
+        <!-- Gráfico 1: Evolução da altura média -->
+        <div class="card">
+          <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+            📏 Evolução da altura média por tratamento
           </div>
-
-          <div style="flex:1 1 180px;">
-            <label>Quebra por</label>
-            <select disabled>
-              <option>Tratamento</option>
-              <option>Bloco</option>
-              <option>Parcela</option>
-              <option>Época de avaliação</option>
-            </select>
-          </div>
-
-          <div style="flex:1 1 180px;">
-            <label>Período</label>
-            <select disabled>
-              <option>Ciclo completo</option>
-              <option>Implantação</option>
-              <option>Desenvolvimento vegetativo</option>
-              <option>Formação de raízes</option>
-              <option>Pós-colheita</option>
-            </select>
-          </div>
-
-          <div style="flex:1 1 200px;">
-            <label>Tipo de gráfico</label>
-            <select disabled>
-              <option>Linhas (evolução no tempo)</option>
-              <option>Barras (comparação entre tratamentos)</option>
-              <option>Boxplot simplificado</option>
-              <option>Dispersão (2 variáveis)</option>
-            </select>
+          <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
+            Altura média das plantas ao longo do tempo, agrupada por parcela (tratamento).
+          </p>
+          <div style="position:relative; height:300px;">
+            <canvas id="chartHeight"></canvas>
           </div>
         </div>
 
-        <div style="margin-top:8px; font-size:12px; color:#6b7280;">
-          No futuro, estes filtros vão acionar consultas no banco de dados para gerar gráficos automaticamente,
-          sem necessidade de exportar planilhas para outros softwares.
-        </div>
-      </div>
-
-      <!-- Área de gráfico principal -->
-      <div class="card">
-        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Gráfico principal (em desenvolvimento)
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Área destinada ao gráfico principal da métrica selecionada, por exemplo:
-          altura média × dias após o plantio, comparando tratamentos.
-        </p>
-
-        <div style="
-          border-radius:12px;
-          border:1px dashed #d1d5db;
-          background:#f9fafb;
-          height:260px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          color:#9ca3af;
-          font-size:13px;
-        ">
-          Placeholder de gráfico<br>
-          <span style="font-size:12px;">
-            (Linha do tempo / barras / dispersão, conforme filtros)
-          </span>
-        </div>
-      </div>
-
-      <!-- Combinações de métricas -->
-      <div class="card">
-        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-          Combinações de métricas (em desenvolvimento)
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Exemplos de análises que esta aba poderá gerar:
-        </p>
-
-        <ul style="font-size:13px; color:#4b5563; padding-left:18px; margin-bottom:8px;">
-          <li>Altura da cultura × precipitação acumulada no período.</li>
-          <li>Índice de tombamento × intensidade de vento (se houver) ou eventos de chuva forte.</li>
-          <li>NDVI médio × produtividade (kg por parcela) por tratamento.</li>
-          <li>Sanidade (nota) × número de intervenções fitossanitárias.</li>
-        </ul>
-
-        <div style="
-          display:grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap:10px;
-        ">
-          <div style="
-            border-radius:10px;
-            border:1px solid #e5e7eb;
-            padding:10px;
-            background:#ffffff;
-            font-size:12px;
-            color:#374151;
-          ">
-            <strong>Gráfico 1 – Desenvolvimento</strong><br>
-            Placeholder para gráfico de altura / cobertura ao longo do tempo, por tratamento.
+        <!-- Gráfico 2: Taxa de sobrevivência -->
+        <div class="card">
+          <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+            🌿 Taxa de sobrevivência por tratamento
           </div>
-          <div style="
-            border-radius:10px;
-            border:1px solid #e5e7eb;
-            padding:10px;
-            background:#ffffff;
-            font-size:12px;
-            color:#374151;
-          ">
-            <strong>Gráfico 2 – Produção</strong><br>
-            Placeholder para gráfico de peso de colheita e raízes comerciais, por tratamento e bloco.
-          </div>
-          <div style="
-            border-radius:10px;
-            border:1px solid #e5e7eb;
-            padding:10px;
-            background:#ffffff;
-            font-size:12px;
-            color:#374151;
-          ">
-            <strong>Gráfico 3 – Integração clima × planta</strong><br>
-            Placeholder para gráfico relacionando chuva/temperatura com desempenho da cultura.
+          <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
+            Percentual de plantas vivas em relação ao total plantado, por parcela.
+          </p>
+          <div style="position:relative; height:300px;">
+            <canvas id="chartSurvival"></canvas>
           </div>
         </div>
-      </div>
+
+        <!-- Grid com 2 gráficos -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:16px;">
+          
+          <!-- Gráfico 3: Distribuição de sanidade -->
+          <div class="card">
+            <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+              ❤️ Sanidade média por tratamento
+            </div>
+            <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
+              Nota média de sanidade (1-5) das plantas por parcela.
+            </p>
+            <div style="position:relative; height:260px;">
+              <canvas id="chartSanity"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 4: Diâmetro médio -->
+          <div class="card">
+            <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+              ⭕ Diâmetro médio do caule
+            </div>
+            <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
+              Média dos três diâmetros medidos, por tratamento.
+            </p>
+            <div style="position:relative; height:260px;">
+              <canvas id="chartDiameter"></canvas>
+            </div>
+          </div>
+
+        </div>
+      ` : ''}
     `;
+
+    if (experiment) {
+      loadChartsData(experiment.id);
+    }
+  }
+
+  // Carregar dados e gerar gráficos
+  async function loadChartsData(experimentId) {
+    if (typeof s === "undefined") {
+      console.error("Supabase client não disponível");
+      return;
+    }
+
+    try {
+      // 1) Buscar todos os monitoramentos
+      const { data: allMonitorings, error: monError } = await s
+        .from("monitoring_events")
+        .select("id, plot_code, block_number, monitoring_date")
+        .eq("experiment_id", experimentId)
+        .order("monitoring_date", { ascending: true });
+
+      if (monError) throw monError;
+      if (!allMonitorings || !allMonitorings.length) return;
+
+      // Pegar apenas últimos monitoramentos por parcela
+      const latestByPlot = {};
+      [...allMonitorings].reverse().forEach(m => {
+        const key = `${m.block_number}_${m.plot_code}`;
+        if (!latestByPlot[key]) {
+          latestByPlot[key] = m;
+        }
+      });
+
+      const allMonitoringIds = allMonitorings.map(m => m.id);
+      const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
+
+      // 2) Buscar biometrias
+      const { data: biometrics, error: bioError } = await s
+        .from("plant_biometrics")
+        .select("*")
+        .in("monitoring_event_id", allMonitoringIds);
+
+      if (bioError) throw bioError;
+
+      // 3) Buscar status das plantas
+      const { data: statuses, error: statusError } = await s
+        .from("plant_status")
+        .select("*")
+        .in("monitoring_event_id", latestMonitoringIds);
+
+      if (statusError) throw statusError;
+
+      // Processar dados
+      generateHeightChart(allMonitorings, biometrics);
+      generateSurvivalChart(latestByPlot, biometrics, statuses);
+      generateSanityChart(latestByPlot, biometrics, statuses);
+      generateDiameterChart(latestByPlot, biometrics, statuses);
+
+    } catch (err) {
+      console.error("Erro ao carregar dados dos gráficos:", err);
+    }
+  }
+
+  // Gráfico 1: Evolução da altura ao longo do tempo
+  function generateHeightChart(monitorings, biometrics) {
+    const ctx = document.getElementById('chartHeight');
+    if (!ctx) return;
+
+    // Agrupar por parcela e data
+    const dataByPlot = {};
+
+    monitorings.forEach(mon => {
+      const plotKey = `${mon.plot_code} (B${mon.block_number})`;
+      if (!dataByPlot[plotKey]) {
+        dataByPlot[plotKey] = [];
+      }
+
+      const plantsBio = biometrics.filter(b => 
+        b.monitoring_event_id === mon.id && 
+        b.has_sprouted === true &&
+        b.height_cm != null &&
+        b.height_cm > 0
+      );
+
+      if (plantsBio.length > 0) {
+        const avgHeight = plantsBio.reduce((sum, b) => sum + b.height_cm, 0) / plantsBio.length;
+        dataByPlot[plotKey].push({
+          date: mon.monitoring_date,
+          height: avgHeight
+        });
+      }
+    });
+
+    // Preparar datasets
+    const colors = [
+      '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
+      '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1'
+    ];
+
+    const datasets = Object.keys(dataByPlot).slice(0, 10).map((plotKey, idx) => {
+      return {
+        label: plotKey,
+        data: dataByPlot[plotKey].map(d => ({ x: d.date, y: d.height })),
+        borderColor: colors[idx % colors.length],
+        backgroundColor: colors[idx % colors.length] + '20',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: false
+      };
+    });
+
+    chartInstances.height = new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'day', displayFormats: { day: 'DD/MM' } },
+            title: { display: true, text: 'Data do monitoramento' }
+          },
+          y: {
+            title: { display: true, text: 'Altura média (cm)' },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: { display: true, position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)} cm`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Gráfico 2: Taxa de sobrevivência por tratamento
+  function generateSurvivalChart(latestByPlot, biometrics, statuses) {
+    const ctx = document.getElementById('chartSurvival');
+    if (!ctx) return;
+
+    const statusMap = {};
+    statuses.forEach(s => {
+      const key = `${s.monitoring_event_id}_${s.plant_position}`;
+      statusMap[key] = s.status;
+    });
+
+    const survivalData = [];
+
+    Object.values(latestByPlot).forEach(mon => {
+      const plotLabel = `${mon.plot_code} (B${mon.block_number})`;
+      
+      const plantsBio = biometrics.filter(b => b.monitoring_event_id === mon.id);
+      const sproutedPlants = plantsBio.filter(b => b.has_sprouted === true);
+      
+      const alivePlants = sproutedPlants.filter(b => {
+        const key = `${b.monitoring_event_id}_${b.plant_position}`;
+        const status = statusMap[key];
+        return !status || status === 'alive';
+      }).length;
+
+      const totalPlants = 9;
+      const survivalRate = (alivePlants / totalPlants) * 100;
+
+      survivalData.push({ label: plotLabel, rate: survivalRate });
+    });
+
+    // Ordenar por taxa
+    survivalData.sort((a, b) => b.rate - a.rate);
+
+    chartInstances.survival = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: survivalData.map(d => d.label),
+        datasets: [{
+          label: 'Taxa de sobrevivência (%)',
+          data: survivalData.map(d => d.rate),
+          backgroundColor: survivalData.map(d => 
+            d.rate >= 80 ? '#10b981' : d.rate >= 60 ? '#f59e0b' : '#ef4444'
+          ),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            max: 100,
+            title: { display: true, text: 'Sobrevivência (%)' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.parsed.y.toFixed(1)}%`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Gráfico 3: Sanidade média
+  function generateSanityChart(latestByPlot, biometrics, statuses) {
+    const ctx = document.getElementById('chartSanity');
+    if (!ctx) return;
+
+    const statusMap = {};
+    statuses.forEach(s => {
+      const key = `${s.monitoring_event_id}_${s.plant_position}`;
+      statusMap[key] = s.status;
+    });
+
+    const sanityData = [];
+
+    Object.values(latestByPlot).forEach(mon => {
+      const plotLabel = `${mon.plot_code} (B${mon.block_number})`;
+      
+      const plantsBio = biometrics.filter(b => 
+        b.monitoring_event_id === mon.id &&
+        b.has_sprouted === true
+      );
+
+      const alivePlants = plantsBio.filter(b => {
+        const key = `${b.monitoring_event_id}_${b.plant_position}`;
+        const status = statusMap[key];
+        return (!status || status === 'alive') && b.sanity_score != null && b.sanity_score > 0;
+      });
+
+      if (alivePlants.length > 0) {
+        const avgSanity = alivePlants.reduce((sum, b) => sum + b.sanity_score, 0) / alivePlants.length;
+        sanityData.push({ label: plotLabel, sanity: avgSanity });
+      }
+    });
+
+    sanityData.sort((a, b) => b.sanity - a.sanity);
+
+    chartInstances.sanity = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sanityData.map(d => d.label),
+        datasets: [{
+          label: 'Sanidade média',
+          data: sanityData.map(d => d.sanity),
+          backgroundColor: '#ec4899',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { 
+            beginAtZero: true,
+            max: 5,
+            title: { display: true, text: 'Nota (1-5)' }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  // Gráfico 4: Diâmetro médio
+  function generateDiameterChart(latestByPlot, biometrics, statuses) {
+    const ctx = document.getElementById('chartDiameter');
+    if (!ctx) return;
+
+    const statusMap = {};
+    statuses.forEach(s => {
+      const key = `${s.monitoring_event_id}_${s.plant_position}`;
+      statusMap[key] = s.status;
+    });
+
+    const diameterData = [];
+
+    Object.values(latestByPlot).forEach(mon => {
+      const plotLabel = `${mon.plot_code} (B${mon.block_number})`;
+      
+      const plantsBio = biometrics.filter(b => 
+        b.monitoring_event_id === mon.id &&
+        b.has_sprouted === true
+      );
+
+      const alivePlants = plantsBio.filter(b => {
+        const key = `${b.monitoring_event_id}_${b.plant_position}`;
+        const status = statusMap[key];
+        return (!status || status === 'alive') && (
+          (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
+          (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
+          (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
+        );
+      });
+
+      if (alivePlants.length > 0) {
+        let totalDiameters = 0;
+        let diameterCount = 0;
+        
+        alivePlants.forEach(b => {
+          if (b.stem_diameter_1_cm && b.stem_diameter_1_cm > 0) { 
+            totalDiameters += b.stem_diameter_1_cm; 
+            diameterCount++; 
+          }
+          if (b.stem_diameter_2_cm && b.stem_diameter_2_cm > 0) { 
+            totalDiameters += b.stem_diameter_2_cm; 
+            diameterCount++; 
+          }
+          if (b.stem_diameter_3_cm && b.stem_diameter_3_cm > 0) { 
+            totalDiameters += b.stem_diameter_3_cm; 
+            diameterCount++; 
+          }
+        });
+
+        if (diameterCount > 0) {
+          const avgDiameter = totalDiameters / diameterCount;
+          diameterData.push({ label: plotLabel, diameter: avgDiameter });
+        }
+      }
+    });
+
+    diameterData.sort((a, b) => b.diameter - a.diameter);
+
+    chartInstances.diameter = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: diameterData.map(d => d.label),
+        datasets: [{
+          label: 'Diâmetro médio (cm)',
+          data: diameterData.map(d => d.diameter),
+          backgroundColor: '#3b82f6',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { 
+            beginAtZero: true,
+            title: { display: true, text: 'Diâmetro (cm)' }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
   }
 
   function escapeHtml(str) {
@@ -193,7 +470,7 @@
     return String(str)
       .replace(/&/g, "&amp;")
       .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;")
+      .replace(/'/g, "'")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
