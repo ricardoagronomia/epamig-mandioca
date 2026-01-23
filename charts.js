@@ -170,18 +170,19 @@
     }
   }
 
-  // Gráfico 1: Evolução da altura ao longo do tempo
+    // Gráfico 1: Evolução da altura ao longo do tempo
   function generateHeightChart(monitorings, biometrics) {
     const ctx = document.getElementById('chartHeight');
     if (!ctx) return;
 
-    // Agrupar por parcela e data
-    const dataByPlot = {};
+    // Agrupar por TRATAMENTO (plot_code) e data, ignorando blocos
+    const dataByTreatment = {};
 
     monitorings.forEach(mon => {
-      const plotKey = `${mon.plot_code} (B${mon.block_number})`;
-      if (!dataByPlot[plotKey]) {
-        dataByPlot[plotKey] = [];
+      const treatmentKey = mon.plot_code; // Apenas o código do tratamento
+      
+      if (!dataByTreatment[treatmentKey]) {
+        dataByTreatment[treatmentKey] = {};
       }
 
       const plantsBio = biometrics.filter(b => 
@@ -193,23 +194,49 @@
 
       if (plantsBio.length > 0) {
         const avgHeight = plantsBio.reduce((sum, b) => sum + b.height_cm, 0) / plantsBio.length;
-        dataByPlot[plotKey].push({
-          date: mon.monitoring_date,
-          height: avgHeight
-        });
+        
+        // Agrupar por data (mesmo tratamento, mesma data, diferentes blocos)
+        if (!dataByTreatment[treatmentKey][mon.monitoring_date]) {
+          dataByTreatment[treatmentKey][mon.monitoring_date] = [];
+        }
+        dataByTreatment[treatmentKey][mon.monitoring_date].push(avgHeight);
       }
     });
 
-    // Preparar datasets
+    // Calcular média entre blocos para cada tratamento e data
+    const finalData = {};
+    
+    Object.keys(dataByTreatment).forEach(treatment => {
+      finalData[treatment] = [];
+      
+      Object.keys(dataByTreatment[treatment]).forEach(date => {
+        const heights = dataByTreatment[treatment][date];
+        const avgAcrossBlocks = heights.reduce((sum, h) => sum + h, 0) / heights.length;
+        
+        finalData[treatment].push({
+          date: date,
+          height: avgAcrossBlocks
+        });
+      });
+      
+      // Ordenar por data
+      finalData[treatment].sort((a, b) => new Date(a.date) - new Date(b.date));
+    });
+
+    // Preparar datasets (cores variadas)
     const colors = [
       '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
-      '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1'
+      '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
+      '#84cc16', '#f43f5e'
     ];
 
-    const datasets = Object.keys(dataByPlot).slice(0, 10).map((plotKey, idx) => {
+    // Ordenar tratamentos alfabeticamente
+    const sortedTreatments = Object.keys(finalData).sort();
+
+    const datasets = sortedTreatments.map((treatment, idx) => {
       return {
-        label: plotKey,
-        data: dataByPlot[plotKey].map(d => ({ x: d.date, y: d.height })),
+        label: treatment,
+        data: finalData[treatment].map(d => ({ x: d.date, y: d.height })),
         borderColor: colors[idx % colors.length],
         backgroundColor: colors[idx % colors.length] + '20',
         borderWidth: 2,
