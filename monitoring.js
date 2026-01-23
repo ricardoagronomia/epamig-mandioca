@@ -137,31 +137,53 @@ async function loadMonitoringSummary(experimentId) {
     const bioData = biometrics || [];
     const statusData = statuses || [];
 
+    // ✅ CORRIGIDO: Criar mapa de status por monitoring_event_id + plant_position
+    const statusMap = {};
+    statusData.forEach(s => {
+      const key = `${s.monitoring_event_id}_${s.plant_position}`;
+      statusMap[key] = s.status;
+    });
+
     // Calcular plantas brotadas
     const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
     const totalSprouted = sproutedPlants.length;
     
-    // Contar plantas vivas (status 'alive')
-    const alivePlants = statusData.filter(s => s.status === 'alive').length;
+    // ✅ CORRIGIDO: Contar plantas vivas = brotadas E NÃO marcadas como mortas
+    const alivePlants = sproutedPlants.filter(b => {
+      const key = `${b.monitoring_event_id}_${b.plant_position}`;
+      const status = statusMap[key];
+      // Se não tem status OU status é 'alive', considera viva
+      // Se status é 'dead', considera morta
+      return !status || status === 'alive';
+    }).length;
     
-    // Se não tem status registrado, assumir que brotadas = vivas
-    const effectiveAlive = alivePlants > 0 ? alivePlants : totalSprouted;
     const alivePercentage = totalSprouted > 0 
-      ? ((effectiveAlive / totalSprouted) * 100).toFixed(1)
+      ? ((alivePlants / totalSprouted) * 100).toFixed(1)
       : "0.0";
 
-    // Altura média (apenas plantas com altura preenchida)
-    const plantsWithHeight = sproutedPlants.filter(b => b.height_cm != null && b.height_cm > 0);
+    // Altura média (apenas plantas VIVAS com altura preenchida)
+    const plantsWithHeight = sproutedPlants.filter(b => {
+      const key = `${b.monitoring_event_id}_${b.plant_position}`;
+      const status = statusMap[key];
+      const isAlive = !status || status === 'alive';
+      return isAlive && b.height_cm != null && b.height_cm > 0;
+    });
+    
     const avgHeight = plantsWithHeight.length > 0
       ? (plantsWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / plantsWithHeight.length).toFixed(1)
       : "–";
 
-    // Diâmetro médio (média dos 3 diâmetros)
-    const plantsWithDiameter = sproutedPlants.filter(b => 
-      (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
-      (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
-      (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
-    );
+    // Diâmetro médio (apenas plantas VIVAS)
+    const plantsWithDiameter = sproutedPlants.filter(b => {
+      const key = `${b.monitoring_event_id}_${b.plant_position}`;
+      const status = statusMap[key];
+      const isAlive = !status || status === 'alive';
+      return isAlive && (
+        (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
+        (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
+        (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
+      );
+    });
     
     let avgDiameter = "–";
     if (plantsWithDiameter.length > 0) {
@@ -188,8 +210,14 @@ async function loadMonitoringSummary(experimentId) {
       }
     }
 
-    // Sanidade média
-    const plantsWithSanity = sproutedPlants.filter(b => b.sanity_score != null && b.sanity_score > 0);
+    // Sanidade média (apenas plantas VIVAS)
+    const plantsWithSanity = sproutedPlants.filter(b => {
+      const key = `${b.monitoring_event_id}_${b.plant_position}`;
+      const status = statusMap[key];
+      const isAlive = !status || status === 'alive';
+      return isAlive && b.sanity_score != null && b.sanity_score > 0;
+    });
+    
     const avgSanity = plantsWithSanity.length > 0
       ? (plantsWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / plantsWithSanity.length).toFixed(1)
       : "–";
@@ -215,7 +243,7 @@ async function loadMonitoringSummary(experimentId) {
           </div>
           <div>
             <div style="font-size:18px; font-weight:600; color:#14532d;">${alivePercentage}%</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas (${alivePlants}/${totalSprouted})</div>
           </div>
         </div>
 
