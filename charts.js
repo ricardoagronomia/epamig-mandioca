@@ -277,7 +277,90 @@
       }
     });
   }
+  // Gráfico 2: Taxa de sobrevivência por tratamento
+  function generateSurvivalChart(latestByPlot, biometrics, statuses) {
+    const ctx = document.getElementById('chartSurvival');
+    if (!ctx) return;
 
+    const statusMap = {};
+    statuses.forEach(s => {
+      const key = `${s.monitoring_event_id}_${s.plant_position}`;
+      statusMap[key] = s.status;
+    });
+
+    // Agrupar por tratamento
+    const dataByTreatment = {};
+
+    Object.values(latestByPlot).forEach(mon => {
+      const treatment = mon.plot_code;
+      
+      if (!dataByTreatment[treatment]) {
+        dataByTreatment[treatment] = { alive: 0, total: 0 };
+      }
+
+      const plantsBio = biometrics.filter(b => b.monitoring_event_id === mon.id);
+      const sproutedPlants = plantsBio.filter(b => b.has_sprouted === true);
+      
+      const alivePlants = sproutedPlants.filter(b => {
+        const key = `${b.monitoring_event_id}_${b.plant_position}`;
+        const status = statusMap[key];
+        return !status || status === 'alive';
+      }).length;
+
+      dataByTreatment[treatment].alive += alivePlants;
+      dataByTreatment[treatment].total += 9; // 9 plantas por parcela
+    });
+
+    // Calcular taxa de sobrevivência por tratamento
+    const survivalData = [];
+
+    Object.keys(dataByTreatment).forEach(treatment => {
+      const { alive, total } = dataByTreatment[treatment];
+      const survivalRate = (alive / total) * 100;
+      survivalData.push({ label: treatment, rate: survivalRate });
+    });
+
+    // Ordenar numericamente
+    survivalData.sort((a, b) => {
+      const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+
+    chartInstances.survival = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: survivalData.map(d => d.label),
+        datasets: [{
+          label: 'Taxa de sobrevivência (%)',
+          data: survivalData.map(d => d.rate),
+          backgroundColor: survivalData.map(d => 
+            d.rate >= 80 ? '#10b981' : d.rate >= 60 ? '#f59e0b' : '#ef4444'
+          ),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            max: 100,
+            title: { display: true, text: 'Sobrevivência (%)' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.parsed.y.toFixed(1)}%`
+            }
+          }
+        }
+      }
+    });
+  }
 
   // Gráfico 3: Sanidade média
   function generateSanityChart(latestByPlot, biometrics, statuses) {
