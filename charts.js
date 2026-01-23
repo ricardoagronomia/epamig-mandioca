@@ -231,19 +231,11 @@
     ];
 
     // Ordenar tratamentos alfabeticamente
-    const sortedTreatments = Object.keys(finalData).sort();
-
-    const datasets = sortedTreatments.map((treatment, idx) => {
-      return {
-        label: treatment,
-        data: finalData[treatment].map(d => ({ x: d.date, y: d.height })),
-        borderColor: colors[idx % colors.length],
-        backgroundColor: colors[idx % colors.length] + '20',
-        borderWidth: 2,
-        tension: 0.3,
-        fill: false
-      };
-    });
+    const sortedTreatments = Object.keys(finalData).sort((a, b) => {
+  const numA = parseInt(a.replace(/\D/g, '')) || 0;
+  const numB = parseInt(b.replace(/\D/g, '')) || 0;
+  return numA - numB;
+});
 
     chartInstances.height = new Chart(ctx, {
       type: 'line',
