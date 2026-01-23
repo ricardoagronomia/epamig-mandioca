@@ -227,7 +227,7 @@
         scales: {
           x: {
             type: 'time',
-            time: { unit: 'day', displayFormats: { day: 'DD/MM' } },
+            time: { unit: 'day', displayFormats: { day: 'dd/MM' } },
             title: { display: true, text: 'Data do monitoramento' }
           },
           y: {
