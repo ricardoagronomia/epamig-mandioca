@@ -362,7 +362,7 @@
     });
   }
 
-  // Gráfico 3: Sanidade média
+    // Gráfico 3: Sanidade média por tratamento
   function generateSanityChart(latestByPlot, biometrics, statuses) {
     const ctx = document.getElementById('chartSanity');
     if (!ctx) return;
@@ -373,11 +373,16 @@
       statusMap[key] = s.status;
     });
 
-    const sanityData = [];
+    // Agrupar por tratamento
+    const dataByTreatment = {};
 
     Object.values(latestByPlot).forEach(mon => {
-      const plotLabel = `${mon.plot_code} (B${mon.block_number})`;
+      const treatment = mon.plot_code;
       
+      if (!dataByTreatment[treatment]) {
+        dataByTreatment[treatment] = [];
+      }
+
       const plantsBio = biometrics.filter(b => 
         b.monitoring_event_id === mon.id &&
         b.has_sprouted === true
@@ -391,11 +396,26 @@
 
       if (alivePlants.length > 0) {
         const avgSanity = alivePlants.reduce((sum, b) => sum + b.sanity_score, 0) / alivePlants.length;
-        sanityData.push({ label: plotLabel, sanity: avgSanity });
+        dataByTreatment[treatment].push(avgSanity);
       }
     });
 
-    sanityData.sort((a, b) => b.sanity - a.sanity);
+    // Calcular média entre blocos
+    const sanityData = [];
+    Object.keys(dataByTreatment).forEach(treatment => {
+      const values = dataByTreatment[treatment];
+      if (values.length > 0) {
+        const avgSanity = values.reduce((sum, v) => sum + v, 0) / values.length;
+        sanityData.push({ label: treatment, sanity: avgSanity });
+      }
+    });
+
+    // Ordenar numericamente
+    sanityData.sort((a, b) => {
+      const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
 
     chartInstances.sanity = new Chart(ctx, {
       type: 'bar',
@@ -425,7 +445,7 @@
     });
   }
 
-  // Gráfico 4: Diâmetro médio
+  // Gráfico 4: Diâmetro médio por tratamento
   function generateDiameterChart(latestByPlot, biometrics, statuses) {
     const ctx = document.getElementById('chartDiameter');
     if (!ctx) return;
@@ -436,11 +456,16 @@
       statusMap[key] = s.status;
     });
 
-    const diameterData = [];
+    // Agrupar por tratamento
+    const dataByTreatment = {};
 
     Object.values(latestByPlot).forEach(mon => {
-      const plotLabel = `${mon.plot_code} (B${mon.block_number})`;
+      const treatment = mon.plot_code;
       
+      if (!dataByTreatment[treatment]) {
+        dataByTreatment[treatment] = [];
+      }
+
       const plantsBio = biometrics.filter(b => 
         b.monitoring_event_id === mon.id &&
         b.has_sprouted === true
@@ -477,12 +502,27 @@
 
         if (diameterCount > 0) {
           const avgDiameter = totalDiameters / diameterCount;
-          diameterData.push({ label: plotLabel, diameter: avgDiameter });
+          dataByTreatment[treatment].push(avgDiameter);
         }
       }
     });
 
-    diameterData.sort((a, b) => b.diameter - a.diameter);
+    // Calcular média entre blocos
+    const diameterData = [];
+    Object.keys(dataByTreatment).forEach(treatment => {
+      const values = dataByTreatment[treatment];
+      if (values.length > 0) {
+        const avgDiameter = values.reduce((sum, v) => sum + v, 0) / values.length;
+        diameterData.push({ label: treatment, diameter: avgDiameter });
+      }
+    });
+
+    // Ordenar numericamente
+    diameterData.sort((a, b) => {
+      const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
 
     chartInstances.diameter = new Chart(ctx, {
       type: 'bar',
@@ -510,6 +550,7 @@
       }
     });
   }
+
 
   function escapeHtml(str) {
     if (!str) return "";
