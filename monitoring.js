@@ -74,7 +74,6 @@
   loadMonitoringSummary(experiment.id); // ✅ Nova função
 }
   // --- Resumo estatístico do monitoramento manual ---
-// --- Resumo estatístico do monitoramento manual ---
 async function loadMonitoringSummary(experimentId) {
   if (typeof s === "undefined") return;
 
@@ -94,7 +93,7 @@ async function loadMonitoringSummary(experimentId) {
       console.error("Erro ao contar monitoramentos:", countError);
     }
 
-    // 2) Buscar todas as biometrias do experimento
+    // 2) Buscar todos os IDs de monitoramentos
     const { data: allMonitorings, error: monError } = await s
       .from("monitoring_events")
       .select("id")
@@ -105,8 +104,6 @@ async function loadMonitoringSummary(experimentId) {
     }
 
     const monitoringIds = (allMonitorings || []).map(m => m.id);
-
-    console.log("📊 IDs dos monitoramentos:", monitoringIds); // ✅ DEBUG
 
     if (!monitoringIds.length) {
       summaryEl.innerHTML = `
@@ -126,9 +123,6 @@ async function loadMonitoringSummary(experimentId) {
       console.error("Erro ao buscar biometrias:", bioError);
     }
 
-    console.log("🌱 Total de biometrias encontradas:", (biometrics || []).length); // ✅ DEBUG
-    console.log("🌱 Biometrias completas:", biometrics); // ✅ DEBUG
-
     // 4) Buscar status das plantas
     const { data: statuses, error: statusError } = await s
       .from("plant_status")
@@ -139,38 +133,34 @@ async function loadMonitoringSummary(experimentId) {
       console.error("Erro ao buscar status:", statusError);
     }
 
-    console.log("💚 Status das plantas:", statuses); // ✅ DEBUG
-
     const totalMonitorings = typeof monitoringCount === "number" ? monitoringCount : 0;
     const bioData = biometrics || [];
     const statusData = statuses || [];
 
-    // Calcular plantas brotadas e vivas
+    // Calcular plantas brotadas
     const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
-    
-    console.log("🌿 Plantas brotadas:", sproutedPlants.length); // ✅ DEBUG
-    
-    const totalPlants = bioData.length || 1;
+    const totalSprouted = sproutedPlants.length;
     
     // Contar plantas vivas (status 'alive')
     const alivePlants = statusData.filter(s => s.status === 'alive').length;
-    const alivePercentage = sproutedPlants.length > 0 
-      ? ((alivePlants / sproutedPlants.length) * 100).toFixed(1)
+    
+    // Se não tem status registrado, assumir que brotadas = vivas
+    const effectiveAlive = alivePlants > 0 ? alivePlants : totalSprouted;
+    const alivePercentage = totalSprouted > 0 
+      ? ((effectiveAlive / totalSprouted) * 100).toFixed(1)
       : "0.0";
 
-    console.log("💚 Plantas vivas:", alivePlants, "de", sproutedPlants.length); // ✅ DEBUG
-
-    // Calcular médias apenas de plantas brotadas
-    const plantsWithHeight = sproutedPlants.filter(b => b.height_cm != null);
+    // Altura média (apenas plantas com altura preenchida)
+    const plantsWithHeight = sproutedPlants.filter(b => b.height_cm != null && b.height_cm > 0);
     const avgHeight = plantsWithHeight.length > 0
       ? (plantsWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / plantsWithHeight.length).toFixed(1)
       : "–";
 
-    console.log("📏 Plantas com altura:", plantsWithHeight.length, "Média:", avgHeight); // ✅ DEBUG
-
     // Diâmetro médio (média dos 3 diâmetros)
     const plantsWithDiameter = sproutedPlants.filter(b => 
-      b.stem_diameter_1_cm != null || b.stem_diameter_2_cm != null || b.stem_diameter_3_cm != null
+      (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
+      (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
+      (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
     );
     
     let avgDiameter = "–";
@@ -179,9 +169,18 @@ async function loadMonitoringSummary(experimentId) {
       let diameterCount = 0;
       
       plantsWithDiameter.forEach(b => {
-        if (b.stem_diameter_1_cm) { totalDiameters += b.stem_diameter_1_cm; diameterCount++; }
-        if (b.stem_diameter_2_cm) { totalDiameters += b.stem_diameter_2_cm; diameterCount++; }
-        if (b.stem_diameter_3_cm) { totalDiameters += b.stem_diameter_3_cm; diameterCount++; }
+        if (b.stem_diameter_1_cm && b.stem_diameter_1_cm > 0) { 
+          totalDiameters += b.stem_diameter_1_cm; 
+          diameterCount++; 
+        }
+        if (b.stem_diameter_2_cm && b.stem_diameter_2_cm > 0) { 
+          totalDiameters += b.stem_diameter_2_cm; 
+          diameterCount++; 
+        }
+        if (b.stem_diameter_3_cm && b.stem_diameter_3_cm > 0) { 
+          totalDiameters += b.stem_diameter_3_cm; 
+          diameterCount++; 
+        }
       });
       
       if (diameterCount > 0) {
@@ -190,7 +189,7 @@ async function loadMonitoringSummary(experimentId) {
     }
 
     // Sanidade média
-    const plantsWithSanity = sproutedPlants.filter(b => b.sanity_score != null);
+    const plantsWithSanity = sproutedPlants.filter(b => b.sanity_score != null && b.sanity_score > 0);
     const avgSanity = plantsWithSanity.length > 0
       ? (plantsWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / plantsWithSanity.length).toFixed(1)
       : "–";
@@ -227,7 +226,7 @@ async function loadMonitoringSummary(experimentId) {
           </div>
           <div>
             <div style="font-size:18px; font-weight:600; color:#713f12;">${avgHeight}${avgHeight !== "–" ? " cm" : ""}</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Altura</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Altura${plantsWithHeight.length > 0 ? ` (${plantsWithHeight.length})` : ""}</div>
           </div>
         </div>
 
@@ -238,7 +237,7 @@ async function loadMonitoringSummary(experimentId) {
           </div>
           <div>
             <div style="font-size:18px; font-weight:600; color:#1e3a8a;">${avgDiameter}${avgDiameter !== "–" ? " cm" : ""}</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Diâmetro</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Diâmetro${plantsWithDiameter.length > 0 ? ` (${plantsWithDiameter.length})` : ""}</div>
           </div>
         </div>
 
@@ -249,7 +248,7 @@ async function loadMonitoringSummary(experimentId) {
           </div>
           <div>
             <div style="font-size:18px; font-weight:600; color:#7f1d1d;">${avgSanity}${avgSanity !== "–" ? "/5" : ""}</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Sanidade</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Sanidade${plantsWithSanity.length > 0 ? ` (${plantsWithSanity.length})` : ""}</div>
           </div>
         </div>
 
@@ -261,7 +260,6 @@ async function loadMonitoringSummary(experimentId) {
     summaryEl.textContent = "Erro ao carregar estatísticas.";
   }
 }
-
 
   function setupMonitoringTabs(container, experiment) {
     const isVisitor = window.currentRole === "visitor";
