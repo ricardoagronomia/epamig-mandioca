@@ -49,45 +49,45 @@
         </div>
       </div>
 
-      ${experiment ? `
-        <!-- Gráfico 1: Evolução da altura média -->
-        <div class="card">
-          <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-            📏 Evolução da altura média por tratamento
-          </div>
-          <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-            Altura média das plantas ao longo do tempo, agrupada por tratamento.
-          </p>
-          <div style="position:relative; height:300px;">
-            <canvas id="chartHeight"></canvas>
-          </div>
-        </div>
-
-        <!-- Gráfico 2: Taxa de sobrevivência -->
-        <div class="card">
-          <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-            🌿 Taxa de sobrevivência por tratamento
-          </div>
-          <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-            Percentual de plantas vivas em relação ao total plantado.
-          </p>
-          <div style="position:relative; height:300px;">
-            <canvas id="chartSurvival"></canvas>
-          </div>
-        </div>
-
-        <!-- Grid com 2 gráficos -->
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:16px;">
+            ${experiment ? `
+        <!-- Grid principal com todos os gráficos -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap:16px;">
           
-          <!-- Gráfico 3: Distribuição de sanidade -->
+          <!-- Gráfico 1: Evolução da altura média -->
           <div class="card">
             <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-              ❤️ Sanidade média por tratamento
+              📏 Evolução da altura média
             </div>
-            <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-              Nota média de sanidade (1-5) das plantas.
+            <p style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+              Altura média por tratamento ao longo do tempo.
             </p>
-            <div style="position:relative; height:260px;">
+            <div style="position:relative; height:240px;">
+              <canvas id="chartHeight"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Taxa de sobrevivência -->
+          <div class="card">
+            <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+              🌿 Taxa de sobrevivência
+            </div>
+            <p style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+              Percentual de plantas vivas por tratamento.
+            </p>
+            <div style="position:relative; height:240px;">
+              <canvas id="chartSurvival"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 3: Sanidade média -->
+          <div class="card">
+            <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+              ❤️ Sanidade média
+            </div>
+            <p style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+              Nota média de sanidade (1-5) por tratamento.
+            </p>
+            <div style="position:relative; height:240px;">
               <canvas id="chartSanity"></canvas>
             </div>
           </div>
@@ -97,29 +97,29 @@
             <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
               ⭕ Diâmetro médio do caule
             </div>
-            <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
+            <p style="font-size:12px; color:#6b7280; margin-bottom:10px;">
               Média dos três diâmetros medidos.
             </p>
-            <div style="position:relative; height:260px;">
+            <div style="position:relative; height:240px;">
               <canvas id="chartDiameter"></canvas>
             </div>
           </div>
 
         </div>
 
-        <!-- Gráfico combinado personalizável -->
+        <!-- Gráfico combinado personalizável (largura total) -->
         <div class="card" style="margin-top:16px;">
-          <div style="font-size:16px; font-weight:700; color:#065f46; margin-bottom:12px;">
+          <div style="font-size:15px; font-weight:700; color:#065f46; margin-bottom:10px;">
             🌦️ Gráfico combinado: Planta × Clima
           </div>
           
           <!-- Seletores -->
-          <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; align-items:end;">
-            <div style="flex:1 1 200px;">
-              <label style="font-size:13px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">
+          <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; align-items:end;">
+            <div style="flex:1 1 180px; min-width:180px;">
+              <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">
                 Métrica da planta
               </label>
-              <select id="selectPlantMetric" style="width:100%; padding:8px; border-radius:8px; border:1px solid #d1d5db; font-size:14px;">
+              <select id="selectPlantMetric" style="width:100%; padding:7px; border-radius:8px; border:1px solid #d1d5db; font-size:13px;">
                 <option value="height">📏 Altura média (cm)</option>
                 <option value="survival">🌿 Taxa de sobrevivência (%)</option>
                 <option value="sanity">❤️ Sanidade (1-5)</option>
@@ -127,11 +127,11 @@
               </select>
             </div>
 
-            <div style="flex:1 1 200px;">
-              <label style="font-size:13px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">
+            <div style="flex:1 1 180px; min-width:180px;">
+              <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">
                 Variável climática
               </label>
-              <select id="selectClimateVar" style="width:100%; padding:8px; border-radius:8px; border:1px solid #d1d5db; font-size:14px;">
+              <select id="selectClimateVar" style="width:100%; padding:7px; border-radius:8px; border:1px solid #d1d5db; font-size:13px;">
                 <option value="precip_accum">🌧️ Precipitação acumulada (mm)</option>
                 <option value="temp_avg">🌡️ Temperatura média (°C)</option>
                 <option value="temp_max">🔥 Temperatura máxima (°C)</option>
@@ -140,13 +140,13 @@
               </select>
             </div>
 
-            <button id="btnUpdateComboChart" class="btn-primary" style="width:auto; padding:8px 20px; height:38px;">
-              Atualizar gráfico
+            <button id="btnUpdateComboChart" class="btn-primary" style="width:auto; padding:7px 18px; height:36px; font-size:13px;">
+              Atualizar
             </button>
           </div>
 
           <!-- Canvas do gráfico combinado -->
-          <div style="position:relative; height:350px;">
+          <div style="position:relative; height:280px;">
             <canvas id="chartCombo"></canvas>
           </div>
         </div>
