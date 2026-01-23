@@ -74,6 +74,7 @@
   loadMonitoringSummary(experiment.id); // ✅ Nova função
 }
   // --- Resumo estatístico do monitoramento manual ---
+// --- Resumo estatístico do monitoramento manual ---
 async function loadMonitoringSummary(experimentId) {
   if (typeof s === "undefined") return;
 
@@ -105,6 +106,8 @@ async function loadMonitoringSummary(experimentId) {
 
     const monitoringIds = (allMonitorings || []).map(m => m.id);
 
+    console.log("📊 IDs dos monitoramentos:", monitoringIds); // ✅ DEBUG
+
     if (!monitoringIds.length) {
       summaryEl.innerHTML = `
         Nenhum monitoramento registrado ainda.<br>
@@ -123,6 +126,9 @@ async function loadMonitoringSummary(experimentId) {
       console.error("Erro ao buscar biometrias:", bioError);
     }
 
+    console.log("🌱 Total de biometrias encontradas:", (biometrics || []).length); // ✅ DEBUG
+    console.log("🌱 Biometrias completas:", biometrics); // ✅ DEBUG
+
     // 4) Buscar status das plantas
     const { data: statuses, error: statusError } = await s
       .from("plant_status")
@@ -133,13 +139,18 @@ async function loadMonitoringSummary(experimentId) {
       console.error("Erro ao buscar status:", statusError);
     }
 
+    console.log("💚 Status das plantas:", statuses); // ✅ DEBUG
+
     const totalMonitorings = typeof monitoringCount === "number" ? monitoringCount : 0;
     const bioData = biometrics || [];
     const statusData = statuses || [];
 
     // Calcular plantas brotadas e vivas
     const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
-    const totalPlants = bioData.length || 1; // Evitar divisão por zero
+    
+    console.log("🌿 Plantas brotadas:", sproutedPlants.length); // ✅ DEBUG
+    
+    const totalPlants = bioData.length || 1;
     
     // Contar plantas vivas (status 'alive')
     const alivePlants = statusData.filter(s => s.status === 'alive').length;
@@ -147,11 +158,15 @@ async function loadMonitoringSummary(experimentId) {
       ? ((alivePlants / sproutedPlants.length) * 100).toFixed(1)
       : "0.0";
 
+    console.log("💚 Plantas vivas:", alivePlants, "de", sproutedPlants.length); // ✅ DEBUG
+
     // Calcular médias apenas de plantas brotadas
     const plantsWithHeight = sproutedPlants.filter(b => b.height_cm != null);
     const avgHeight = plantsWithHeight.length > 0
       ? (plantsWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / plantsWithHeight.length).toFixed(1)
       : "–";
+
+    console.log("📏 Plantas com altura:", plantsWithHeight.length, "Média:", avgHeight); // ✅ DEBUG
 
     // Diâmetro médio (média dos 3 diâmetros)
     const plantsWithDiameter = sproutedPlants.filter(b => 
@@ -246,6 +261,7 @@ async function loadMonitoringSummary(experimentId) {
     summaryEl.textContent = "Erro ao carregar estatísticas.";
   }
 }
+
 
   function setupMonitoringTabs(container, experiment) {
     const isVisitor = window.currentRole === "visitor";
