@@ -799,7 +799,24 @@ if (plotInput) {
 
     <div style="margin-bottom:12px;">
       <label for="bioSanity">Sanidade (1 a 5)</label>
-      <input type="number" min="1" max="5" id="bioSanity" value="${bio.sanity_score || ""}" />
+      <input type="number" min="1" max="5" id="bioSanity" value="${bio.sanity_score || ""}" 
+        oninput="toggleSanityObservations()" />
+      <div style="font-size:11px; color:#6b7280; margin-top:2px;">
+        5 = saúde perfeita · 1 = saúde muito comprometida
+      </div>
+    </div>
+
+    <!-- Campo de observações (inicialmente oculto) -->
+    <div id="sanityObsContainer" style="margin-bottom:12px; display:none;">
+      <label for="bioSanityObs" style="color:#dc2626; font-weight:600;">
+        ⚠️ Observações sobre sanidade
+      </label>
+      <textarea id="bioSanityObs" rows="3" 
+        style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid #fca5a5; font-size:13px; resize:vertical; background:#fef2f2;"
+        placeholder="Descreva as anomalias: formigas, lagartas, viroses, bactérias, etc.">${bio.sanity_observations || ""}</textarea>
+      <div style="font-size:11px; color:#6b7280; margin-top:2px;">
+        Registre qualquer problema fitossanitário observado
+      </div>
     </div>
 
     <button class="btn-primary" style="width:100%;" onclick="savePlantBiometric(${position})">
@@ -810,8 +827,29 @@ if (plotInput) {
   if (typeof openModal === "function") {
     openModal(`Biometria - Planta ${position}`, bodyHtml);
   }
+  
+  // Verificar sanidade inicial após abrir modal
+  setTimeout(() => {
+    toggleSanityObservations();
+  }, 50);
 };
 
+  window.toggleSanityObservations = function toggleSanityObservations() {
+  const sanityInput = document.getElementById("bioSanity");
+  const obsContainer = document.getElementById("sanityObsContainer");
+  
+  if (!sanityInput || !obsContainer) return;
+  
+  const sanityValue = parseFloat(sanityInput.value);
+  
+  // Mostrar campo se sanidade < 5 (e não vazio)
+  if (!isNaN(sanityValue) && sanityValue < 5) {
+    obsContainer.style.display = "block";
+  } else {
+    obsContainer.style.display = "none";
+  }
+};
+  
   window.savePlantBiometric = async function savePlantBiometric(position) {
   if (!currentMonitoringId) {
     alert("Inicie um monitoramento primeiro.");
@@ -824,8 +862,8 @@ if (plotInput) {
   const diam2 = document.getElementById("bioDiam2")?.value || null;
   const diam3 = document.getElementById("bioDiam3")?.value || null;
   const sanity = document.getElementById("bioSanity")?.value || null;
+  const sanityObs = document.getElementById("bioSanityObs")?.value || null; // ✅ NOVO
   
-  // ✅ CORRIGIDO: usar checked diretamente, não OR null
   const sproutedCheckbox = document.getElementById("bioSprouted");
   const expandedCheckbox = document.getElementById("bioExpanded");
   
@@ -841,12 +879,12 @@ if (plotInput) {
     stem_diameter_2_cm: diam2 ? Number(diam2) : null,
     stem_diameter_3_cm: diam3 ? Number(diam3) : null,
     sanity_score: sanity ? Number(sanity) : null,
-    has_sprouted: sprouted,  // ✅ Agora salva true/false corretamente
-    has_expanded_leaves: expanded,  // ✅ Agora salva true/false corretamente
+    sanity_observations: sanityObs, // ✅ NOVO
+    has_sprouted: sprouted,
+    has_expanded_leaves: expanded,
   };
 
   try {
-    // Verificar se já existe
     const { data: existing } = await s
       .from("plant_biometrics")
       .select("id")
@@ -865,16 +903,21 @@ if (plotInput) {
       if (error) throw error;
     }
 
-    // Atualizar cache local
-    currentBiometrics[position] = payload;
+    currentBiometrics[position] = {
+      ...payload,
+      has_sprouted: sprouted,
+      has_expanded_leaves: expanded
+    };
+
+    await loadBiometricsData(currentMonitoringId);
 
     if (typeof closeModal === "function") closeModal();
+    setTimeout(() => openBiometricCollectionDialog(), 100);
     
-    // Atualizar cache local
-currentBiometrics[position] = {
-  ...payload,
-  has_sprouted: sprouted,  // Garantir que está salvo corretamente
-  has_expanded_leaves: expanded
+  } catch (err) {
+    console.error("Erro ao salvar biometria da planta:", err);
+    alert("Erro ao salvar dados da planta.");
+  }
 };
 
 // ✅ ADICIONAR: Forçar reload dos dados do banco
@@ -1561,22 +1604,28 @@ await loadBiometricsData(currentMonitoringId);
     const sproutedLabel = bio?.has_sprouted === true ? '✅' : '-';
     const expandedLabel = bio?.has_expanded_leaves === true ? '✅' : '-';
 
+      // ✅ NOVO: Formatar observações de sanidade
+  const sanityObs = bio?.sanity_observations 
+    ? `<span style="color:#dc2626; font-size:11px;">⚠️ ${escapeHtml(bio.sanity_observations)}</span>`
+    : '-';
+
     return `
-      <tr>
-        <td style="text-align:center; font-weight:600;">${pos}</td>
-        <td style="text-align:center;">${sproutedLabel}</td>
-        <td style="text-align:center;">${expandedLabel}</td>
-        <td style="text-align:center;">${bio?.height_cm || '-'}</td>
-        <td style="text-align:center;">${bio?.stem_count || '-'}</td>
-        <td style="text-align:center;">${bio?.stem_diameter_1_cm || '-'}</td>
-        <td style="text-align:center;">${bio?.stem_diameter_2_cm || '-'}</td>
-        <td style="text-align:center;">${bio?.stem_diameter_3_cm || '-'}</td>
-        <td style="text-align:center;">${bio?.sanity_score || '-'}</td>
-        <td style="text-align:center;">${statusLabel}</td>
-        <td style="text-align:center;">${lodgingLabel}</td>
-      </tr>
-    `;
-  }).join("");
+    <tr>
+      <td style="text-align:center; font-weight:600;">${pos}</td>
+      <td style="text-align:center;">${sproutedLabel}</td>
+      <td style="text-align:center;">${expandedLabel}</td>
+      <td style="text-align:center;">${bio?.height_cm || '-'}</td>
+      <td style="text-align:center;">${bio?.stem_count || '-'}</td>
+      <td style="text-align:center;">${bio?.stem_diameter_1_cm || '-'}</td>
+      <td style="text-align:center;">${bio?.stem_diameter_2_cm || '-'}</td>
+      <td style="text-align:center;">${bio?.stem_diameter_3_cm || '-'}</td>
+      <td style="text-align:center;">${bio?.sanity_score || '-'}</td>
+      <td style="text-align:center;">${statusLabel}</td>
+      <td style="text-align:center;">${lodgingLabel}</td>
+      <td style="text-align:left; max-width:200px; font-size:11px;">${sanityObs}</td>
+    </tr>
+  `;
+}).join("");
 
     const bodyHtml = `
       <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:8px;">
@@ -1607,9 +1656,9 @@ await loadBiometricsData(currentMonitoringId);
               <th style="text-align:center;">Sanidade<br>(1-5)</th>
               <th style="text-align:center;">Status</th>
               <th style="text-align:center;">Tombada</th>
+              <th style="text-align:left;">Obs. Sanidade</th>
             </tr>
           </thead>
-
           <tbody>
             ${rows}
           </tbody>
