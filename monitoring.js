@@ -838,15 +838,22 @@ if (plotInput) {
   const sanityInput = document.getElementById("bioSanity");
   const obsContainer = document.getElementById("sanityObsContainer");
   
-  if (!sanityInput || !obsContainer) return;
+  if (!sanityInput || !obsContainer) {
+    console.log("❌ Elementos não encontrados:", { sanityInput, obsContainer });
+    return;
+  }
   
   const sanityValue = parseFloat(sanityInput.value);
+  
+  console.log("🔍 Sanidade:", sanityValue, "< 5?", sanityValue < 5);
   
   // Mostrar campo se sanidade < 5 (e não vazio)
   if (!isNaN(sanityValue) && sanityValue < 5) {
     obsContainer.style.display = "block";
+    console.log("✅ Campo de observações EXIBIDO");
   } else {
     obsContainer.style.display = "none";
+    console.log("⚠️ Campo de observações OCULTO");
   }
 };
   
@@ -862,7 +869,13 @@ if (plotInput) {
   const diam2 = document.getElementById("bioDiam2")?.value || null;
   const diam3 = document.getElementById("bioDiam3")?.value || null;
   const sanity = document.getElementById("bioSanity")?.value || null;
-  const sanityObs = document.getElementById("bioSanityObs")?.value || null; // ✅ NOVO
+  const sanityObs = document.getElementById("bioSanityObs")?.value || null;
+  
+  // ✅ ADICIONAR ESTES LOGS
+  console.log("📊 Dados capturados:");
+  console.log("- Sanidade:", sanity);
+  console.log("- Observações (raw):", document.getElementById("bioSanityObs")?.value);
+  console.log("- Observações (processada):", sanityObs);
   
   const sproutedCheckbox = document.getElementById("bioSprouted");
   const expandedCheckbox = document.getElementById("bioExpanded");
@@ -879,10 +892,13 @@ if (plotInput) {
     stem_diameter_2_cm: diam2 ? Number(diam2) : null,
     stem_diameter_3_cm: diam3 ? Number(diam3) : null,
     sanity_score: sanity ? Number(sanity) : null,
-    sanity_observations: sanityObs, // ✅ NOVO
+    sanity_observations: sanityObs,
     has_sprouted: sprouted,
     has_expanded_leaves: expanded,
   };
+
+  // ✅ ADICIONAR ESTE LOG
+  console.log("📦 Payload completo:", payload);
 
   try {
     // Verificar se já existe
