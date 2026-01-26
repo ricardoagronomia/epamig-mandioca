@@ -1395,61 +1395,72 @@ if (plotInput) {
   }
 
   window.editMonitoring = async function editMonitoring(id) {
-    if (window.currentRole === "visitor") return;
+  if (window.currentRole === "visitor") return;
 
-    try {
-      const { data: row, error } = await s
-        .from("monitoring_events")
-        .select("*")
-        .eq("id", id)
-        .single();
+  try {
+    const { data: row, error } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-      if (error) throw error;
-      if (!row) {
-        alert("Monitoramento não encontrado.");
-        return;
-      }
+    if (error) throw error;
 
-      currentMonitoringId = row.id;
-
-      await loadPlantDataForEdit(row.id);
-      await loadBiometricsData(row.id);
-
-      const tabsEl = document.getElementById("monitoringTabs");
-      if (tabsEl) {
-        tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-        tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add("active");
-        
-        const experiment = window.currentExperiment;
-        const block = parseInt(row.block_number, 10) || 1;
-        const plotCode = row.plot_code || "";
-        
-        renderMonitoringTabIniciar(
-          document.getElementById("monitoringTabContent"),
-          experiment,
-          { block, plotCode }
-        );
-      }
-
-      setTimeout(() => {
-        const blockSelect = document.getElementById("monitorBlock");
-        const plotSelect = document.getElementById("monitorPlot");
-        
-        if (blockSelect) blockSelect.value = String(row.block_number || 1);
-        if (plotSelect) plotSelect.value = row.plot_code || "";
-        
-        const dateInput = document.getElementById("monDate");
-        if (dateInput) dateInput.value = row.monitoring_date || "";
-        
-        const notesInput = document.getElementById("monNotes");
-        if (notesInput) notesInput.value = row.notes || "";
-      }, 50);
-
-    } catch (err) {
-      console.error("Erro ao carregar monitoramento para edição:", err);
-      alert("Erro ao carregar monitoramento.");
+    if (!row) {
+      alert("Monitoramento não encontrado.");
+      return;
     }
-  };
+
+    currentMonitoringId = row.id;
+    await loadPlantDataForEdit(row.id);
+    await loadBiometricsData(row.id);
+
+    // Ativar aba "Iniciar monitoramento"
+    const tabsEl = document.getElementById("monitoringTabs");
+    if (tabsEl) {
+      tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+      tabsEl.querySelector("[data-tab='iniciar']")?.classList.add("active");
+    }
+
+    const experiment = window.currentExperiment;
+    const block = parseInt(row.block_number, 10) || 1;
+    const plotCode = row.plot_code;
+
+    renderMonitoringTabIniciar(
+      document.getElementById("monitoringTabContent"),
+      experiment,
+      { block, plotCode }
+    );
+
+    setTimeout(() => {
+      // Atualizar selects
+      const blockSelect = document.getElementById("monitorBlock");
+      const plotSelect = document.getElementById("monitorPlot");
+      if (blockSelect) blockSelect.value = String(row.block_number || 1);
+      if (plotSelect) plotSelect.value = row.plot_code;
+
+      // Preencher campos
+      const dateInput = document.getElementById("monDate");
+      if (dateInput) dateInput.value = row.monitoring_date;
+
+      const notesInput = document.getElementById("monNotes");
+      if (notesInput) notesInput.value = row.notes || "";
+
+      // ✅ NOVO: Scroll suave para o topo do formulário
+      const headerCard = document.getElementById("monitoringHeaderCard");
+      if (headerCard) {
+        headerCard.scrollIntoView({ 
+          behavior: "smooth", 
+          block: "start" 
+        });
+      }
+    }, 50);
+
+  } catch (err) {
+    console.error("Erro ao carregar monitoramento para edição:", err);
+    alert("Erro ao carregar monitoramento.");
+  }
+};
 
   async function loadPlantDataForEdit(monitoringId) {
     try {
