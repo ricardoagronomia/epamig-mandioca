@@ -885,6 +885,7 @@ if (plotInput) {
   };
 
   try {
+    // Verificar se já existe
     const { data: existing } = await s
       .from("plant_biometrics")
       .select("id")
@@ -903,28 +904,18 @@ if (plotInput) {
       if (error) throw error;
     }
 
+    // Atualizar cache local
     currentBiometrics[position] = {
       ...payload,
       has_sprouted: sprouted,
       has_expanded_leaves: expanded
     };
 
+    // Recarregar dados do banco
     await loadBiometricsData(currentMonitoringId);
 
+    // Fechar modal e reabrir lista
     if (typeof closeModal === "function") closeModal();
-    setTimeout(() => openBiometricCollectionDialog(), 100);
-    
-  } catch (err) {
-    console.error("Erro ao salvar biometria da planta:", err);
-    alert("Erro ao salvar dados da planta.");
-  }
-};
-
-// ✅ ADICIONAR: Forçar reload dos dados do banco
-await loadBiometricsData(currentMonitoringId);
-
-    
-    // Reabrir lista de plantas
     setTimeout(() => openBiometricCollectionDialog(), 100);
     
   } catch (err) {
