@@ -1427,20 +1427,29 @@ if (plotInput) {
 }
 
   async function loadBiometricsData(monitoringId) {
-    try {
-      const { data } = await s
-        .from("plant_biometrics")
-        .select("*")
-        .eq("monitoring_event_id", monitoringId);
+  try {
+    const { data } = await s
+      .from("plant_biometrics")
+      .select("*")
+      .eq("monitoring_event_id", monitoringId);
 
-      currentBiometrics = {};
-      (data || []).forEach((b) => {
-        currentBiometrics[b.plant_position] = b;
-      });
-    } catch (err) {
-      console.error("Erro ao carregar dados biométricos:", err);
-    }
+    console.log("📥 loadBiometricsData - Dados recebidos do banco:", data);
+
+    currentBiometrics = {};
+    (data || []).forEach((b) => {
+      currentBiometrics[b.plant_position] = b;
+      
+      // Log apenas se tiver observações
+      if (b.sanity_observations) {
+        console.log(`   ✅ Planta ${b.plant_position} tem observações:`, b.sanity_observations);
+      }
+    });
+    
+    console.log("📦 currentBiometrics atualizado:", currentBiometrics);
+  } catch (err) {
+    console.error("Erro ao carregar dados biométricos:", err);
   }
+}
 
   window.editMonitoring = async function editMonitoring(id) {
   if (window.currentRole === "visitor") return;
