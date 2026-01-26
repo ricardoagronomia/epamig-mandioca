@@ -850,6 +850,8 @@ if (plotInput) {
 };
   
   window.savePlantBiometric = async function savePlantBiometric(position) {
+  console.log("🔵 savePlantBiometric INICIOU - Planta:", position); // ✅ ADICIONAR ESTA LINHA
+  
   if (!currentMonitoringId) {
     alert("Inicie um monitoramento primeiro.");
     return;
@@ -862,6 +864,10 @@ if (plotInput) {
   const diam3 = document.getElementById("bioDiam3")?.value || null;
   const sanity = document.getElementById("bioSanity")?.value || null;
   const sanityObs = document.getElementById("bioSanityObs")?.value || null;
+  
+  console.log("📊 Valores capturados:"); // ✅ ADICIONAR
+  console.log("  - Sanidade:", sanity); // ✅ ADICIONAR
+  console.log("  - Observações:", sanityObs); // ✅ ADICIONAR
   
   const sproutedCheckbox = document.getElementById("bioSprouted");
   const expandedCheckbox = document.getElementById("bioExpanded");
