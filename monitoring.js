@@ -838,22 +838,14 @@ if (plotInput) {
   const sanityInput = document.getElementById("bioSanity");
   const obsContainer = document.getElementById("sanityObsContainer");
   
-  if (!sanityInput || !obsContainer) {
-    console.log("❌ Elementos não encontrados:", { sanityInput, obsContainer });
-    return;
-  }
+  if (!sanityInput || !obsContainer) return;
   
   const sanityValue = parseFloat(sanityInput.value);
   
-  console.log("🔍 Sanidade:", sanityValue, "< 5?", sanityValue < 5);
-  
-  // Mostrar campo se sanidade < 5 (e não vazio)
   if (!isNaN(sanityValue) && sanityValue < 5) {
     obsContainer.style.display = "block";
-    console.log("✅ Campo de observações EXIBIDO");
   } else {
     obsContainer.style.display = "none";
-    console.log("⚠️ Campo de observações OCULTO");
   }
 };
   
@@ -870,12 +862,6 @@ if (plotInput) {
   const diam3 = document.getElementById("bioDiam3")?.value || null;
   const sanity = document.getElementById("bioSanity")?.value || null;
   const sanityObs = document.getElementById("bioSanityObs")?.value || null;
-  
-  // ✅ ADICIONAR ESTES LOGS
-  console.log("📊 Dados capturados:");
-  console.log("- Sanidade:", sanity);
-  console.log("- Observações (raw):", document.getElementById("bioSanityObs")?.value);
-  console.log("- Observações (processada):", sanityObs);
   
   const sproutedCheckbox = document.getElementById("bioSprouted");
   const expandedCheckbox = document.getElementById("bioExpanded");
@@ -897,79 +883,42 @@ if (plotInput) {
     has_expanded_leaves: expanded,
   };
 
-  // ✅ ADICIONAR ESTE LOG
-  console.log("📦 Payload completo:", payload);
-
   try {
-  // Verificar se já existe
-  const { data: existing } = await s
-    .from("plant_biometrics")
-    .select("id")
-    .eq("monitoring_event_id", currentMonitoringId)
-    .eq("plant_position", position)
-    .maybeSingle();
-
-  console.log("🔍 Registro existente?", existing);
-
-  let result;
-  if (existing) {
-    console.log("🔄 Atualizando registro:", existing.id);
-    console.log("📦 Payload para UPDATE:", payload);
-    
-    result = await s
+    const { data: existing } = await s
       .from("plant_biometrics")
-      .update(payload)
-      .eq("id", existing.id)
-      .select();
-    
-    console.log("✅ Resultado completo da atualização:", result);
-    
-    if (result.error) {
-      console.error("❌ Erro do Supabase:", result.error);
-      throw result.error;
+      .select("id")
+      .eq("monitoring_event_id", currentMonitoringId)
+      .eq("plant_position", position)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await s
+        .from("plant_biometrics")
+        .update(payload)
+        .eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await s
+        .from("plant_biometrics")
+        .insert(payload);
+      if (error) throw error;
     }
-  } else {
-    console.log("➕ Inserindo novo registro");
-    console.log("📦 Payload para INSERT:", payload);
+
+    currentBiometrics[position] = {
+      ...payload,
+      has_sprouted: sprouted,
+      has_expanded_leaves: expanded
+    };
+
+    await loadBiometricsData(currentMonitoringId);
+
+    if (typeof closeModal === "function") closeModal();
+    setTimeout(() => openBiometricCollectionDialog(), 100);
     
-    result = await s
-      .from("plant_biometrics")
-      .insert(payload)
-      .select();
-    
-    console.log("✅ Resultado completo da inserção:", result);
-    
-    if (result.error) {
-      console.error("❌ Erro do Supabase:", result.error);
-      throw result.error;
-    }
+  } catch (err) {
+    console.error("Erro ao salvar biometria da planta:", err);
+    alert("Erro ao salvar dados da planta.");
   }
-
-  // Verificar dados salvos
-  if (result.data && result.data.length > 0) {
-    console.log("📄 Dados confirmados no banco:", result.data[0]);
-    console.log("🔍 sanity_observations salvo:", result.data[0].sanity_observations);
-  }
-
-  // Atualizar cache local
-  currentBiometrics[position] = {
-    ...payload,
-    has_sprouted: sprouted,
-    has_expanded_leaves: expanded
-  };
-
-  // Recarregar dados do banco
-  await loadBiometricsData(currentMonitoringId);
-
-  // Fechar modal e reabrir lista
-  if (typeof closeModal === "function") closeModal();
-  setTimeout(() => openBiometricCollectionDialog(), 100);
-  
-} catch (err) {
-  console.error("❌ Erro ao salvar biometria da planta:", err);
-  console.error("❌ Detalhes do erro:", JSON.stringify(err, null, 2));
-  alert("Erro ao salvar dados da planta.");
-}
 };
 
   window.openPlantStatusDialog = function openPlantStatusDialog() {
@@ -1433,19 +1382,10 @@ if (plotInput) {
       .select("*")
       .eq("monitoring_event_id", monitoringId);
 
-    console.log("📥 loadBiometricsData - Dados recebidos do banco:", data);
-
     currentBiometrics = {};
     (data || []).forEach((b) => {
       currentBiometrics[b.plant_position] = b;
-      
-      // Log apenas se tiver observações
-      if (b.sanity_observations) {
-        console.log(`   ✅ Planta ${b.plant_position} tem observações:`, b.sanity_observations);
-      }
     });
-    
-    console.log("📦 currentBiometrics atualizado:", currentBiometrics);
   } catch (err) {
     console.error("Erro ao carregar dados biométricos:", err);
   }
