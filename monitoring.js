@@ -850,8 +850,6 @@ if (plotInput) {
 };
   
   window.savePlantBiometric = async function savePlantBiometric(position) {
-  console.log("[DEBUG] savePlantBiometric INICIOU - Planta:", position);
-  
   if (!currentMonitoringId) {
     alert("Inicie um monitoramento primeiro.");
     return;
@@ -864,10 +862,6 @@ if (plotInput) {
   const diam3 = document.getElementById("bioDiam3")?.value || null;
   const sanity = document.getElementById("bioSanity")?.value || null;
   const sanityObs = document.getElementById("bioSanityObs")?.value || null;
-  
-  console.log("[DEBUG] Valores capturados:");
-  console.log("  - Sanidade:", sanity);
-  console.log("  - Observacoes:", sanityObs);
   
   const sproutedCheckbox = document.getElementById("bioSprouted");
   const expandedCheckbox = document.getElementById("bioExpanded");
@@ -889,62 +883,26 @@ if (plotInput) {
     has_expanded_leaves: expanded,
   };
 
-  console.log("[DEBUG] Payload:", payload);
-
   try {
-    const { data: existing, error: selectError } = await s
+    const { data: existing } = await s
       .from("plant_biometrics")
-      .select("id, sanity_score")
+      .select("id")
       .eq("monitoring_event_id", currentMonitoringId)
       .eq("plant_position", position)
       .maybeSingle();
 
-    console.log("[DEBUG] Registro existente?", existing);
-    
-    if (selectError) {
-      console.error("[ERROR] Erro ao buscar:", selectError);
-      throw selectError;
-    }
-
     if (existing) {
-      console.log("[DEBUG] UPDATE no registro:", existing.id);
-      console.log("  Sanidade ANTES:", existing.sanity_score);
-      console.log("  Sanidade NOVA:", payload.sanity_score);
-      
-      const result = await s
+      const { error } = await s
         .from("plant_biometrics")
         .update(payload)
-        .eq("id", existing.id)
-        .select("id, sanity_score, sanity_observations");
-      
-      console.log("[DEBUG] Resultado UPDATE:", result);
-      
-      if (result.error) {
-        console.error("[ERROR] Erro UPDATE:", result.error);
-        throw result.error;
-      }
-      
-      if (result.data && result.data.length > 0) {
-        console.log("  Sanidade DEPOIS:", result.data[0].sanity_score);
-        console.log("  Observacoes DEPOIS:", result.data[0].sanity_observations);
-      }
+        .eq("id", existing.id);
+      if (error) throw error;
     } else {
-      console.log("[DEBUG] INSERT novo registro");
-      
-      const result = await s
+      const { error } = await s
         .from("plant_biometrics")
-        .insert(payload)
-        .select("id, sanity_score, sanity_observations");
-      
-      console.log("[DEBUG] Resultado INSERT:", result);
-      
-      if (result.error) {
-        console.error("[ERROR] Erro INSERT:", result.error);
-        throw result.error;
-      }
+        .insert(payload);
+      if (error) throw error;
     }
-
-    console.log("[DEBUG] Salvamento concluido!");
 
     currentBiometrics[position] = {
       ...payload,
@@ -958,9 +916,8 @@ if (plotInput) {
     setTimeout(() => openBiometricCollectionDialog(), 100);
     
   } catch (err) {
-    console.error("[ERROR] ERRO GERAL:", err);
-    console.error("[ERROR] Detalhes:", JSON.stringify(err, null, 2));
-    alert("Erro ao salvar dados da planta: " + (err.message || "Erro desconhecido"));
+    console.error("Erro ao salvar biometria da planta:", err);
+    alert("Erro ao salvar dados da planta.");
   }
 };
 
