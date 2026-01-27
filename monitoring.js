@@ -1392,7 +1392,10 @@ if (plotInput) {
 }
 
   window.editMonitoring = async function editMonitoring(id) {
+  console.log("[DEBUG] editMonitoring chamado com ID:", id);
+  
   if (window.currentRole === "visitor") return;
+
 
   try {
     const { data: row, error } = await s
