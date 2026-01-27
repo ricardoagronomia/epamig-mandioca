@@ -527,13 +527,24 @@ if (plotInput) {
 
   async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
   const isVisitor = window.currentRole === "visitor";
-
-  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block); // ✅ adicionar selection.block
   
-  if (!latest) {
+  let monitoringToUse;
+  
+  if (currentMonitoringId) {
+    const { data } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("id", currentMonitoringId)
+      .single();
+    monitoringToUse = data;
+  } else {
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+  }
+
+  if (!monitoringToUse) {
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
       </div>
       <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
         Nenhum monitoramento registrado ainda para esta parcela.
@@ -543,9 +554,9 @@ if (plotInput) {
     return;
   }
 
-  currentMonitoringId = latest.id;
-  await loadPlantDataForEdit(latest.id);
-  await loadBiometricsData(latest.id);
+  currentMonitoringId = monitoringToUse.id;
+  await loadPlantDataForEdit(monitoringToUse.id);
+  await loadBiometricsData(monitoringToUse.id);
 
   container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
@@ -568,13 +579,24 @@ if (plotInput) {
 
   async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
   const isVisitor = window.currentRole === "visitor";
+  
+  let monitoringToUse;
+  
+  if (currentMonitoringId) {
+    const { data } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("id", currentMonitoringId)
+      .single();
+    monitoringToUse = data;
+  } else {
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+  }
 
-  const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block); // ✅ adicionar selection.block
-    
-  if (!latest) {
+  if (!monitoringToUse) {
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
       </div>
       <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
         Nenhum monitoramento registrado ainda para esta parcela.
@@ -584,9 +606,9 @@ if (plotInput) {
     return;
   }
 
-  currentMonitoringId = latest.id;
-  await loadPlantDataForEdit(latest.id);
-  await loadBiometricsData(latest.id);
+  currentMonitoringId = monitoringToUse.id;
+  await loadPlantDataForEdit(monitoringToUse.id);
+  await loadBiometricsData(monitoringToUse.id);
 
   container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
