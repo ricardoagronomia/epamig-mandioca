@@ -455,7 +455,11 @@ if (plotInput) {
   async function renderMonitoringTabBiometria(container, experiment, selection) {
     const isVisitor = window.currentRole === "visitor";
 
-    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block); // ✅ adicionar selection.block
+    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+
+console.log("[DEBUG] renderMonitoringTabBiometria - latest encontrado:", latest?.id, latest?.monitoring_date); // ✅ ADICIONAR
+console.log("[DEBUG] renderMonitoringTabBiometria - currentMonitoringId (editando):", currentMonitoringId); // ✅ ADICIONAR
+
     
     if (!latest) {
       container.innerHTML = `
