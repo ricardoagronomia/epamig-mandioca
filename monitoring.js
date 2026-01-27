@@ -1396,13 +1396,15 @@ if (plotInput) {
   
   if (window.currentRole === "visitor") return;
 
-
   try {
     const { data: row, error } = await s
       .from("monitoring_events")
       .select("*")
       .eq("id", id)
       .single();
+
+    console.log("[DEBUG] Dados buscados do banco:", row); // ✅ ADICIONAR
+    console.log("[DEBUG] Parcela:", row?.plot_code, "Bloco:", row?.block_number, "Data:", row?.monitoring_date); // ✅ ADICIONAR
 
     if (error) throw error;
 
