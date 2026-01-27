@@ -500,7 +500,7 @@ if (plotInput) {
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
         <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
+        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
       </div>
 
       <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:10px;">
@@ -561,7 +561,7 @@ if (plotInput) {
   container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
       <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
     </div>
 
     <div style="margin-bottom:10px; font-size:13px; color:#374151;">
@@ -613,7 +613,7 @@ if (plotInput) {
   container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
       <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(latest.monitoring_date)}</span>
+      <br<span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
     </div>
 
     <div style="margin-bottom:10px; font-size:13px; color:#374151;">
