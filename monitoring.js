@@ -453,29 +453,44 @@ if (plotInput) {
 }
 
   async function renderMonitoringTabBiometria(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
-
-    const latest = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-
-console.log("[DEBUG] renderMonitoringTabBiometria - latest encontrado:", latest?.id, latest?.monitoring_date); // ✅ ADICIONAR
-console.log("[DEBUG] renderMonitoringTabBiometria - currentMonitoringId (editando):", currentMonitoringId); // ✅ ADICIONAR
-
+  const isVisitor = window.currentRole === "visitor";
+  
+  // Se já existe um monitoramento sendo editado, usa ele
+  let monitoringToUse;
+  
+  if (currentMonitoringId) {
+    // Está editando - buscar dados do monitoramento específico
+    const { data, error } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("id", currentMonitoringId)
+      .single();
     
-    if (!latest) {
-      container.innerHTML = `
-        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Inicie um monitoramento na aba <strong>"Iniciar monitoramento"</strong> primeiro.
-        </p>
-      `;
-      return;
-    }
+    monitoringToUse = data;
+    console.log("[DEBUG] Usando monitoramento em edição:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
+  } else {
+    // Não está editando - buscar o mais recente
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    console.log("[DEBUG] Usando último monitoramento:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
+  }
 
-    currentMonitoringId = latest.id;
-    await loadBiometricsData(latest.id);
+  if (!monitoringToUse) {
+    container.innerHTML = `
+      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      </div>
+      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+        Nenhum monitoramento registrado ainda para esta parcela.
+        <br>Inicie um monitoramento na aba <strong>Iniciar monitoramento</strong> primeiro.
+      </p>
+    `;
+    return;
+  }
+
+  currentMonitoringId = monitoringToUse.id;
+  await loadBiometricsData(monitoringToUse.id);
+  
+  // Resto do código continua igual...
 
     // Calcular progresso
     const totalPlants = 9;
