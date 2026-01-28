@@ -83,7 +83,7 @@
                 onclick="generatePDFReport()"
                 ${!experiment ? 'disabled' : ''}
               >
-                Gerar relatório em PDF (em breve)
+                📥 Gerar relatório em PDF
               </button>
             </div>
           </div>
@@ -250,7 +250,7 @@
     `;
   }
 
-    // ========== FUNÇÕES DE EXPORTAÇÃO EXCEL ==========
+  // ========== FUNÇÕES DE EXPORTAÇÃO EXCEL ==========
 
   window.exportMonitoringData = async function() {
     const experiment = window.currentExperiment;
@@ -260,7 +260,6 @@
     }
 
     try {
-      // Buscar dados de monitoramento
       const { data: monitorings, error: monError } = await s
         .from("monitoring_events")
         .select("id, plot_code, block_number, monitoring_date, notes")
@@ -290,7 +289,6 @@
 
       if (statusError) throw statusError;
 
-      // Preparar dados para export
       const exportData = [];
 
       monitorings.forEach(mon => {
@@ -320,12 +318,10 @@
         });
       });
 
-      // Criar planilha
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Monitoramento");
 
-      // Download
       const filename = `${experiment.code}_monitoramento_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
@@ -529,7 +525,7 @@
     }
   };
 
-    window.exportAllData = async function() {
+  window.exportAllData = async function() {
     const experiment = window.currentExperiment;
     if (!experiment) {
       alert('Nenhum experimento selecionado');
@@ -540,7 +536,6 @@
       const workbook = XLSX.utils.book_new();
       let totalSheets = 0;
 
-      // 1. Informações do experimento
       const expData = [{
         'Código': experiment.code,
         'Nome': experiment.name,
@@ -566,7 +561,6 @@
       XLSX.utils.book_append_sheet(workbook, wsExp, "Experimento");
       totalSheets++;
 
-      // 2. Tratamentos
       const { data: treatments } = await s
         .from("treatments")
         .select("*")
@@ -584,7 +578,6 @@
         totalSheets++;
       }
 
-      // 3. Cronograma
       const { data: schedule } = await s
         .from("scheduled_actions")
         .select("*")
@@ -606,7 +599,6 @@
         totalSheets++;
       }
 
-      // 4. Monitoramento
       const { data: monitorings } = await s
         .from("monitoring_events")
         .select("id, plot_code, block_number, monitoring_date, notes")
@@ -654,7 +646,6 @@
         }
       }
 
-      // 5. Colheita
       const { data: harvest } = await s
         .from("harvest_records")
         .select("*")
@@ -677,7 +668,6 @@
         totalSheets++;
       }
 
-      // 6. Drone
       const { data: drone } = await s
         .from("drone_monitoring")
         .select("*")
@@ -700,7 +690,6 @@
         totalSheets++;
       }
 
-      // 7. Clima
       const { data: climate } = await s
         .from("climate_daily")
         .select("*")
@@ -721,7 +710,6 @@
         totalSheets++;
       }
 
-      // 8. Intervenções
       const { data: interventions } = await s
         .from("interventions")
         .select("*")
@@ -743,7 +731,6 @@
         totalSheets++;
       }
 
-      // Download do arquivo consolidado
       const filename = `${experiment.code}_COMPLETO_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
@@ -755,9 +742,507 @@
     }
   };
 
-  window.generatePDFReport = function() {
-    alert('Funcionalidade de relatório PDF em desenvolvimento.\n\nEm breve você poderá gerar relatórios completos em PDF com gráficos, tabelas e análises consolidadas.');
+  // ========== GERAÇÃO DE RELATÓRIO EM PDF ==========
+
+  window.generatePDFReport = async function() {
+    const experiment = window.currentExperiment;
+    if (!experiment) {
+      alert('Nenhum experimento selecionado');
+      return;
+    }
+
+    try {
+      // Mostrar loading
+      const button = event.target;
+      const originalText = button.textContent;
+      button.textContent = '⏳ Gerando PDF...';
+      button.disabled = true;
+
+      // Buscar dados
+      const { data: monitorings } = await s
+        .from("monitoring_events")
+        .select("id, plot_code, block_number, monitoring_date, notes")
+        .eq("experiment_id", experiment.id)
+        .order("monitoring_date", { ascending: true });
+
+      const monitoringIds = monitorings ? monitorings.map(m => m.id) : [];
+
+      const { data: biometrics } = monitoringIds.length > 0 ? await s
+        .from("plant_biometrics")
+        .select("*")
+        .in("monitoring_event_id", monitoringIds) : { data: [] };
+
+      const { data: harvest } = await s
+        .from("harvest_records")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("harvest_date", { ascending: true });
+
+      const { data: climate } = await s
+        .from("climate_daily")
+        .select("*")
+        .eq("station_code", "PADRAO")
+        .order("date", { ascending: true });
+
+      const { data: interventions } = await s
+        .from("interventions")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("intervention_date", { ascending: true });
+
+      const { data: schedule } = await s
+        .from("scheduled_actions")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("start_date", { ascending: true });
+
+      // Gerar HTML do relatório
+      const html = generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, interventions, schedule);
+
+      // Criar PDF
+      const opt = {
+        margin: 10,
+        filename: `${experiment.code}_relatorio_${new Date().toISOString().slice(0,10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
+
+      html2pdf().set(opt).from(html).save();
+
+      // Restaurar botão
+      button.textContent = originalText;
+      button.disabled = false;
+
+      alert('✓ Relatório PDF gerado com sucesso!');
+
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      button.textContent = originalText;
+      button.disabled = false;
+      alert('Erro ao gerar relatório PDF: ' + err.message);
+    }
   };
+
+  function generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, interventions, schedule) {
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+    // Calcula estatísticas de monitoramento
+    const statsMonit = biometrics && biometrics.length > 0 ? {
+      mediaAltura: (biometrics.reduce((sum, b) => sum + (b.height_cm || 0), 0) / biometrics.length).toFixed(2),
+      mediaSanidade: (biometrics.reduce((sum, b) => sum + (b.sanity_score || 0), 0) / biometrics.length).toFixed(2),
+      totalMedicoes: biometrics.length
+    } : { mediaAltura: 0, mediaSanidade: 0, totalMedicoes: 0 };
+
+    // Calcula estatísticas de colheita
+    const statsColheita = harvest && harvest.length > 0 ? {
+      pesoTotal: harvest.reduce((sum, h) => sum + (h.total_weight || 0), 0).toFixed(2),
+      pesoMedio: (harvest.reduce((sum, h) => sum + (h.total_weight || 0), 0) / harvest.length).toFixed(2),
+      qualidadeMedia: (harvest.reduce((sum, h) => sum + (h.quality_score || 0), 0) / harvest.length).toFixed(2),
+      totalRegistros: harvest.length
+    } : { pesoTotal: 0, pesoMedio: 0, qualidadeMedia: 0, totalRegistros: 0 };
+
+    // Calcula estatísticas climáticas
+    const statsClima = climate && climate.length > 0 ? {
+      chuvaTotal: climate.reduce((sum, c) => sum + (c.rain_mm || 0), 0).toFixed(2),
+      tempMedia: (climate.reduce((sum, c) => sum + (c.tmean_c || 0), 0) / climate.length).toFixed(2),
+      dias: climate.length
+    } : { chuvaTotal: 0, tempMedia: 0, dias: 0 };
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; line-height: 1.5; color: #333; }
+          
+          .page-break { page-break-after: always; }
+          
+          .capa {
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            min-height: 297mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+          
+          .capa h1 { font-size: 42px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+          .capa h2 { font-size: 28px; margin-bottom: 40px; font-weight: 300; }
+          .capa .info { font-size: 14px; margin-top: 60px; line-height: 2; opacity: 0.95; }
+          .capa .data { margin-top: 80px; font-size: 12px; opacity: 0.8; }
+          
+          .header {
+            border-bottom: 3px solid #065f46;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+          }
+          
+          .header h1 { font-size: 24px; color: #065f46; margin-bottom: 5px; }
+          .header p { font-size: 12px; color: #666; }
+          
+          .section {
+            margin-bottom: 40px;
+            padding: 0 40px;
+          }
+          
+          .section h2 {
+            font-size: 18px;
+            color: #065f46;
+            margin-bottom: 15px;
+            border-left: 4px solid #065f46;
+            padding-left: 12px;
+          }
+          
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          
+          .info-box {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+          }
+          
+          .info-box strong { color: #065f46; display: block; margin-bottom: 4px; }
+          
+          .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+          }
+          
+          .stat-card {
+            background: #ecfdf5;
+            border-left: 4px solid #065f46;
+            padding: 15px;
+            border-radius: 4px;
+          }
+          
+          .stat-card .value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #065f46;
+          }
+          
+          .stat-card .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+          }
+          
+          table th {
+            background: #065f46;
+            color: white;
+            padding: 8px;
+            text-align: left;
+          }
+          
+          table td {
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          table tr:nth-child(even) { background: #f9fafb; }
+          
+          .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+          }
+        </style>
+      </head>
+      <body>
+        <!-- CAPA -->
+        <div class="capa">
+          <h1>RELATÓRIO EXPERIMENTAL</h1>
+          <h2>${escapeHtml(experiment.name)}</h2>
+          <div class="info">
+            <strong>Código:</strong> ${escapeHtml(experiment.code)}<br>
+            <strong>Pesquisador:</strong> ${escapeHtml(experiment.researcher)}<br>
+            <strong>Fazenda:</strong> ${escapeHtml(experiment.farm)}<br>
+            <strong>Município:</strong> ${escapeHtml(experiment.municipality)}
+          </div>
+          <div class="data">Gerado em ${dataAtual}</div>
+        </div>
+
+        <!-- PÁGINA 2: INFORMAÇÕES GERAIS -->
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>INFORMAÇÕES GERAIS DO EXPERIMENTO</h1>
+            <p>Resumo das características e configuração experimental</p>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-box">
+              <strong>Código do Experimento</strong>
+              ${escapeHtml(experiment.code)}
+            </div>
+            <div class="info-box">
+              <strong>Nome do Experimento</strong>
+              ${escapeHtml(experiment.name)}
+            </div>
+            <div class="info-box">
+              <strong>Data de Plantio</strong>
+              ${new Date(experiment.planting_date).toLocaleDateString('pt-BR')}
+            </div>
+            <div class="info-box">
+              <strong>Pesquisador</strong>
+              ${escapeHtml(experiment.researcher)}
+            </div>
+            <div class="info-box">
+              <strong>Fazenda</strong>
+              ${escapeHtml(experiment.farm)}
+            </div>
+            <div class="info-box">
+              <strong>Município</strong>
+              ${escapeHtml(experiment.municipality)}
+            </div>
+            <div class="info-box">
+              <strong>Bioma</strong>
+              ${escapeHtml(experiment.biome || 'Não informado')}
+            </div>
+            <div class="info-box">
+              <strong>Tipo de Solo</strong>
+              ${escapeHtml(experiment.soil_type || 'Não informado')}
+            </div>
+          </div>
+
+          <h2>Objetivo do Experimento</h2>
+          <p style="background: #f9fafb; padding: 12px; border-radius: 4px; font-size: 13px;">
+            ${escapeHtml(experiment.objective)}
+          </p>
+
+          <h2 style="margin-top: 30px;">Configuração Experimental</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="value">${experiment.blocks_count}</div>
+              <div class="label">Blocos</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${experiment.treatments_count}</div>
+              <div class="label">Tratamentos</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${experiment.plots_per_block || 'N/A'}</div>
+              <div class="label">Parcelas por Bloco</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PÁGINA 3: MONITORAMENTO -->
+        ${monitorings && monitorings.length > 0 ? `
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>DADOS DE MONITORAMENTO</h1>
+            <p>Biometria das plantas ao longo das avaliações</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="value">${statsMonit.mediaAltura}</div>
+              <div class="label">Altura Média (cm)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsMonit.mediaSanidade}</div>
+              <div class="label">Sanidade Média (1-5)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsMonit.totalMedicoes}</div>
+              <div class="label">Total de Medições</div>
+            </div>
+          </div>
+
+          <h2>Últimas Avaliações Registradas</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Bloco</th>
+                <th>Tratamento</th>
+                <th>Alt. Média (cm)</th>
+                <th>Sanidade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monitorings.slice(-10).map(m => {
+                const bioMon = biometrics.filter(b => b.monitoring_event_id === m.id);
+                const altMedia = bioMon.length > 0 ? (bioMon.reduce((sum, b) => sum + (b.height_cm || 0), 0) / bioMon.length).toFixed(1) : 0;
+                const sanMedia = bioMon.length > 0 ? (bioMon.reduce((sum, b) => sum + (b.sanity_score || 0), 0) / bioMon.length).toFixed(1) : 0;
+                return `
+                  <tr>
+                    <td>${new Date(m.monitoring_date).toLocaleDateString('pt-BR')}</td>
+                    <td>${m.block_number}</td>
+                    <td>${escapeHtml(m.plot_code)}</td>
+                    <td>${altMedia}</td>
+                    <td>${sanMedia}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- PÁGINA 4: COLHEITA -->
+        ${harvest && harvest.length > 0 ? `
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>DADOS DE COLHEITA</h1>
+            <p>Produção e qualidade dos produtos colhidos</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="value">${statsColheita.pesoTotal}</div>
+              <div class="label">Peso Total (kg)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsColheita.pesoMedio}</div>
+              <div class="label">Peso Médio (kg)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsColheita.qualidadeMedia}</div>
+              <div class="label">Qualidade Média (1-5)</div>
+            </div>
+          </div>
+
+          <h2>Registros de Colheita</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Bloco</th>
+                <th>Tratamento</th>
+                <th>Peso (kg)</th>
+                <th>Raízes Comerciais</th>
+                <th>Qualidade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${harvest.map(h => `
+                <tr>
+                  <td>${new Date(h.harvest_date).toLocaleDateString('pt-BR')}</td>
+                  <td>${h.block_number}</td>
+                  <td>${escapeHtml(h.plot_code)}</td>
+                  <td>${(h.total_weight || 0).toFixed(2)}</td>
+                  <td>${h.commercial_roots || '-'}</td>
+                  <td>${h.quality_score || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- PÁGINA 5: CLIMA -->
+        ${climate && climate.length > 0 ? `
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>DADOS CLIMÁTICOS</h1>
+            <p>Condições meteorológicas durante o experimento</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="value">${statsClima.chuvaTotal}</div>
+              <div class="label">Chuva Total (mm)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsClima.tempMedia}</div>
+              <div class="label">Temperatura Média (°C)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsClima.dias}</div>
+              <div class="label">Dias Registrados</div>
+            </div>
+          </div>
+
+          <h2>Últimos Registros Climáticos</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Chuva (mm)</th>
+                <th>T. Máx (°C)</th>
+                <th>T. Mín (°C)</th>
+                <th>T. Média (°C)</th>
+                <th>UR (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${climate.slice(-15).map(c => `
+                <tr>
+                  <td>${c.date}</td>
+                  <td>${(c.rain_mm || 0).toFixed(1)}</td>
+                  <td>${c.tmax_c ? c.tmax_c.toFixed(1) : '-'}</td>
+                  <td>${c.tmin_c ? c.tmin_c.toFixed(1) : '-'}</td>
+                  <td>${c.tmean_c ? c.tmean_c.toFixed(1) : '-'}</td>
+                  <td>${c.rh_mean ? c.rh_mean.toFixed(1) : '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- PÁGINA FINAL: CONCLUSÕES -->
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>CONCLUSÕES E OBSERVAÇÕES</h1>
+            <p>Análise consolidada do experimento</p>
+          </div>
+
+          <h2>Resumo Executivo</h2>
+          <p style="background: #f9fafb; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.8;">
+            Este relatório consolida os dados coletados no experimento <strong>${escapeHtml(experiment.code)}</strong>, 
+            conduzido em ${escapeHtml(experiment.farm)} sob a responsabilidade do pesquisador 
+            <strong>${escapeHtml(experiment.researcher)}</strong>. O experimento foi iniciado em 
+            ${new Date(experiment.planting_date).toLocaleDateString('pt-BR')} e engloba 
+            ${experiment.blocks_count} blocos com ${experiment.treatments_count} tratamentos cada um.
+          </p>
+
+          <h2 style="margin-top: 25px;">Resultados Principais</h2>
+          <ul style="font-size: 13px; line-height: 1.8;">
+            ${biometrics && biometrics.length > 0 ? `<li><strong>Monitoramento:</strong> ${statsMonit.totalMedicoes} medições realizadas com altura média de ${statsMonit.mediaAltura} cm e sanidade média de ${statsMonit.mediaSanidade}/5.</li>` : ''}
+            ${harvest && harvest.length > 0 ? `<li><strong>Colheita:</strong> ${statsColheita.totalRegistros} registros com produção total de ${statsColheita.pesoTotal} kg e qualidade média de ${statsColheita.qualidadeMedia}/5.</li>` : ''}
+            ${climate && climate.length > 0 ? `<li><strong>Clima:</strong> ${statsClima.dias} dias monitorados com precipitação total de ${statsClima.chuvaTotal} mm e temperatura média de ${statsClima.tempMedia}°C.</li>` : ''}
+          </ul>
+
+          <div class="footer">
+            <p>Relatório gerado automaticamente pelo Sistema de Monitoramento Experimental</p>
+            <p>Data: ${dataAtual}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 
   function escapeHtml(str) {
     if (!str) return "";
@@ -769,4 +1254,3 @@
       .replace(/>/g, "&gt;");
   }
 })();
-
