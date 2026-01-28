@@ -18,7 +18,7 @@
           </div>
           <div>
             <div style="font-size:18px; font-weight:600; color:#111827;" id="clQuickRain">– mm</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Chuva (últimos dias)</div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Chuva (últimos 7 dias)</div>
           </div>
         </div>
 
