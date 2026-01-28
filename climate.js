@@ -1,6 +1,3 @@
-<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-
-<script>
 // climate.js
 // Página de Dados Climáticos
 
@@ -841,4 +838,3 @@
   }
 
 })();
-</script>
