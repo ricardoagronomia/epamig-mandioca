@@ -56,44 +56,48 @@
         </p>
 
         <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end;">
-          <div style="flex:1 1 120px;">
-            <label for="clDate">Data</label>
-            <input type="date" id="clDate">
-          </div>
+  <div style="flex:1 1 120px;">
+    <label for="clDate">Data</label>
+    <input type="date" id="clDate">
+  </div>
 
-          <div style="flex:1 1 120px;">
-            <label for="clRain">Precipitação (mm)</label>
-            <input type="number" id="clRain" step="0.1" min="0" placeholder="Ex. 12.5">
-          </div>
+  <div style="flex:1 1 100px;">
+    <label for="clRain">Precipitação (mm)</label>
+    <input type="number" id="clRain" step="0.1" min="0" placeholder="Ex. 12.5">
+  </div>
 
-          <div style="flex:1 1 120px;">
-            <label for="clTmax">Temp. máxima (°C)</label>
-            <input type="number" id="clTmax" step="0.1" placeholder="Ex. 30.2">
-          </div>
+  <div style="flex:1 1 100px;">
+    <label for="clTmax">Temp. máxima (°C)</label>
+    <input type="number" id="clTmax" step="0.1" placeholder="Ex. 30.2">
+  </div>
 
-          <div style="flex:1 1 120px;">
-            <label for="clTmin">Temp. mínima (°C)</label>
-            <input type="number" id="clTmin" step="0.1" placeholder="Ex. 18.7">
-          </div>
+  <div style="flex:1 1 100px;">
+    <label for="clTmin">Temp. mínima (°C)</label>
+    <input type="number" id="clTmin" step="0.1" placeholder="Ex. 18.7">
+  </div>
 
-          <div style="flex:1 1 140px;">
-            <label for="clRh">Umidade relativa (%)</label>
-            <input type="number" id="clRh" step="1" min="0" max="100" placeholder="Ex. 75">
-          </div>
+  <div style="flex:1 1 100px;">
+    <label for="clTmean">Temp. média (°C)</label>
+    <input type="number" id="clTmean" step="0.1" placeholder="Ex. 24.5">
+  </div>
 
-          <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:2px;">
-            <button
-              type="button"
-              class="btn-primary"
-              style="margin-top:4px; font-size:13px; padding:6px 12px; width:auto; padding-inline:18px;"
-              onclick="saveClimateDailyRecord()"
-              ${isVisitor ? "disabled title='Somente leitura para visitantes'" : ""}
-            >
-              Salvar registro diário
-            </button>
-          </div>
-        </div>
-      </div>
+  <div style="flex:1 1 100px;">
+    <label for="clRh">Umidade relativa (%)</label>
+    <input type="number" id="clRh" step="1" min="0" max="100" placeholder="Ex. 75">
+  </div>
+
+  <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:2px;">
+    <button
+      type="button"
+      class="btn-primary"
+      style="margin-top:4px; font-size:13px; padding:6px 12px; width:auto; padding-inline:18px;"
+      onclick="saveClimateDailyRecord()"
+      ${isVisitor ? "disabled title='Somente leitura para visitantes'" : ""}
+    >
+      Salvar registro diário
+    </button>
+  </div>
+</div>
 
       <!-- Resumo mensal / anual (mock) -->
       <div class="card" style="margin-top:16px;">
@@ -180,6 +184,7 @@
   const rain_mm = document.getElementById("clRain")?.value;
   const tmax_c = document.getElementById("clTmax")?.value;
   const tmin_c = document.getElementById("clTmin")?.value;
+  const tmean_c = document.getElementById("clTmean")?.value;  // ADICIONAR ESTA LINHA
   const rh_mean = document.getElementById("clRh")?.value;
 
   if (!date) {
@@ -188,13 +193,14 @@
   }
 
   const payload = {
-    station_code: "PADRAO",
-    date,
-    rain_mm: rain_mm === "" ? null : Number(rain_mm),
-    tmax_c: tmax_c === "" ? null : Number(tmax_c),
-    tmin_c: tmin_c === "" ? null : Number(tmin_c),
-    rh_mean: rh_mean === "" ? null : Number(rh_mean),
-  };
+  station_code: "PADRAO",
+  date,
+  rain_mm: rain_mm === "" ? null : Number(rain_mm),
+  tmax_c: tmax_c === "" ? null : Number(tmax_c),
+  tmin_c: tmin_c === "" ? null : Number(tmin_c),
+  tmean_c: tmean_c === "" ? null : Number(tmean_c),  // ADICIONAR ESTA LINHA
+  rh_mean: rh_mean === "" ? null : Number(rh_mean),
+};
 
   try {
     if (currentClimateEditId) {
@@ -211,6 +217,7 @@
     document.getElementById("clRain").value = "";
     document.getElementById("clTmax").value = "";
     document.getElementById("clTmin").value = "";
+    document.getElementById("clTmean").value = "";  // ADICIONAR ESTA LINHA
     document.getElementById("clRh").value = "";
     // mantém a data para facilitar lançamentos em série
 
@@ -500,6 +507,7 @@
   document.getElementById("clRain").value = row.rain_mm ?? "";
   document.getElementById("clTmax").value = row.tmax_c ?? "";
   document.getElementById("clTmin").value = row.tmin_c ?? "";
+  document.getElementById("clTmean").value = row.tmean_c ?? "";  // ADICIONAR ESTA LINHA
   document.getElementById("clRh").value = row.rh_mean ?? "";
 
   const btn = document.querySelector('button[onclick="saveClimateDailyRecord()"]');
