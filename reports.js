@@ -250,7 +250,7 @@
     `;
   }
 
-  // ========== FUNÇÕES DE EXPORTAÇÃO EXCEL ==========
+    // ========== FUNÇÕES DE EXPORTAÇÃO EXCEL ==========
 
   window.exportMonitoringData = async function() {
     const experiment = window.currentExperiment;
@@ -263,11 +263,16 @@
       // Buscar dados de monitoramento
       const { data: monitorings, error: monError } = await s
         .from("monitoring_events")
-        .select("id, plot_code, block_number, monitoring_date")
+        .select("id, plot_code, block_number, monitoring_date, notes")
         .eq("experiment_id", experiment.id)
         .order("monitoring_date", { ascending: true });
 
       if (monError) throw monError;
+
+      if (!monitorings || monitorings.length === 0) {
+        alert('Nenhum dado de monitoramento disponível para este experimento');
+        return;
+      }
 
       const monitoringIds = monitorings.map(m => m.id);
 
@@ -301,13 +306,16 @@
             'Tratamento': mon.plot_code,
             'Posição': bio.plant_position,
             'Brotou': bio.has_sprouted ? 'Sim' : 'Não',
+            'Folhas expandidas': bio.has_expanded_leaves ? 'Sim' : 'Não',
             'Altura (cm)': bio.height_cm || '',
-            'Sanidade (1-5)': bio.sanity_score || '',
+            'Contagem de hastes': bio.stem_count || '',
             'Diâmetro 1 (cm)': bio.stem_diameter_1_cm || '',
             'Diâmetro 2 (cm)': bio.stem_diameter_2_cm || '',
             'Diâmetro 3 (cm)': bio.stem_diameter_3_cm || '',
+            'Sanidade (1-5)': bio.sanity_score || '',
+            'Obs. sanidade': bio.sanity_observations || '',
             'Status': status ? status.status : 'alive',
-            'Observações': bio.notes || ''
+            'Observações gerais': mon.notes || ''
           });
         });
       });
@@ -321,7 +329,7 @@
       const filename = `${experiment.code}_monitoramento_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
-      alert(`✓ Dados de monitoramento exportados com sucesso!`);
+      alert(`✓ ${exportData.length} registros de monitoramento exportados com sucesso!`);
 
     } catch (err) {
       console.error('Erro ao exportar monitoramento:', err);
@@ -338,7 +346,7 @@
 
     try {
       const { data, error } = await s
-        .from("harvest_data")
+        .from("harvest_records")
         .select("*")
         .eq("experiment_id", experiment.id)
         .order("harvest_date", { ascending: true });
@@ -354,10 +362,11 @@
         'Data da colheita': h.harvest_date,
         'Bloco': h.block_number,
         'Tratamento': h.plot_code,
-        'Peso total (kg)': h.total_weight_kg || '',
-        'Raízes comerciais (kg)': h.commercial_roots_kg || '',
-        'Raízes não comerciais (kg)': h.non_commercial_roots_kg || '',
-        'Número de raízes': h.roots_count || '',
+        'Peso total (kg)': h.total_weight || '',
+        'Raízes comerciais (unid)': h.commercial_roots || '',
+        'Diâmetro médio (cm)': h.mean_diameter_cm || '',
+        'Qualidade (1-5)': h.quality_score || '',
+        'Código amostra': h.sample_code || '',
         'Observações': h.notes || ''
       }));
 
@@ -368,7 +377,7 @@
       const filename = `${experiment.code}_colheita_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
-      alert(`✓ Dados de colheita exportados com sucesso!`);
+      alert(`✓ ${exportData.length} registros de colheita exportados com sucesso!`);
 
     } catch (err) {
       console.error('Erro ao exportar colheita:', err);
@@ -399,10 +408,22 @@
 
       const exportData = data.map(d => ({
         'Data do voo': d.flight_date,
-        'Bloco': d.block_number,
-        'Tratamento': d.plot_code,
-        'NDVI': d.ndvi_value || '',
-        'Cobertura vegetal (%)': d.canopy_coverage_percent || '',
+        'Hora': d.flight_time || '',
+        'Operador': d.operator_name || '',
+        'Bloco': d.block_number || '',
+        'Altitude (m)': d.altitude_m || '',
+        'Nº imagens': d.image_count || '',
+        'Índice cobertura': d.coverage_index || '',
+        'NDVI médio': d.ndvi_mean || '',
+        'Altura planta (m)': d.plant_height_m || '',
+        'Volume copa (m³)': d.canopy_volume_m3 || '',
+        'Índice área foliar': d.leaf_area_index || '',
+        'Índice margem': d.margin_index || '',
+        'Plantas/ha': d.stand_plants_per_ha || '',
+        'Score saúde': d.health_score || '',
+        'Índice vegetação': d.vegetation_index || '',
+        'Sobreposição frontal (%)': d.front_overlap_pct || '',
+        'Sobreposição lateral (%)': d.side_overlap_pct || '',
         'Observações': d.notes || ''
       }));
 
@@ -413,7 +434,7 @@
       const filename = `${experiment.code}_drone_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
-      alert(`✓ Dados de drone exportados com sucesso!`);
+      alert(`✓ ${exportData.length} registros de drone exportados com sucesso!`);
 
     } catch (err) {
       console.error('Erro ao exportar drone:', err);
@@ -438,6 +459,7 @@
 
       const exportData = data.map(c => ({
         'Data': c.date,
+        'Estação': c.station_code,
         'Precipitação (mm)': c.rain_mm || '',
         'Temp. máxima (°C)': c.tmax_c || '',
         'Temp. mínima (°C)': c.tmin_c || '',
@@ -452,7 +474,7 @@
       const filename = `clima_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
-      alert(`✓ Dados climáticos exportados com sucesso!`);
+      alert(`✓ ${exportData.length} registros climáticos exportados com sucesso!`);
 
     } catch (err) {
       console.error('Erro ao exportar clima:', err);
@@ -484,9 +506,11 @@
       const exportData = data.map(i => ({
         'Data': i.intervention_date,
         'Tipo': i.intervention_type,
-        'Descrição': i.description || '',
-        'Produto/Insumo': i.product_name || '',
-        'Dose/Quantidade': i.dosage || '',
+        'Bloco': i.block_number || '',
+        'Tratamento': i.plot_code || '',
+        'Produto': i.product || '',
+        'Dosagem': i.dosage || '',
+        'Método': i.method || '',
         'Observações': i.notes || ''
       }));
 
@@ -497,7 +521,7 @@
       const filename = `${experiment.code}_intervencoes_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
-      alert(`✓ Dados de intervenções exportados com sucesso!`);
+      alert(`✓ ${exportData.length} intervenções exportadas com sucesso!`);
 
     } catch (err) {
       console.error('Erro ao exportar intervenções:', err);
@@ -514,11 +538,78 @@
 
     try {
       const workbook = XLSX.utils.book_new();
+      let totalSheets = 0;
 
-      // 1. Monitoramento
+      // 1. Informações do experimento
+      const expData = [{
+        'Código': experiment.code,
+        'Nome': experiment.name,
+        'Objetivo': experiment.objective,
+        'Pesquisador': experiment.researcher,
+        'Colaborador': experiment.collaborator || '',
+        'Data plantio': experiment.planting_date,
+        'Fazenda': experiment.farm,
+        'Município': experiment.municipality,
+        'Latitude': experiment.latitude || '',
+        'Longitude': experiment.longitude || '',
+        'Altitude': experiment.altitude || '',
+        'Bioma': experiment.biome,
+        'Tipo solo': experiment.soil_type || '',
+        'Clima': experiment.climate || '',
+        'Sistema cultivo': experiment.cultivation_system,
+        'Nº blocos': experiment.blocks_count,
+        'Nº tratamentos': experiment.treatments_count,
+        'Área total': experiment.total_area || '',
+        'Status': experiment.status
+      }];
+      const wsExp = XLSX.utils.json_to_sheet(expData);
+      XLSX.utils.book_append_sheet(workbook, wsExp, "Experimento");
+      totalSheets++;
+
+      // 2. Tratamentos
+      const { data: treatments } = await s
+        .from("treatments")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("code", { ascending: true });
+
+      if (treatments && treatments.length > 0) {
+        const treatData = treatments.map(t => ({
+          'Código': t.code,
+          'Posição': t.position,
+          'Descrição': t.description || ''
+        }));
+        const ws = XLSX.utils.json_to_sheet(treatData);
+        XLSX.utils.book_append_sheet(workbook, ws, "Tratamentos");
+        totalSheets++;
+      }
+
+      // 3. Cronograma
+      const { data: schedule } = await s
+        .from("scheduled_actions")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("start_date", { ascending: true });
+
+      if (schedule && schedule.length > 0) {
+        const schedData = schedule.map(a => ({
+          'Nome': a.name,
+          'Fase': a.phase,
+          'Data início': a.start_date || '',
+          'Data fim': a.end_date || '',
+          'Concluído em': a.completed_at || '',
+          'Responsável': a.owner || '',
+          'Descrição': a.description || ''
+        }));
+        const ws = XLSX.utils.json_to_sheet(schedData);
+        XLSX.utils.book_append_sheet(workbook, ws, "Cronograma");
+        totalSheets++;
+      }
+
+      // 4. Monitoramento
       const { data: monitorings } = await s
         .from("monitoring_events")
-        .select("id, plot_code, block_number, monitoring_date")
+        .select("id, plot_code, block_number, monitoring_date, notes")
         .eq("experiment_id", experiment.id)
         .order("monitoring_date", { ascending: true });
 
@@ -544,9 +635,13 @@
               'Bloco': mon.block_number,
               'Tratamento': mon.plot_code,
               'Posição': bio.plant_position,
+              'Brotou': bio.has_sprouted ? 'Sim' : 'Não',
               'Altura (cm)': bio.height_cm || '',
+              'Hastes': bio.stem_count || '',
+              'Diâm. 1': bio.stem_diameter_1_cm || '',
+              'Diâm. 2': bio.stem_diameter_2_cm || '',
+              'Diâm. 3': bio.stem_diameter_3_cm || '',
               'Sanidade': bio.sanity_score || '',
-              'Diâmetro 1': bio.stem_diameter_1_cm || '',
               'Status': status ? status.status : 'alive'
             });
           });
@@ -555,46 +650,57 @@
         if (monData.length > 0) {
           const ws = XLSX.utils.json_to_sheet(monData);
           XLSX.utils.book_append_sheet(workbook, ws, "Monitoramento");
+          totalSheets++;
         }
       }
 
-      // 2. Colheita
+      // 5. Colheita
       const { data: harvest } = await s
-        .from("harvest_data")
+        .from("harvest_records")
         .select("*")
-        .eq("experiment_id", experiment.id);
+        .eq("experiment_id", experiment.id)
+        .order("harvest_date", { ascending: true });
 
       if (harvest && harvest.length > 0) {
         const harvestData = harvest.map(h => ({
           'Data': h.harvest_date,
           'Bloco': h.block_number,
           'Tratamento': h.plot_code,
-          'Peso total (kg)': h.total_weight_kg || '',
-          'Raízes comerciais (kg)': h.commercial_roots_kg || ''
+          'Peso total (kg)': h.total_weight || '',
+          'Raízes comerciais': h.commercial_roots || '',
+          'Diâmetro médio (cm)': h.mean_diameter_cm || '',
+          'Qualidade': h.quality_score || '',
+          'Código amostra': h.sample_code || ''
         }));
         const ws = XLSX.utils.json_to_sheet(harvestData);
         XLSX.utils.book_append_sheet(workbook, ws, "Colheita");
+        totalSheets++;
       }
 
-      // 3. Drone
+      // 6. Drone
       const { data: drone } = await s
         .from("drone_monitoring")
         .select("*")
-        .eq("experiment_id", experiment.id);
+        .eq("experiment_id", experiment.id)
+        .order("flight_date", { ascending: true });
 
       if (drone && drone.length > 0) {
         const droneData = drone.map(d => ({
           'Data': d.flight_date,
-          'Bloco': d.block_number,
-          'Tratamento': d.plot_code,
-          'NDVI': d.ndvi_value || '',
-          'Cobertura (%)': d.canopy_coverage_percent || ''
+          'Bloco': d.block_number || '',
+          'Operador': d.operator_name || '',
+          'Altitude (m)': d.altitude_m || '',
+          'NDVI médio': d.ndvi_mean || '',
+          'Altura planta (m)': d.plant_height_m || '',
+          'IAF': d.leaf_area_index || '',
+          'Plantas/ha': d.stand_plants_per_ha || ''
         }));
         const ws = XLSX.utils.json_to_sheet(droneData);
         XLSX.utils.book_append_sheet(workbook, ws, "Drone");
+        totalSheets++;
       }
 
-      // 4. Clima
+      // 7. Clima
       const { data: climate } = await s
         .from("climate_daily")
         .select("*")
@@ -612,34 +718,40 @@
         }));
         const ws = XLSX.utils.json_to_sheet(climateData);
         XLSX.utils.book_append_sheet(workbook, ws, "Clima");
+        totalSheets++;
       }
 
-      // 5. Intervenções
+      // 8. Intervenções
       const { data: interventions } = await s
         .from("interventions")
         .select("*")
-        .eq("experiment_id", experiment.id);
+        .eq("experiment_id", experiment.id)
+        .order("intervention_date", { ascending: true });
 
       if (interventions && interventions.length > 0) {
         const intData = interventions.map(i => ({
           'Data': i.intervention_date,
           'Tipo': i.intervention_type,
-          'Descrição': i.description || '',
-          'Produto': i.product_name || ''
+          'Bloco': i.block_number || '',
+          'Tratamento': i.plot_code || '',
+          'Produto': i.product || '',
+          'Dosagem': i.dosage || '',
+          'Método': i.method || ''
         }));
         const ws = XLSX.utils.json_to_sheet(intData);
         XLSX.utils.book_append_sheet(workbook, ws, "Intervenções");
+        totalSheets++;
       }
 
       // Download do arquivo consolidado
-      const filename = `${experiment.code}_consolidado_${new Date().toISOString().slice(0,10)}.xlsx`;
+      const filename = `${experiment.code}_COMPLETO_${new Date().toISOString().slice(0,10)}.xlsx`;
       XLSX.writeFile(workbook, filename);
 
-      alert(`✓ Todos os dados exportados com sucesso em ${workbook.SheetNames.length} abas!`);
+      alert(`✓ Exportação completa!\n\n${totalSheets} abas geradas com todos os dados do experimento.`);
 
     } catch (err) {
       console.error('Erro ao exportar dados consolidados:', err);
-      alert('Erro ao exportar dados consolidados');
+      alert('Erro ao exportar dados consolidados: ' + err.message);
     }
   };
 
