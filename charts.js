@@ -570,7 +570,7 @@
     });
   }
 
-  async function generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId) {
+    async function generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId) {
     const ctx = document.getElementById('chartCombo');
     if (!ctx) return;
 
@@ -581,41 +581,69 @@
     const plantMetric = document.getElementById('selectPlantMetric')?.value || 'height';
     const climateVar = document.getElementById('selectClimateVar')?.value || 'precip_accum';
 
-    const dateGroups = {};
+    // Buscar dados climáticos mensais
+    const climateData = await getClimateMonthlyData(climateVar, experimentId);
+    if (!climateData || climateData.length === 0) {
+      console.warn('Sem dados climáticos disponíveis');
+      return;
+    }
+
+    // Agrupar monitoramentos por mês
+    const monitoringsByMonth = {};
+    
     allMonitorings.forEach(mon => {
-      if (!dateGroups[mon.monitoring_date]) {
-        dateGroups[mon.monitoring_date] = [];
+      const date = new Date(mon.monitoring_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monitoringsByMonth[monthKey]) {
+        monitoringsByMonth[monthKey] = [];
       }
-      dateGroups[mon.monitoring_date].push(mon);
+      monitoringsByMonth[monthKey].push(mon);
     });
 
-    const sortedDates = Object.keys(dateGroups).sort((a, b) => new Date(a) - new Date(b));
-
-    const treatmentData = {};
+    // Calcular média de cada tratamento por mês
+    const treatmentsByMonth = {};
     
-    sortedDates.forEach(date => {
-      const monitorings = dateGroups[date];
+    Object.keys(monitoringsByMonth).forEach(monthKey => {
+      const monitorings = monitoringsByMonth[monthKey];
+      
+      const treatmentValues = {};
       
       monitorings.forEach(mon => {
         const treatment = mon.plot_code;
         
-        if (!treatmentData[treatment]) {
-          treatmentData[treatment] = [];
+        if (!treatmentValues[treatment]) {
+          treatmentValues[treatment] = [];
         }
-
+        
         const value = getPlantMetricValueForMonitoring(plantMetric, mon, biometrics, statuses);
-        treatmentData[treatment].push(value);
+        treatmentValues[treatment].push(value);
+      });
+      
+      // Calcular média de cada tratamento neste mês
+      Object.keys(treatmentValues).forEach(treatment => {
+        if (!treatmentsByMonth[treatment]) {
+          treatmentsByMonth[treatment] = {};
+        }
+        
+        const values = treatmentValues[treatment];
+        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+        treatmentsByMonth[treatment][monthKey] = avg;
       });
     });
 
-    const sortedTreatments = Object.keys(treatmentData).sort((a, b) => {
+    // Ordenar tratamentos
+    const sortedTreatments = Object.keys(treatmentsByMonth).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
       return numA - numB;
     });
 
-    const climateDataByPeriod = await getClimateDataByPeriod(climateVar, experimentId, sortedDates);
+    // Criar labels dos meses
+    const monthLabels = climateData.map(d => d.label);
+    const monthKeys = climateData.map(d => d.monthKey);
 
+    // Configuração
     const config = getMetricConfig(plantMetric, climateVar);
     const colors = [
       '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
@@ -623,43 +651,45 @@
       '#84cc16', '#f43f5e'
     ];
 
-    const datasets = sortedTreatments.map((treatment, idx) => {
-      return {
-        type: 'bar',
-        label: treatment,
-        data: treatmentData[treatment],
-        backgroundColor: colors[idx % colors.length],
-        borderRadius: 4,
-        yAxisID: 'y'
-      };
-    });
+    // Dataset das barras (dados climáticos)
+    const datasets = [{
+      type: 'bar',
+      label: config.climateLabel,
+      data: climateData.map(d => d.value),
+      backgroundColor: 'rgba(37, 99, 235, 0.3)',
+      borderColor: '#2563eb',
+      borderWidth: 1,
+      borderRadius: 4,
+      yAxisID: 'y1'
+    }];
 
-    if (climateDataByPeriod && climateDataByPeriod.length > 0) {
+    // Datasets das linhas (tratamentos)
+    sortedTreatments.forEach((treatment, idx) => {
+      const treatmentData = monthKeys.map(monthKey => {
+        return treatmentsByMonth[treatment][monthKey] || null;
+      });
+
       datasets.push({
         type: 'line',
-        label: config.climateLabel,
-        data: climateDataByPeriod,
-        borderColor: '#dc2626',
-        backgroundColor: 'transparent',
-        borderWidth: 3,
-        tension: 0.4,
-        yAxisID: 'y1',
-        pointRadius: 5,
-        pointBackgroundColor: '#dc2626',
+        label: treatment,
+        data: treatmentData,
+        borderColor: colors[idx % colors.length],
+        backgroundColor: colors[idx % colors.length],
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: colors[idx % colors.length],
         pointBorderColor: '#fff',
-        pointBorderWidth: 2
+        pointBorderWidth: 2,
+        yAxisID: 'y',
+        spanGaps: true
       });
-    }
-
-    const periodLabels = sortedDates.map((date, idx) => {
-      const d = new Date(date);
-      return `P${idx + 1} (${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')})`;
     });
 
     chartInstances.combo = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: periodLabels,
+        labels: monthLabels,
         datasets: datasets
       },
       options: {
@@ -676,22 +706,67 @@
             position: 'left',
             beginAtZero: config.plantBeginAtZero,
             max: config.plantMax,
-            title: { display: true, text: config.plantAxisLabel, color: '#065f46', font: { weight: 'bold' } }
+            title: { 
+              display: true, 
+              text: config.plantAxisLabel, 
+              color: '#065f46', 
+              font: { weight: 'bold', size: 13 } 
+            },
+            ticks: {
+              color: '#065f46',
+              font: { weight: 600 }
+            }
           },
           y1: {
             type: 'linear',
             display: true,
             position: 'right',
             beginAtZero: config.climateBeginAtZero,
-            title: { display: true, text: config.climateAxisLabel, color: '#dc2626', font: { weight: 'bold' } },
-            grid: { drawOnChartArea: false }
+            title: { 
+              display: true, 
+              text: config.climateAxisLabel, 
+              color: '#2563eb', 
+              font: { weight: 'bold', size: 13 } 
+            },
+            grid: { 
+              drawOnChartArea: false 
+            },
+            ticks: {
+              color: '#2563eb',
+              font: { weight: 600 }
+            }
+          },
+          x: {
+            ticks: {
+              font: { size: 11 }
+            }
           }
         },
         plugins: {
           legend: { 
             display: true, 
             position: 'top',
-            labels: { boxWidth: 12, padding: 8, font: { size: 11 } }
+            labels: { 
+              boxWidth: 15, 
+              padding: 10, 
+              font: { size: 11 },
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y;
+                
+                if (context.dataset.type === 'bar') {
+                  return `${label}: ${value.toFixed(1)}`;
+                } else {
+                  const unit = getPlantMetricUnit(plantMetric);
+                  return `${label}: ${value.toFixed(1)} ${unit}`;
+                }
+              }
+            }
           }
         }
       }
@@ -773,60 +848,113 @@
     return 0;
   }
 
-  async function getClimateDataByPeriod(climateVar, experimentId, monitoringDates) {
+  async function getClimateMonthlyData(climateVar, experimentId) {
     try {
       const { data, error } = await s
-        .from("climate_data")
-        .select("observation_date, precipitation_mm, temp_max_c, temp_min_c, humidity_percent")
-        .eq("experiment_id", experimentId)
-        .order("observation_date", { ascending: true });
+        .from("climate_daily")
+        .select("date, rain_mm, tmax_c, tmin_c, tmean_c, rh_mean")
+        .eq("station_code", "PADRAO")
+        .order("date", { ascending: true });
 
-      if (error || !data || data.length === 0) return null;
+      if (error || !data || data.length === 0) {
+        console.warn('Sem dados climáticos');
+        return null;
+      }
 
-      const result = [];
-
-      monitoringDates.forEach(monDate => {
-        const monDateObj = new Date(monDate);
+      // Agrupar por mês
+      const monthlyData = {};
+      
+      data.forEach(d => {
+        if (!d.date) return;
         
-        const climateUpToDate = data.filter(d => new Date(d.observation_date) <= monDateObj);
-
-        if (climateUpToDate.length === 0) {
-          result.push(0);
-          return;
+        const date = new Date(d.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = {
+            precipSum: 0,
+            tmaxSum: 0,
+            tmaxCount: 0,
+            tminSum: 0,
+            tminCount: 0,
+            tmeanSum: 0,
+            tmeanCount: 0,
+            rhSum: 0,
+            rhCount: 0,
+            year: date.getFullYear(),
+            month: date.getMonth()
+          };
         }
-
-        if (climateVar === 'precip_accum') {
-          const accum = climateUpToDate.reduce((sum, d) => sum + (d.precipitation_mm || 0), 0);
-          result.push(accum);
-
-        } else if (climateVar === 'temp_avg') {
-          const temps = climateUpToDate.map(d => ((d.temp_max_c || 0) + (d.temp_min_c || 0)) / 2);
-          const avg = temps.reduce((sum, t) => sum + t, 0) / temps.length;
-          result.push(avg);
-
-        } else if (climateVar === 'temp_max') {
-          const temps = climateUpToDate.map(d => d.temp_max_c || 0).filter(t => t > 0);
-          const avg = temps.length > 0 ? temps.reduce((sum, t) => sum + t, 0) / temps.length : 0;
-          result.push(avg);
-
-        } else if (climateVar === 'temp_min') {
-          const temps = climateUpToDate.map(d => d.temp_min_c || 0).filter(t => t > 0);
-          const avg = temps.length > 0 ? temps.reduce((sum, t) => sum + t, 0) / temps.length : 0;
-          result.push(avg);
-
-        } else if (climateVar === 'humidity') {
-          const humidity = climateUpToDate.map(d => d.humidity_percent || 0).filter(h => h > 0);
-          const avg = humidity.length > 0 ? humidity.reduce((sum, h) => sum + h, 0) / humidity.length : 0;
-          result.push(avg);
+        
+        const m = monthlyData[monthKey];
+        
+        if (d.rain_mm != null) m.precipSum += d.rain_mm;
+        
+        if (d.tmax_c != null) {
+          m.tmaxSum += d.tmax_c;
+          m.tmaxCount++;
+        }
+        
+        if (d.tmin_c != null) {
+          m.tminSum += d.tmin_c;
+          m.tminCount++;
+        }
+        
+        if (d.tmean_c != null) {
+          m.tmeanSum += d.tmean_c;
+          m.tmeanCount++;
+        }
+        
+        if (d.rh_mean != null) {
+          m.rhSum += d.rh_mean;
+          m.rhCount++;
         }
       });
 
+      // Converter para array e calcular valores finais
+      const result = [];
+      const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      
+      Object.keys(monthlyData).sort().forEach(monthKey => {
+        const m = monthlyData[monthKey];
+        let value = 0;
+        
+        if (climateVar === 'precip_accum') {
+          value = m.precipSum;
+        } else if (climateVar === 'temp_avg') {
+          value = m.tmeanCount > 0 ? m.tmeanSum / m.tmeanCount : 
+                  (m.tmaxCount > 0 && m.tminCount > 0 ? (m.tmaxSum / m.tmaxCount + m.tminSum / m.tminCount) / 2 : 0);
+        } else if (climateVar === 'temp_max') {
+          value = m.tmaxCount > 0 ? m.tmaxSum / m.tmaxCount : 0;
+        } else if (climateVar === 'temp_min') {
+          value = m.tminCount > 0 ? m.tminSum / m.tminCount : 0;
+        } else if (climateVar === 'humidity') {
+          value = m.rhCount > 0 ? m.rhSum / m.rhCount : 0;
+        }
+        
+        result.push({
+          monthKey: monthKey,
+          label: `${nomesMeses[m.month]}/${m.year}`,
+          value: value
+        });
+      });
+      
       return result;
-
+      
     } catch (err) {
-      console.error("Erro ao buscar dados climáticos:", err);
+      console.error("Erro ao buscar dados climáticos mensais:", err);
       return null;
     }
+  }
+
+  function getPlantMetricUnit(plantMetric) {
+    const units = {
+      height: 'cm',
+      survival: '%',
+      sanity: '/5',
+      diameter: 'cm'
+    };
+    return units[plantMetric] || '';
   }
 
   function getMetricConfig(plantMetric, climateVar) {
@@ -905,7 +1033,7 @@
     return String(str)
       .replace(/&/g, "&amp;")
       .replace(/"/g, "&quot;")
-      .replace(/'/g, "'")
+      .replace(/'/g, "&#039;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
