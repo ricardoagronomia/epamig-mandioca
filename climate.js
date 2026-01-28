@@ -385,10 +385,12 @@
     try {
       const { data, error } = await s
         .from("climate_daily")
-        .select("date, rain_mm, tmax_c, tmin_c, rh_mean")
+        .select("date, rain_mm, tmax_c, tmin_c, tmean_c, rh_mean")
         .gte("date", dataInicio)
         .lte("date", dataFim)
         .order("date", { ascending: true });
+       
+      console.log("Dados carregados:", data);
 
       if (error) throw error;
 
