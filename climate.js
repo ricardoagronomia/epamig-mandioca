@@ -159,6 +159,7 @@
                 <th>Precipitação acumulada (mm)</th>
                 <th>Temp. máx. média (°C)</th>
                 <th>Temp. mín. média (°C)</th>
+                <th>Temp. média (°C)</th>
                 <th>Umidade relativa média (%)</th>
               </tr>
             </thead>
@@ -297,7 +298,7 @@
     try {
       const { data, error } = await s
         .from("climate_daily")
-        .select("id, date, rain_mm, tmax_c, tmin_c, tmean_c, rh_mean")
+        .select("date, rain_mm, tmax_c, tmin_c, tmean_c, rh_mean")
         .order("date", { ascending: true });
 
       console.log("climate_daily data:", data, "error:", error);
@@ -403,6 +404,8 @@
           tmaxCount: 0,
           tminSum: 0,
           tminCount: 0,
+          tmeanSum: 0,      
+          tmeanCount: 0,
           rhSum: 0,
           rhCount: 0,
         });
@@ -431,6 +434,10 @@
           slot.tminSum += Number(row.tmin_c);
           slot.tminCount += 1;
         }
+        if (row.tmean_c != null) {
+        slot.tmeanSum += Number(row.tmean_c);
+        slot.tmeanCount += 1;
+        }
         if (row.rh_mean != null) {
           slot.rhSum += Number(row.rh_mean);
           slot.rhCount += 1;
@@ -447,6 +454,7 @@
         const rainAcum = acumulado > 0 ? acumulado.toFixed(1) : "–";
         const tmax = s.tmaxCount ? (s.tmaxSum / s.tmaxCount).toFixed(1) : "–";
         const tmin = s.tminCount ? (s.tminSum / s.tminCount).toFixed(1) : "–";
+        const tmean = s.tmeanCount ? (s.tmeanSum / s.tmeanCount).toFixed(1) : "–";
         const rh = s.rhCount ? (s.rhSum / s.rhCount).toFixed(0) : "–";
 
         return `
@@ -456,6 +464,7 @@
             <td>${rainAcum}</td>
             <td>${tmax}</td>
             <td>${tmin}</td>
+            <td>${tmean}</td>
             <td>${rh}</td>
           </tr>
         `;
