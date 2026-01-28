@@ -537,9 +537,10 @@
 
     diameterData.sort((a, b) => {
       const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
-      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.label.replace(/\D/g, '')) || 0;  // ✅ Corrigido
       return numA - numB;
     });
+
 
     if (diameterData.length === 0) return;
 
