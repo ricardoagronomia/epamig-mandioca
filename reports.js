@@ -529,7 +529,7 @@
     }
   };
 
-  window.exportAllData = async function() {
+    window.exportAllData = async function() {
     const experiment = window.currentExperiment;
     if (!experiment) {
       alert('Nenhum experimento selecionado');
@@ -769,3 +769,4 @@
       .replace(/>/g, "&gt;");
   }
 })();
+
