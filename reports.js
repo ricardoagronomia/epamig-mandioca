@@ -801,11 +801,12 @@
 
       // Criar PDF
       const opt = {
-        margin: 10,
+        margin: 20,
         filename: `${experiment.code}_relatorio_${new Date().toISOString().slice(0,10)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        pagebreak: { mode: ['css'] }
       };
 
       html2pdf().set(opt).from(html).save();
@@ -859,12 +860,19 @@
           body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; line-height: 1.5; color: #333; }
           
           @page {
-            size: A4;
-            margin: 20mm 15mm;
-            padding: 0;
-          }
-          
-          .page-break { page-break-after: always; margin-bottom: 0; padding-bottom: 0; }
+          size: A4;
+          margin: 20mm 15mm;
+        }
+        body {
+         margin: 0;
+          padding: 0;
+        }
+        table, tr, td, .section, .stat-card {
+          page-break-inside: avoid;
+        }
+        .page-break {
+          page-break-after: always;
+        }
           
           .capa {
             padding: 40px 30px;
