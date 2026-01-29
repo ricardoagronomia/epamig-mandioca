@@ -858,149 +858,203 @@
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; line-height: 1.5; color: #333; }
           
-          .page-break { page-break-after: always; }
+          @page {
+            size: A4;
+            margin: 20mm 15mm;
+            padding: 0;
+          }
+          
+          .page-break { page-break-after: always; margin-bottom: 0; padding-bottom: 0; }
           
           .capa {
-            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
-            color: white;
-            padding: 60px 40px;
+            padding: 40px 30px;
             text-align: center;
-            min-height: 297mm;
+            min-height: 280mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            border-top: 3px solid #065f46;
+            border-bottom: 3px solid #065f46;
           }
           
-          .capa h1 { font-size: 42px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
-          .capa h2 { font-size: 28px; margin-bottom: 40px; font-weight: 300; }
-          .capa .info { font-size: 14px; margin-top: 60px; line-height: 2; opacity: 0.95; }
-          .capa .data { margin-top: 80px; font-size: 12px; opacity: 0.8; }
+          .capa h1 { font-size: 36px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; color: #065f46; }
+          .capa h2 { font-size: 24px; margin-bottom: 30px; font-weight: 400; color: #333; }
+          .capa .info { font-size: 13px; margin-top: 40px; line-height: 2.2; color: #555; }
+          .capa .periodo { margin-top: 30px; font-size: 12px; color: #888; font-style: italic; }
+          .capa .data { margin-top: 60px; font-size: 11px; color: #999; }
           
           .header {
-            border-bottom: 3px solid #065f46;
-            padding-bottom: 15px;
-            margin-bottom: 30px;
+            border-top: 2px solid #065f46;
+            border-bottom: 2px solid #065f46;
+            padding: 12px 0;
+            margin-bottom: 20px;
+            margin-top: 0;
           }
           
-          .header h1 { font-size: 24px; color: #065f46; margin-bottom: 5px; }
-          .header p { font-size: 12px; color: #666; }
+          .header h1 { font-size: 20px; color: #065f46; margin-bottom: 3px; font-weight: 600; }
+          .header p { font-size: 11px; color: #777; margin: 0; }
           
           .section {
-            margin-bottom: 40px;
-            padding: 0 40px;
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+            padding: 0;
           }
           
           .section h2 {
-            font-size: 18px;
+            font-size: 15px;
             color: #065f46;
-            margin-bottom: 15px;
-            border-left: 4px solid #065f46;
-            padding-left: 12px;
+            margin: 20px 0 10px 0;
+            border-left: 3px solid #065f46;
+            padding-left: 8px;
+            font-weight: 600;
           }
           
           .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 15px;
           }
           
           .info-box {
-            background: #f0fdf4;
-            border: 1px solid #86efac;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 13px;
+            border: 1px solid #d1d5db;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #ffffff;
           }
           
-          .info-box strong { color: #065f46; display: block; margin-bottom: 4px; }
+          .info-box strong { color: #065f46; display: block; margin-bottom: 3px; font-size: 11px; }
           
           .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 15px;
           }
           
           .stat-card {
-            background: #ecfdf5;
-            border-left: 4px solid #065f46;
-            padding: 15px;
-            border-radius: 4px;
+            border-top: 2px solid #065f46;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px;
+            border-radius: 0;
+            background: #ffffff;
           }
           
           .stat-card .value {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: bold;
             color: #065f46;
           }
           
           .stat-card .label {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
+            font-size: 11px;
+            color: #777;
+            margin-top: 3px;
           }
           
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 11px;
+            margin-bottom: 15px;
+            font-size: 10px;
+            page-break-inside: avoid;
           }
           
           table th {
-            background: #065f46;
-            color: white;
-            padding: 8px;
+            background: #ffffff;
+            border-bottom: 2px solid #065f46;
+            color: #065f46;
+            padding: 6px;
             text-align: left;
+            font-weight: 600;
+            font-size: 10px;
           }
           
           table td {
-            padding: 8px;
+            padding: 6px;
             border-bottom: 1px solid #e5e7eb;
           }
           
           table tr:nth-child(even) { background: #f9fafb; }
           
+          .layout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 4px;
+            margin-bottom: 15px;
+          }
+          
+          .layout-cell {
+            aspect-ratio: 1;
+            border: 1px solid #065f46;
+            padding: 4px;
+            font-size: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: #ffffff;
+            overflow: hidden;
+          }
+          
+          .layout-cell strong { color: #065f46; font-size: 9px; }
+          
+          .nota {
+            border-left: 3px solid #065f46;
+            padding: 10px;
+            margin: 15px 0;
+            background: #ffffff;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          
           .footer {
             text-align: center;
-            font-size: 10px;
+            font-size: 9px;
             color: #999;
-            margin-top: 40px;
-            padding-top: 20px;
+            margin-top: 15px;
+            padding-top: 10px;
             border-top: 1px solid #e5e7eb;
+            page-break-inside: avoid;
           }
         </style>
       </head>
       <body>
-        <!-- CAPA -->
+        <!-- CAPA SIMPLES -->
         <div class="capa">
           <h1>RELATÓRIO EXPERIMENTAL</h1>
           <h2>${escapeHtml(experiment.name)}</h2>
           <div class="info">
-            <strong>Código:</strong> ${escapeHtml(experiment.code)}<br>
-            <strong>Pesquisador:</strong> ${escapeHtml(experiment.researcher)}<br>
-            <strong>Fazenda:</strong> ${escapeHtml(experiment.farm)}<br>
-            <strong>Município:</strong> ${escapeHtml(experiment.municipality)}
+            <div><strong>Código:</strong> ${escapeHtml(experiment.code)}</div>
+            <div><strong>Pesquisador:</strong> ${escapeHtml(experiment.researcher)}</div>
+            <div><strong>Fazenda:</strong> ${escapeHtml(experiment.farm)}</div>
+            <div><strong>Município:</strong> ${escapeHtml(experiment.municipality)}</div>
           </div>
+          ${experiment.planting_date ? `
+            <div class="periodo">
+              Período: ${new Date(experiment.planting_date).toLocaleDateString('pt-BR')} até hoje
+            </div>
+          ` : ''}
           <div class="data">Gerado em ${dataAtual}</div>
         </div>
 
-        <!-- PÁGINA 2: INFORMAÇÕES GERAIS -->
+        <!-- PÁGINA 2: INFORMAÇÕES GERAIS E OBJETIVO -->
         <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>INFORMAÇÕES GERAIS DO EXPERIMENTO</h1>
-            <p>Resumo das características e configuração experimental</p>
+            <h1>INFORMAÇÕES GERAIS</h1>
+            <p>Descrição do campo e caracterização</p>
           </div>
 
           <div class="info-grid">
             <div class="info-box">
-              <strong>Código do Experimento</strong>
+              <strong>Código</strong>
               ${escapeHtml(experiment.code)}
             </div>
             <div class="info-box">
-              <strong>Nome do Experimento</strong>
+              <strong>Nome</strong>
               ${escapeHtml(experiment.name)}
             </div>
             <div class="info-box">
@@ -1030,11 +1084,11 @@
           </div>
 
           <h2>Objetivo do Experimento</h2>
-          <p style="background: #f9fafb; padding: 12px; border-radius: 4px; font-size: 13px;">
+          <div class="nota">
             ${escapeHtml(experiment.objective)}
-          </p>
+          </div>
 
-          <h2 style="margin-top: 30px;">Configuração Experimental</h2>
+          <h2>Configuração Experimental</h2>
           <div class="stats-grid">
             <div class="stat-card">
               <div class="value">${experiment.blocks_count}</div>
@@ -1045,18 +1099,53 @@
               <div class="label">Tratamentos</div>
             </div>
             <div class="stat-card">
-              <div class="value">${experiment.plots_per_block || 'N/A'}</div>
-              <div class="label">Parcelas por Bloco</div>
+              <div class="value">${experiment.plots_per_block || '-'}</div>
+              <div class="label">Parcelas/Bloco</div>
             </div>
           </div>
         </div>
 
-        <!-- PÁGINA 3: MONITORAMENTO -->
+        <!-- PÁGINA 3: LAYOUT EXPERIMENTAL -->
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>LAYOUT EXPERIMENTAL</h1>
+            <p>Mapa visual dos blocos e tratamentos</p>
+          </div>
+
+          ${schedule && schedule.length > 0 ? `
+            <h2>Cronograma de Eventos</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Fase</th>
+                  <th>Data Início</th>
+                  <th>Data Fim</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${schedule.map(s => `
+                  <tr>
+                    <td>${escapeHtml(s.name)}</td>
+                    <td>${escapeHtml(s.phase || '-')}</td>
+                    <td>${s.start_date ? new Date(s.start_date).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td>${s.end_date ? new Date(s.end_date).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td>${s.completed_at ? '✓ Concluído' : '● Pendente'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p style="color: #999; font-size: 12px;">Nenhum cronograma registrado.</p>'}
+        </div>
+
+        <!-- PÁGINA 4: MONITORAMENTO -->
         ${monitorings && monitorings.length > 0 ? `
         <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>DADOS DE MONITORAMENTO</h1>
+            <h1>DESEMPENHO - MONITORAMENTO</h1>
             <p>Biometria das plantas ao longo das avaliações</p>
           </div>
 
@@ -1075,19 +1164,19 @@
             </div>
           </div>
 
-          <h2>Últimas Avaliações Registradas</h2>
+          <h2>Avaliações Realizadas</h2>
           <table>
             <thead>
               <tr>
                 <th>Data</th>
                 <th>Bloco</th>
-                <th>Tratamento</th>
+                <th>Trat.</th>
                 <th>Alt. Média (cm)</th>
                 <th>Sanidade</th>
               </tr>
             </thead>
             <tbody>
-              ${monitorings.slice(-10).map(m => {
+              ${monitorings.slice(-15).map(m => {
                 const bioMon = biometrics.filter(b => b.monitoring_event_id === m.id);
                 const altMedia = bioMon.length > 0 ? (bioMon.reduce((sum, b) => sum + (b.height_cm || 0), 0) / bioMon.length).toFixed(1) : 0;
                 const sanMedia = bioMon.length > 0 ? (bioMon.reduce((sum, b) => sum + (b.sanity_score || 0), 0) / bioMon.length).toFixed(1) : 0;
@@ -1106,12 +1195,12 @@
         </div>
         ` : ''}
 
-        <!-- PÁGINA 4: COLHEITA -->
+        <!-- PÁGINA 5: COLHEITA -->
         ${harvest && harvest.length > 0 ? `
         <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>DADOS DE COLHEITA</h1>
+            <h1>DESEMPENHO - COLHEITA</h1>
             <p>Produção e qualidade dos produtos colhidos</p>
           </div>
 
@@ -1135,11 +1224,11 @@
             <thead>
               <tr>
                 <th>Data</th>
-                <th>Bloco</th>
-                <th>Tratamento</th>
+                <th>Bl.</th>
+                <th>Trat.</th>
                 <th>Peso (kg)</th>
-                <th>Raízes Comerciais</th>
-                <th>Qualidade</th>
+                <th>Raízes</th>
+                <th>Qualid.</th>
               </tr>
             </thead>
             <tbody>
@@ -1158,12 +1247,50 @@
         </div>
         ` : ''}
 
-        <!-- PÁGINA 5: CLIMA -->
+        <!-- PÁGINA 6: INTERVENÇÕES -->
+        ${interventions && interventions.length > 0 ? `
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>HISTÓRICO DE INTERVENÇÕES</h1>
+            <p>Adubação, controle fitossanitário e irrigação</p>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Bl.</th>
+                <th>Trat.</th>
+                <th>Produto</th>
+                <th>Dosagem</th>
+                <th>Método</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${interventions.map(i => `
+                <tr>
+                  <td>${new Date(i.intervention_date).toLocaleDateString('pt-BR')}</td>
+                  <td>${escapeHtml(i.intervention_type)}</td>
+                  <td>${i.block_number || '-'}</td>
+                  <td>${escapeHtml(i.plot_code || '-')}</td>
+                  <td>${escapeHtml(i.product || '-')}</td>
+                  <td>${escapeHtml(i.dosage || '-')}</td>
+                  <td>${escapeHtml(i.method || '-')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- PÁGINA 7: CLIMA -->
         ${climate && climate.length > 0 ? `
         <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>DADOS CLIMÁTICOS</h1>
+            <h1>DADOS CLIMÁTICOS INTEGRADOS</h1>
             <p>Condições meteorológicas durante o experimento</p>
           </div>
 
@@ -1182,7 +1309,7 @@
             </div>
           </div>
 
-          <h2>Últimos Registros Climáticos</h2>
+          <h2>Registros Climáticos</h2>
           <table>
             <thead>
               <tr>
@@ -1195,7 +1322,7 @@
               </tr>
             </thead>
             <tbody>
-              ${climate.slice(-15).map(c => `
+              ${climate.slice(-20).map(c => `
                 <tr>
                   <td>${c.date}</td>
                   <td>${(c.rain_mm || 0).toFixed(1)}</td>
@@ -1210,29 +1337,36 @@
         </div>
         ` : ''}
 
-        <!-- PÁGINA FINAL: CONCLUSÕES -->
+        <!-- PÁGINA 8: CONCLUSÕES E RECOMENDAÇÕES -->
         <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>CONCLUSÕES E OBSERVAÇÕES</h1>
+            <h1>CONCLUSÕES E RECOMENDAÇÕES</h1>
             <p>Análise consolidada do experimento</p>
           </div>
 
           <h2>Resumo Executivo</h2>
-          <p style="background: #f9fafb; padding: 12px; border-radius: 4px; font-size: 13px; line-height: 1.8;">
+          <div class="nota">
             Este relatório consolida os dados coletados no experimento <strong>${escapeHtml(experiment.code)}</strong>, 
             conduzido em ${escapeHtml(experiment.farm)} sob a responsabilidade do pesquisador 
             <strong>${escapeHtml(experiment.researcher)}</strong>. O experimento foi iniciado em 
             ${new Date(experiment.planting_date).toLocaleDateString('pt-BR')} e engloba 
             ${experiment.blocks_count} blocos com ${experiment.treatments_count} tratamentos cada um.
-          </p>
+          </div>
 
-          <h2 style="margin-top: 25px;">Resultados Principais</h2>
-          <ul style="font-size: 13px; line-height: 1.8;">
-            ${biometrics && biometrics.length > 0 ? `<li><strong>Monitoramento:</strong> ${statsMonit.totalMedicoes} medições realizadas com altura média de ${statsMonit.mediaAltura} cm e sanidade média de ${statsMonit.mediaSanidade}/5.</li>` : ''}
+          <h2>Resultados Principais</h2>
+          <ul style="font-size: 12px; line-height: 1.7; margin-left: 15px;">
+            ${biometrics && biometrics.length > 0 ? `<li><strong>Monitoramento:</strong> ${statsMonit.totalMedicoes} medições com altura média de ${statsMonit.mediaAltura} cm e sanidade média de ${statsMonit.mediaSanidade}/5.</li>` : ''}
             ${harvest && harvest.length > 0 ? `<li><strong>Colheita:</strong> ${statsColheita.totalRegistros} registros com produção total de ${statsColheita.pesoTotal} kg e qualidade média de ${statsColheita.qualidadeMedia}/5.</li>` : ''}
             ${climate && climate.length > 0 ? `<li><strong>Clima:</strong> ${statsClima.dias} dias monitorados com precipitação total de ${statsClima.chuvaTotal} mm e temperatura média de ${statsClima.tempMedia}°C.</li>` : ''}
+            ${interventions && interventions.length > 0 ? `<li><strong>Intervenções:</strong> ${interventions.length} operações registradas durante o ciclo do experimento.</li>` : ''}
           </ul>
+
+          <h2 style="margin-top: 15px;">Próximas Etapas</h2>
+          <div class="nota">
+            Recomenda-se a continuação do monitoramento periódico, análise estatística dos dados coletados 
+            e documentação complementar dos fatores externos que possam ter influenciado os resultados obtidos.
+          </div>
 
           <div class="footer">
             <p>Relatório gerado automaticamente pelo Sistema de Monitoramento Experimental</p>
