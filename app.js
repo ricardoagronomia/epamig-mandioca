@@ -244,7 +244,6 @@ function showApp() {
   $("authScreen").style.display = "none";
   $("appScreen").style.display = "flex";
 
-  NEW_STR:
   // preenche e-mail + role no cabeçalho
   if (currentUser) {
     const el = $("userEmail");
@@ -833,6 +832,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
