@@ -59,24 +59,7 @@
             flex-direction:column;
             gap:8px;
           ">
-            <div style="font-size:13px; color:#374151;">
-              <strong>Conteúdo do relatório:</strong>
-            </div>
-
-            <ul style="font-size:12px; color:#4b5563; padding-left:18px; margin:0;">
-              <li>Capa com código, nome e período do experimento.</li>
-              <li>Resumo executivo (objetivos, principais resultados).</li>
-              <li>Descrição do campo (localização, solo, clima local).</li>
-              <li>Layout experimental (mapa visual dos blocos e tratamentos).</li>
-              <li>Cronograma de eventos (plantio, avaliações, colheita).</li>
-              <li>Descrição dos tratamentos (formulações, doses, datas de aplicação).</li>
-              <li>Tabelas e gráficos de desempenho (altura, sanidade, produção).</li>
-              <li>Dados climáticos integrados (chuva, temperatura, variabilidade).</li>
-              <li>Conclusões e recomendações.</li>
-              <li>Histórico de intervenções (adubação, controle, irrigação).</li>
-            </ul>
-
-            <div style="margin-top:8px;">
+            <div style="margin-bottom:8px;">
               <button 
                 class="btn-primary" 
                 style="width:100%; padding:10px; font-size:13px;" 
@@ -744,293 +727,293 @@
 
   // ========== GERAÇÃO DE RELATÓRIO EM PDF ==========
 
-window.generatePDFReport = async function() {
-  const experiment = window.currentExperiment;
-  if (!experiment) {
-    alert('Nenhum experimento selecionado');
-    return;
-  }
-
-  try {
-    const button = event.target;
-    const originalText = button.textContent;
-    button.textContent = '⏳ Gerando PDF...';
-    button.disabled = true;
-
-    const { data: monitorings } = await s
-      .from("monitoring_events")
-      .select("id, plot_code, block_number, monitoring_date, notes")
-      .eq("experiment_id", experiment.id)
-      .order("monitoring_date", { ascending: true });
-
-    const monitoringIds = monitorings ? monitorings.map(m => m.id) : [];
-
-    const { data: biometrics } = monitoringIds.length > 0 ? await s
-      .from("plant_biometrics")
-      .select("*")
-      .in("monitoring_event_id", monitoringIds) : { data: [] };
-
-    const { data: harvest } = await s
-      .from("harvest_records")
-      .select("*")
-      .eq("experiment_id", experiment.id)
-      .order("harvest_date", { ascending: true });
-
-    const { data: climate } = await s
-      .from("climate_daily")
-      .select("*")
-      .eq("station_code", "PADRAO")
-      .order("date", { ascending: true });
-
-    const { data: interventions } = await s
-      .from("interventions")
-      .select("*")
-      .eq("experiment_id", experiment.id)
-      .order("intervention_date", { ascending: true });
-
-    const { data: schedule } = await s
-      .from("scheduled_actions")
-      .select("*")
-      .eq("experiment_id", experiment.id)
-      .order("start_date", { ascending: true });
-
-    const html = generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, interventions, schedule);
-
-    const opt = {
-      margin: [15, 15, 18, 15], // top, left, bottom, right (mm)
-      filename: `${experiment.code}_relatorio_${new Date().toISOString().slice(0,10)}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
-      pagebreak: { mode: ['css'] }
-    };
-
-    html2pdf().set(opt).from(html).save();
-
-    button.textContent = originalText;
-    button.disabled = false;
-
-    alert('✓ Relatório PDF gerado com sucesso!');
-  } catch (err) {
-    console.error('Erro ao gerar PDF:', err);
-    if (event && event.target) {
-      const button = event.target;
-      button.textContent = '📥 Gerar relatório em PDF';
-      button.disabled = false;
+  window.generatePDFReport = async function() {
+    const experiment = window.currentExperiment;
+    if (!experiment) {
+      alert('Nenhum experimento selecionado');
+      return;
     }
-    alert('Erro ao gerar relatório PDF: ' + err.message);
-  }
-};
 
-function generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, interventions, schedule) {
-  const dataAtual = new Date().toLocaleDateString('pt-BR');
+    try {
+      // Mostrar loading
+      const button = event.target;
+      const originalText = button.textContent;
+      button.textContent = '⏳ Gerando PDF...';
+      button.disabled = true;
 
-  const statsMonit = biometrics && biometrics.length > 0 ? {
-    mediaAltura: (biometrics.reduce((sum, b) => sum + (b.height_cm || 0), 0) / biometrics.length).toFixed(1),
-    mediaSanidade: (biometrics.reduce((sum, b) => sum + (b.sanity_score || 0), 0) / biometrics.length).toFixed(1),
-    totalMedicoes: biometrics.length
-  } : { mediaAltura: "–", mediaSanidade: "–", totalMedicoes: 0 };
+      // Buscar dados
+      const { data: monitorings } = await s
+        .from("monitoring_events")
+        .select("id, plot_code, block_number, monitoring_date, notes")
+        .eq("experiment_id", experiment.id)
+        .order("monitoring_date", { ascending: true });
 
-  const statsColheita = harvest && harvest.length > 0 ? {
-    pesoTotal: harvest.reduce((sum, h) => sum + (h.total_weight || 0), 0).toFixed(1),
-    pesoMedio: (harvest.reduce((sum, h) => sum + (h.total_weight || 0), 0) / harvest.length).toFixed(1),
-    qualidadeMedia: (harvest.reduce((sum, h) => sum + (h.quality_score || 0), 0) / harvest.length).toFixed(1),
-    totalRegistros: harvest.length
-  } : { pesoTotal: "–", pesoMedio: "–", qualidadeMedia: "–", totalRegistros: 0 };
+      const monitoringIds = monitorings ? monitorings.map(m => m.id) : [];
 
-  const statsClima = climate && climate.length > 0 ? (() => {
-    const chuvaTotal = climate.reduce((sum, c) => sum + (c.rain_mm || 0), 0);
-    const tempMedia = climate.reduce((sum, c) => sum + (c.tmean_c || 0), 0) / climate.length;
-    const umidMedia = climate.reduce((sum, c) => sum + (c.rh_mean || 0), 0) / climate.length;
-    return {
-      chuvaTotal: chuvaTotal.toFixed(1),
-      tempMedia: tempMedia.toFixed(1),
-      umidMedia: umidMedia.toFixed(0),
+      const { data: biometrics } = monitoringIds.length > 0 ? await s
+        .from("plant_biometrics")
+        .select("*")
+        .in("monitoring_event_id", monitoringIds) : { data: [] };
+
+      const { data: harvest } = await s
+        .from("harvest_records")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("harvest_date", { ascending: true });
+
+      const { data: climate } = await s
+        .from("climate_daily")
+        .select("*")
+        .eq("station_code", "PADRAO")
+        .order("date", { ascending: true });
+
+      const { data: interventions } = await s
+        .from("interventions")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("intervention_date", { ascending: true });
+
+      const { data: schedule } = await s
+        .from("scheduled_actions")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("start_date", { ascending: true });
+
+      // Gerar HTML do relatório
+      const html = generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, interventions, schedule);
+
+      // Criar PDF
+      const opt = {
+        margin: 10,
+        filename: `${experiment.code}_relatorio_${new Date().toISOString().slice(0,10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
+
+      html2pdf().set(opt).from(html).save();
+
+      // Restaurar botão
+      button.textContent = originalText;
+      button.disabled = false;
+
+      alert('✓ Relatório PDF gerado com sucesso!');
+
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      button.textContent = originalText;
+      button.disabled = false;
+      alert('Erro ao gerar relatório PDF: ' + err.message);
+    }
+  };
+
+  function generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, interventions, schedule) {
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+    // Calcula estatísticas de monitoramento
+    const statsMonit = biometrics && biometrics.length > 0 ? {
+      mediaAltura: (biometrics.reduce((sum, b) => sum + (b.height_cm || 0), 0) / biometrics.length).toFixed(2),
+      mediaSanidade: (biometrics.reduce((sum, b) => sum + (b.sanity_score || 0), 0) / biometrics.length).toFixed(2),
+      totalMedicoes: biometrics.length
+    } : { mediaAltura: 0, mediaSanidade: 0, totalMedicoes: 0 };
+
+    // Calcula estatísticas de colheita
+    const statsColheita = harvest && harvest.length > 0 ? {
+      pesoTotal: harvest.reduce((sum, h) => sum + (h.total_weight || 0), 0).toFixed(2),
+      pesoMedio: (harvest.reduce((sum, h) => sum + (h.total_weight || 0), 0) / harvest.length).toFixed(2),
+      qualidadeMedia: (harvest.reduce((sum, h) => sum + (h.quality_score || 0), 0) / harvest.length).toFixed(2),
+      totalRegistros: harvest.length
+    } : { pesoTotal: 0, pesoMedio: 0, qualidadeMedia: 0, totalRegistros: 0 };
+
+    // Calcula estatísticas climáticas
+    const statsClima = climate && climate.length > 0 ? {
+      chuvaTotal: climate.reduce((sum, c) => sum + (c.rain_mm || 0), 0).toFixed(2),
+      tempMedia: (climate.reduce((sum, c) => sum + (c.tmean_c || 0), 0) / climate.length).toFixed(2),
       dias: climate.length
-    };
-  })() : { chuvaTotal: "–", tempMedia: "–", umidMedia: "–", dias: 0 };
+    } : { chuvaTotal: 0, tempMedia: 0, dias: 0 };
 
-  const statsDrone = (() => {
-    if (!monitorings || !biometrics) return { alturaMedia: "–" };
-    if (!window.droneSummaryCache) return { alturaMedia: "–" };
-    return window.droneSummaryCache;
-  })();
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        * { box-sizing: border-box; }
-        html, body {
-          margin: 0;
-          padding: 0;
-          font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
-          color: #111827;
-          line-height: 1.45;
-          font-size: 11px;
-        }
-        @page {
-          size: A4;
-          margin: 15mm 15mm 18mm 15mm;
-        }
-        .page-break { page-break-after: always; }
-        .wrapper {
-          padding: 4mm 2mm 2mm 2mm;
-        }
-        .capa {
-          min-height: 260mm;
-          border-top: 2px solid #065f46;
-          border-bottom: 2px solid #065f46;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          text-align: center;
-          padding: 10mm 15mm;
-        }
-        .capa h1 {
-          font-size: 20px;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: #065f46;
-          margin-bottom: 4mm;
-        }
-        .capa h2 {
-          font-size: 16px;
-          margin-bottom: 6mm;
-        }
-        .capa .info {
-          font-size: 11px;
-          color: #374151;
-          line-height: 1.9;
-        }
-        .capa .periodo {
-          margin-top: 6mm;
-          font-size: 10px;
-          color: #6b7280;
-          font-style: italic;
-        }
-        .capa .data {
-          margin-top: 10mm;
-          font-size: 10px;
-          color: #9ca3af;
-        }
-        .header {
-          border-top: 1px solid #065f46;
-          border-bottom: 1px solid #065f46;
-          padding: 3mm 0;
-          margin-bottom: 4mm;
-        }
-        .header h1 {
-          font-size: 14px;
-          color: #065f46;
-          margin: 0 0 1mm 0;
-        }
-        .header p {
-          font-size: 10px;
-          color: #6b7280;
-          margin: 0;
-        }
-        .section {
-          margin-bottom: 6mm;
-          page-break-inside: avoid;
-        }
-        .section h2 {
-          font-size: 12px;
-          color: #065f46;
-          margin: 3mm 0 2mm 0;
-          border-left: 2px solid #065f46;
-          padding-left: 2mm;
-        }
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 3mm;
-          margin-top: 2mm;
-        }
-        .info-box {
-          border: 1px solid #e5e7eb;
-          border-radius: 4px;
-          padding: 3mm;
-          font-size: 10px;
-        }
-        .info-box strong {
-          display: block;
-          font-size: 9px;
-          color: #065f46;
-          margin-bottom: 1mm;
-        }
-        .stats-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 3mm;
-          margin-top: 2mm;
-        }
-        .stat-card {
-          flex: 1 1 30mm;
-          min-width: 30mm;
-          border-radius: 4px;
-          border: 1px solid #e5e7eb;
-          padding: 3mm;
-          page-break-inside: avoid;
-        }
-        .stat-card .label {
-          font-size: 9px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: #6b7280;
-          margin-bottom: 1mm;
-        }
-        .stat-card .value {
-          font-size: 13px;
-          font-weight: 600;
-          color: #111827;
-        }
-        .stat-card .hint {
-          font-size: 9px;
-          color: #6b7280;
-          margin-top: 0.5mm;
-        }
-        .nota {
-          border-left: 2px solid #065f46;
-          padding: 2mm 3mm;
-          background: #f9fafb;
-          border-radius: 3px;
-          font-size: 10px;
-          margin-top: 2mm;
-        }
-        ul.resumo {
-          font-size: 10px;
-          padding-left: 4mm;
-          margin-top: 1mm;
-        }
-        ul.resumo li {
-          margin-bottom: 1mm;
-        }
-        .footer {
-          text-align: center;
-          font-size: 9px;
-          color: #9ca3af;
-          margin-top: 6mm;
-          padding-top: 2mm;
-          border-top: 1px solid #e5e7eb;
-          page-break-inside: avoid;
-        }
-      </style>
-    </head>
-    <body>
-      <!-- CAPA -->
-      <div class="wrapper">
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; line-height: 1.5; color: #333; }
+          
+          @page {
+            size: A4;
+            margin: 20mm 15mm;
+            padding: 0;
+          }
+          
+          .page-break { page-break-after: always; margin-bottom: 0; padding-bottom: 0; }
+          
+          .capa {
+            padding: 40px 30px;
+            text-align: center;
+            min-height: 280mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-top: 3px solid #065f46;
+            border-bottom: 3px solid #065f46;
+          }
+          
+          .capa h1 { font-size: 36px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; color: #065f46; }
+          .capa h2 { font-size: 24px; margin-bottom: 30px; font-weight: 400; color: #333; }
+          .capa .info { font-size: 13px; margin-top: 40px; line-height: 2.2; color: #555; }
+          .capa .periodo { margin-top: 30px; font-size: 12px; color: #888; font-style: italic; }
+          .capa .data { margin-top: 60px; font-size: 11px; color: #999; }
+          
+          .header {
+            border-top: 2px solid #065f46;
+            border-bottom: 2px solid #065f46;
+            padding: 12px 0;
+            margin-bottom: 20px;
+            margin-top: 0;
+          }
+          
+          .header h1 { font-size: 20px; color: #065f46; margin-bottom: 3px; font-weight: 600; }
+          .header p { font-size: 11px; color: #777; margin: 0; }
+          
+          .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+            padding: 0;
+          }
+          
+          .section h2 {
+            font-size: 15px;
+            color: #065f46;
+            margin: 20px 0 10px 0;
+            border-left: 3px solid #065f46;
+            padding-left: 8px;
+            font-weight: 600;
+          }
+          
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+          }
+          
+          .info-box {
+            border: 1px solid #d1d5db;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #ffffff;
+          }
+          
+          .info-box strong { color: #065f46; display: block; margin-bottom: 3px; font-size: 11px; }
+          
+          .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+          }
+          
+          .stat-card {
+            border-top: 2px solid #065f46;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px;
+            border-radius: 0;
+            background: #ffffff;
+          }
+          
+          .stat-card .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #065f46;
+          }
+          
+          .stat-card .label {
+            font-size: 11px;
+            color: #777;
+            margin-top: 3px;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 10px;
+            page-break-inside: avoid;
+          }
+          
+          table th {
+            background: #ffffff;
+            border-bottom: 2px solid #065f46;
+            color: #065f46;
+            padding: 6px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+          }
+          
+          table td {
+            padding: 6px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          table tr:nth-child(even) { background: #f9fafb; }
+          
+          .layout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 4px;
+            margin-bottom: 15px;
+          }
+          
+          .layout-cell {
+            aspect-ratio: 1;
+            border: 1px solid #065f46;
+            padding: 4px;
+            font-size: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: #ffffff;
+            overflow: hidden;
+          }
+          
+          .layout-cell strong { color: #065f46; font-size: 9px; }
+          
+          .nota {
+            border-left: 3px solid #065f46;
+            padding: 10px;
+            margin: 15px 0;
+            background: #ffffff;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          
+          .footer {
+            text-align: center;
+            font-size: 9px;
+            color: #999;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            page-break-inside: avoid;
+          }
+        </style>
+      </head>
+      <body>
+        <!-- CAPA SIMPLES -->
         <div class="capa">
-          <h1>Relatório experimental</h1>
+          <h1>RELATÓRIO EXPERIMENTAL</h1>
           <h2>${escapeHtml(experiment.name)}</h2>
           <div class="info">
             <div><strong>Código:</strong> ${escapeHtml(experiment.code)}</div>
-            <div><strong>Pesquisador:</strong> ${escapeHtml(experiment.researcher || "-")}</div>
-            <div><strong>Fazenda:</strong> ${escapeHtml(experiment.farm || "-")}</div>
-            <div><strong>Município:</strong> ${escapeHtml(experiment.municipality || "-")}</div>
+            <div><strong>Pesquisador:</strong> ${escapeHtml(experiment.researcher)}</div>
+            <div><strong>Fazenda:</strong> ${escapeHtml(experiment.farm)}</div>
+            <div><strong>Município:</strong> ${escapeHtml(experiment.municipality)}</div>
           </div>
           ${experiment.planting_date ? `
             <div class="periodo">
@@ -1039,15 +1022,13 @@ function generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, 
           ` : ''}
           <div class="data">Gerado em ${dataAtual}</div>
         </div>
-      </div>
 
-      <!-- PÁGINA 2: Identificação e detalhes -->
-      <div class="page-break"></div>
-      <div class="wrapper">
+        <!-- PÁGINA 2: INFORMAÇÕES GERAIS E OBJETIVO -->
+        <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>Informações gerais do experimento</h1>
-            <p>Identificação, descrição do campo e configuração experimental</p>
+            <h1>INFORMAÇÕES GERAIS</h1>
+            <p>Descrição do campo e caracterização</p>
           </div>
 
           <div class="info-grid">
@@ -1060,270 +1041,325 @@ function generatePDFHtml(experiment, monitorings, biometrics, harvest, climate, 
               ${escapeHtml(experiment.name)}
             </div>
             <div class="info-box">
-              <strong>Data de plantio</strong>
-              ${experiment.planting_date ? new Date(experiment.planting_date).toLocaleDateString('pt-BR') : "-"}
+              <strong>Data de Plantio</strong>
+              ${new Date(experiment.planting_date).toLocaleDateString('pt-BR')}
             </div>
             <div class="info-box">
               <strong>Pesquisador</strong>
-              ${escapeHtml(experiment.researcher || "-")}
+              ${escapeHtml(experiment.researcher)}
             </div>
             <div class="info-box">
               <strong>Fazenda</strong>
-              ${escapeHtml(experiment.farm || "-")}
+              ${escapeHtml(experiment.farm)}
             </div>
             <div class="info-box">
               <strong>Município</strong>
-              ${escapeHtml(experiment.municipality || "-")}
+              ${escapeHtml(experiment.municipality)}
             </div>
             <div class="info-box">
               <strong>Bioma</strong>
-              ${escapeHtml(experiment.biome || "Não informado")}
+              ${escapeHtml(experiment.biome || 'Não informado')}
             </div>
             <div class="info-box">
-              <strong>Tipo de solo</strong>
-              ${escapeHtml(experiment.soil_type || "Não informado")}
+              <strong>Tipo de Solo</strong>
+              ${escapeHtml(experiment.soil_type || 'Não informado')}
             </div>
           </div>
 
-          <h2>Objetivo do experimento</h2>
+          <h2>Objetivo do Experimento</h2>
           <div class="nota">
-            ${escapeHtml(experiment.objective || "Objetivo não informado.")}
+            ${escapeHtml(experiment.objective)}
           </div>
 
-          <h2>Configuração experimental</h2>
-          <div class="stats-row">
+          <h2>Configuração Experimental</h2>
+          <div class="stats-grid">
             <div class="stat-card">
+              <div class="value">${experiment.blocks_count}</div>
               <div class="label">Blocos</div>
-              <div class="value">${experiment.blocks_count || "-"}</div>
             </div>
             <div class="stat-card">
+              <div class="value">${experiment.treatments_count}</div>
               <div class="label">Tratamentos</div>
-              <div class="value">${experiment.treatments_count || "-"}</div>
             </div>
             <div class="stat-card">
-              <div class="label">Parcelas por bloco</div>
-              <div class="value">${experiment.plots_per_block || "-"}</div>
+              <div class="value">${experiment.plots_per_block || '-'}</div>
+              <div class="label">Parcelas/Bloco</div>
             </div>
           </div>
         </div>
 
-        <div class="section">
-          <h2>Descrição do campo</h2>
-          <div class="nota">
-            Local: ${escapeHtml(experiment.farm || "-")}, município de ${escapeHtml(experiment.municipality || "-")}.<br>
-            Solo: ${escapeHtml(experiment.soil_type || "não informado")}. Clima local: ${escapeHtml(experiment.climate || "não informado")}.
-          </div>
-        </div>
-      </div>
-
-      <!-- PÁGINA 3: Cronograma (resumo) -->
-      <div class="page-break"></div>
-      <div class="wrapper">
+        <!-- PÁGINA 3: LAYOUT EXPERIMENTAL -->
+        <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>Cronograma de eventos</h1>
-            <p>Principais marcos: plantio, avaliações, tratos culturais e colheita</p>
-          </div>
-
-          <div class="nota">
-            O cronograma abaixo resume as fases cadastradas no sistema (pré-plantio, plantio, acompanhamento, tratos
-            culturais e colheita), permitindo rastrear a evolução do experimento ao longo do tempo.
+            <h1>LAYOUT EXPERIMENTAL</h1>
+            <p>Mapa visual dos blocos e tratamentos</p>
           </div>
 
           ${schedule && schedule.length > 0 ? `
-          <ul class="resumo">
-            ${schedule.map(a => `
-              <li>
-                ${escapeHtml(a.name || "Evento")}
-                ${a.start_date ? ` – início em ${new Date(a.start_date).toLocaleDateString('pt-BR')}` : ""}
-                ${a.phase ? ` · fase: ${escapeHtml(a.phase)}` : ""}
-                ${a.completed_at ? " · concluído" : ""}
-              </li>
-            `).join('')}
-          </ul>
-          ` : `
-          <p style="font-size:10px; color:#6b7280; margin-top:2mm;">
-            Nenhum evento de cronograma foi cadastrado para este experimento.
-          </p>`}
+            <h2>Cronograma de Eventos</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Fase</th>
+                  <th>Data Início</th>
+                  <th>Data Fim</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${schedule.map(s => `
+                  <tr>
+                    <td>${escapeHtml(s.name)}</td>
+                    <td>${escapeHtml(s.phase || '-')}</td>
+                    <td>${s.start_date ? new Date(s.start_date).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td>${s.end_date ? new Date(s.end_date).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td>${s.completed_at ? '✓ Concluído' : '● Pendente'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p style="color: #999; font-size: 12px;">Nenhum cronograma registrado.</p>'}
         </div>
-      </div>
 
-      <!-- PÁGINA 4: Monitoramento manual (resumo) -->
-      ${biometrics && biometrics.length > 0 ? `
-      <div class="page-break"></div>
-      <div class="wrapper">
+        <!-- PÁGINA 4: MONITORAMENTO -->
+        ${monitorings && monitorings.length > 0 ? `
+        <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>Desempenho – monitoramento manual</h1>
-            <p>Resumo das coletas, vigor e sanidade das plantas</p>
+            <h1>DESEMPENHO - MONITORAMENTO</h1>
+            <p>Biometria das plantas ao longo das avaliações</p>
           </div>
 
-          <div class="nota">
-            Os indicadores abaixo seguem o mesmo padrão do módulo de <strong>Monitoramento manual</strong>:
-            número de coletas, porcentagem de plantas vivas em relação às plantas plantadas, altura média,
-            diâmetro médio do caule e sanidade média das plantas úteis.
-          </div>
-
-          <div class="stats-row">
+          <div class="stats-grid">
             <div class="stat-card">
-              <div class="label">Coletas</div>
+              <div class="value">${statsMonit.mediaAltura}</div>
+              <div class="label">Altura Média (cm)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsMonit.mediaSanidade}</div>
+              <div class="label">Sanidade Média (1-5)</div>
+            </div>
+            <div class="stat-card">
               <div class="value">${statsMonit.totalMedicoes}</div>
-              <div class="hint">Medições individuais de plantas</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Altura média</div>
-              <div class="value">${statsMonit.mediaAltura !== "–" ? statsMonit.mediaAltura + " cm" : "–"}</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Sanidade média</div>
-              <div class="value">${statsMonit.mediaSanidade !== "–" ? statsMonit.mediaSanidade + "/5" : "–"}</div>
+              <div class="label">Total de Medições</div>
             </div>
           </div>
-        </div>
-      </div>
-      ` : ''}
 
-      <!-- PÁGINA 5: Colheita (resumo) -->
-      ${harvest && harvest.length > 0 ? `
-      <div class="page-break"></div>
-      <div class="wrapper">
+          <h2>Avaliações Realizadas</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Bloco</th>
+                <th>Trat.</th>
+                <th>Alt. Média (cm)</th>
+                <th>Sanidade</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monitorings.slice(-15).map(m => {
+                const bioMon = biometrics.filter(b => b.monitoring_event_id === m.id);
+                const altMedia = bioMon.length > 0 ? (bioMon.reduce((sum, b) => sum + (b.height_cm || 0), 0) / bioMon.length).toFixed(1) : 0;
+                const sanMedia = bioMon.length > 0 ? (bioMon.reduce((sum, b) => sum + (b.sanity_score || 0), 0) / bioMon.length).toFixed(1) : 0;
+                return `
+                  <tr>
+                    <td>${new Date(m.monitoring_date).toLocaleDateString('pt-BR')}</td>
+                    <td>${m.block_number}</td>
+                    <td>${escapeHtml(m.plot_code)}</td>
+                    <td>${altMedia}</td>
+                    <td>${sanMedia}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- PÁGINA 5: COLHEITA -->
+        ${harvest && harvest.length > 0 ? `
+        <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>Desempenho – colheita</h1>
-            <p>Resumo da produção e qualidade das raízes colhidas</p>
+            <h1>DESEMPENHO - COLHEITA</h1>
+            <p>Produção e qualidade dos produtos colhidos</p>
           </div>
 
-          <div class="nota">
-            Estes indicadores sintetizam os dados de colheita registrados no sistema, em alinhamento com a página
-            de <strong>Colheita</strong>: peso total, peso médio por parcela e nota média de qualidade das raízes.
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="value">${statsColheita.pesoTotal}</div>
+              <div class="label">Peso Total (kg)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsColheita.pesoMedio}</div>
+              <div class="label">Peso Médio (kg)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsColheita.qualidadeMedia}</div>
+              <div class="label">Qualidade Média (1-5)</div>
+            </div>
           </div>
 
-          <div class="stats-row">
-            <div class="stat-card">
-              <div class="label">Produção total</div>
-              <div class="value">${statsColheita.pesoTotal !== "–" ? statsColheita.pesoTotal + " kg" : "–"}</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Peso médio</div>
-              <div class="value">${statsColheita.pesoMedio !== "–" ? statsColheita.pesoMedio + " kg" : "–"}</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Qualidade média</div>
-              <div class="value">${statsColheita.qualidadeMedia !== "–" ? statsColheita.qualidadeMedia + "/5" : "–"}</div>
-            </div>
-          </div>
+          <h2>Registros de Colheita</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Bl.</th>
+                <th>Trat.</th>
+                <th>Peso (kg)</th>
+                <th>Raízes</th>
+                <th>Qualid.</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${harvest.map(h => `
+                <tr>
+                  <td>${new Date(h.harvest_date).toLocaleDateString('pt-BR')}</td>
+                  <td>${h.block_number}</td>
+                  <td>${escapeHtml(h.plot_code)}</td>
+                  <td>${(h.total_weight || 0).toFixed(2)}</td>
+                  <td>${h.commercial_roots || '-'}</td>
+                  <td>${h.quality_score || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
         </div>
-      </div>
-      ` : ''}
+        ` : ''}
 
-      <!-- PÁGINA 6: Intervenções (resumo) -->
-      ${interventions && interventions.length > 0 ? `
-      <div class="page-break"></div>
-      <div class="wrapper">
+        <!-- PÁGINA 6: INTERVENÇÕES -->
+        ${interventions && interventions.length > 0 ? `
+        <div class="page-break"></div>
         <div class="section">
           <div class="header">
-            <h1>Histórico de intervenções</h1>
-            <p>Adubações, controles e demais operações registradas</p>
+            <h1>HISTÓRICO DE INTERVENÇÕES</h1>
+            <p>Adubação, controle fitossanitário e irrigação</p>
           </div>
 
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Bl.</th>
+                <th>Trat.</th>
+                <th>Produto</th>
+                <th>Dosagem</th>
+                <th>Método</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${interventions.map(i => `
+                <tr>
+                  <td>${new Date(i.intervention_date).toLocaleDateString('pt-BR')}</td>
+                  <td>${escapeHtml(i.intervention_type)}</td>
+                  <td>${i.block_number || '-'}</td>
+                  <td>${escapeHtml(i.plot_code || '-')}</td>
+                  <td>${escapeHtml(i.product || '-')}</td>
+                  <td>${escapeHtml(i.dosage || '-')}</td>
+                  <td>${escapeHtml(i.method || '-')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- PÁGINA 7: CLIMA -->
+        ${climate && climate.length > 0 ? `
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>DADOS CLIMÁTICOS INTEGRADOS</h1>
+            <p>Condições meteorológicas durante o experimento</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="value">${statsClima.chuvaTotal}</div>
+              <div class="label">Chuva Total (mm)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsClima.tempMedia}</div>
+              <div class="label">Temperatura Média (°C)</div>
+            </div>
+            <div class="stat-card">
+              <div class="value">${statsClima.dias}</div>
+              <div class="label">Dias Registrados</div>
+            </div>
+          </div>
+
+          <h2>Registros Climáticos</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Chuva (mm)</th>
+                <th>T. Máx (°C)</th>
+                <th>T. Mín (°C)</th>
+                <th>T. Média (°C)</th>
+                <th>UR (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${climate.slice(-20).map(c => `
+                <tr>
+                  <td>${c.date}</td>
+                  <td>${(c.rain_mm || 0).toFixed(1)}</td>
+                  <td>${c.tmax_c ? c.tmax_c.toFixed(1) : '-'}</td>
+                  <td>${c.tmin_c ? c.tmin_c.toFixed(1) : '-'}</td>
+                  <td>${c.tmean_c ? c.tmean_c.toFixed(1) : '-'}</td>
+                  <td>${c.rh_mean ? c.rh_mean.toFixed(1) : '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- PÁGINA 8: CONCLUSÕES E RECOMENDAÇÕES -->
+        <div class="page-break"></div>
+        <div class="section">
+          <div class="header">
+            <h1>CONCLUSÕES E RECOMENDAÇÕES</h1>
+            <p>Análise consolidada do experimento</p>
+          </div>
+
+          <h2>Resumo Executivo</h2>
           <div class="nota">
-            Foram registradas ${interventions.length} intervenções durante o ciclo do experimento,
-            incluindo operações de adubação, controle fitossanitário, irrigação e outras práticas culturais.
+            Este relatório consolida os dados coletados no experimento <strong>${escapeHtml(experiment.code)}</strong>, 
+            conduzido em ${escapeHtml(experiment.farm)} sob a responsabilidade do pesquisador 
+            <strong>${escapeHtml(experiment.researcher)}</strong>. O experimento foi iniciado em 
+            ${new Date(experiment.planting_date).toLocaleDateString('pt-BR')} e engloba 
+            ${experiment.blocks_count} blocos com ${experiment.treatments_count} tratamentos cada um.
           </div>
 
-          <ul class="resumo">
-            <li>Primeira intervenção: ${new Date(interventions[0].intervention_date).toLocaleDateString('pt-BR')}</li>
-            <li>Última intervenção: ${new Date(interventions[interventions.length - 1].intervention_date).toLocaleDateString('pt-BR')}</li>
+          <h2>Resultados Principais</h2>
+          <ul style="font-size: 12px; line-height: 1.7; margin-left: 15px;">
+            ${biometrics && biometrics.length > 0 ? `<li><strong>Monitoramento:</strong> ${statsMonit.totalMedicoes} medições com altura média de ${statsMonit.mediaAltura} cm e sanidade média de ${statsMonit.mediaSanidade}/5.</li>` : ''}
+            ${harvest && harvest.length > 0 ? `<li><strong>Colheita:</strong> ${statsColheita.totalRegistros} registros com produção total de ${statsColheita.pesoTotal} kg e qualidade média de ${statsColheita.qualidadeMedia}/5.</li>` : ''}
+            ${climate && climate.length > 0 ? `<li><strong>Clima:</strong> ${statsClima.dias} dias monitorados com precipitação total de ${statsClima.chuvaTotal} mm e temperatura média de ${statsClima.tempMedia}°C.</li>` : ''}
+            ${interventions && interventions.length > 0 ? `<li><strong>Intervenções:</strong> ${interventions.length} operações registradas durante o ciclo do experimento.</li>` : ''}
           </ul>
-        </div>
-      </div>
-      ` : ''}
 
-      <!-- PÁGINA 7: Clima (resumo) -->
-      ${climate && climate.length > 0 ? `
-      <div class="page-break"></div>
-      <div class="wrapper">
-        <div class="section">
-          <div class="header">
-            <h1>Dados climáticos integrados</h1>
-            <p>Resumo de chuva, temperatura e umidade ao longo do experimento</p>
-          </div>
-
+          <h2 style="margin-top: 15px;">Próximas Etapas</h2>
           <div class="nota">
-            Os indicadores abaixo seguem o mesmo conceito dos resumos de clima do sistema:
-            chuva total acumulada no período considerado, temperatura média e umidade relativa média.
-          </div>
-
-          <div class="stats-row">
-            <div class="stat-card">
-              <div class="label">Chuva total</div>
-              <div class="value">${statsClima.chuvaTotal !== "–" ? statsClima.chuvaTotal + " mm" : "–"}</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Temperatura média</div>
-              <div class="value">${statsClima.tempMedia !== "–" ? statsClima.tempMedia + " °C" : "–"}</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Umidade relativa média</div>
-              <div class="value">${statsClima.umidMedia !== "–" ? statsClima.umidMedia + " %" : "–"}</div>
-              <div class="hint">${statsClima.dias} dia(s) com registro</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      ` : ''}
-
-      <!-- PÁGINA FINAL: Conclusões -->
-      <div class="page-break"></div>
-      <div class="wrapper">
-        <div class="section">
-          <div class="header">
-            <h1>Conclusões e recomendações</h1>
-            <p>Resumo executivo dos principais resultados e próximos passos</p>
-          </div>
-
-          <h2>Resumo executivo</h2>
-          <div class="nota">
-            Este relatório consolida informações do experimento <strong>${escapeHtml(experiment.code)}</strong>,
-            conduzido em ${escapeHtml(experiment.farm || "-")} sob responsabilidade de
-            <strong>${escapeHtml(experiment.researcher || "-")}</strong>. O experimento foi iniciado em
-            ${experiment.planting_date ? new Date(experiment.planting_date).toLocaleDateString('pt-BR') : "-"}
-            e estruturado com ${experiment.blocks_count || "-"} bloco(s) e
-            ${experiment.treatments_count || "-"} tratamento(s).
-          </div>
-
-          <h2>Principais resultados</h2>
-          <ul class="resumo">
-            ${biometrics && biometrics.length > 0 ? `
-              <li><strong>Monitoramento:</strong> ${statsMonit.totalMedicoes} medições com altura média de ${statsMonit.mediaAltura !== "–" ? statsMonit.mediaAltura + " cm" : "–"} e sanidade média de ${statsMonit.mediaSanidade !== "–" ? statsMonit.mediaSanidade + "/5" : "–"}.</li>
-            ` : ""}
-            ${harvest && harvest.length > 0 ? `
-              <li><strong>Colheita:</strong> ${statsColheita.totalRegistros} registros, produção total de ${statsColheita.pesoTotal !== "–" ? statsColheita.pesoTotal + " kg" : "–"} e qualidade média de ${statsColheita.qualidadeMedia !== "–" ? statsColheita.qualidadeMedia + "/5" : "–"}.</li>
-            ` : ""}
-            ${climate && climate.length > 0 ? `
-              <li><strong>Clima:</strong> ${statsClima.dias} dia(s) monitorados, chuva total de ${statsClima.chuvaTotal !== "–" ? statsClima.chuvaTotal + " mm" : "–"} e temperatura média de ${statsClima.tempMedia !== "–" ? statsClima.tempMedia + " °C" : "–"}.</li>
-            ` : ""}
-            ${interventions && interventions.length > 0 ? `
-              <li><strong>Intervenções:</strong> ${interventions.length} operações registradas ao longo do ciclo.</li>
-            ` : ""}
-          </ul>
-
-          <h2>Recomendações gerais</h2>
-          <div class="nota">
-            Recomenda-se utilizar estes resultados como base para análises estatísticas detalhadas e comparação entre
-            tratamentos, bem como registrar em relatórios técnicos e artigos científicos. Novos ciclos experimentais
-            podem aprofundar a avaliação de manejo, genótipos e respostas às condições climáticas locais.
+            Recomenda-se a continuação do monitoramento periódico, análise estatística dos dados coletados 
+            e documentação complementar dos fatores externos que possam ter influenciado os resultados obtidos.
           </div>
 
           <div class="footer">
-            Sistema MandiocaTrack – Relatório gerado automaticamente em ${dataAtual}
+            <p>Relatório gerado automaticamente pelo Sistema de Monitoramento Experimental</p>
+            <p>Data: ${dataAtual}</p>
           </div>
         </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
+      </body>
+      </html>
+    `;
+  }
 
   function escapeHtml(str) {
     if (!str) return "";
