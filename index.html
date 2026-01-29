@@ -5,6 +5,7 @@
   <title>MandiocaTrack - Gestão de Pesquisa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- ================== ESTILOS ================== -->
   <!-- Reset básico e ajustes de header -->
   <style>
     body {
@@ -12,7 +13,6 @@
       padding: 0;
       box-sizing: border-box;
     }
-
     .header {
       position: sticky;
       top: 0;
@@ -20,17 +20,9 @@
       width: 100%;
       z-index: 1000;
     }
-
     .main-container {
       margin-top: 0;
     }
-
-    /* Se o header for fixo e estiver cobrindo o conteúdo, descomente: */
-    /*
-    main, #appContainer, #appRoot {
-      padding-top: 60px;  // ajuste 60px para a altura real do cabeçalho
-    }
-    */
   </style>
 
   <!-- Estilos gerais da aplicação -->
@@ -186,22 +178,22 @@
     .app-layout { display: flex; flex-direction: column; height: 100vh; }
 
     .header {
-  background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
-  color: #f9fafb;
-  padding: 6px 12px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
-  z-index: 1000;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-}
+      background: linear-gradient(135deg, #022c22 0%, var(--green-dark) 50%, var(--green) 100%);
+      color: #f9fafb;
+      padding: 6px 12px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+      z-index: 1000;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+    }
 
     .header-content {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      gap: 8px;
     }
     .header-left {
       display: flex;
@@ -233,26 +225,35 @@
       font-size: 12px;
       color: #d1fae5;
     }
-    .header-right { text-align: right; }
+    .header-right {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
     .header-user {
-      font-size: 13px;
-      margin-bottom: 4px;
+      font-size: 12px;
+      max-width: 160px;
+      white-space: normal;
+      word-break: break-word;
       color: #e5e7eb;
     }
     .btn-outline {
-      padding: 6px 12px;
+      padding: 4px 10px;
       border-radius: 999px;
       border: 1px solid rgba(209, 213, 219, 0.6);
       background: transparent;
       color: #f9fafb;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
+      text-align: center;
     }
     .btn-outline:hover { background: rgba(15, 23, 42, 0.4); }
 
-     /* desktop / default */
-      .main-container {
-       flex: 1;
+    /* Layout principal */
+    .main-container {
+      flex: 1;
       display: flex;
       min-height: 0;
       background: #f3f4f6;
@@ -289,6 +290,7 @@
       color: #cbd5f5;
       cursor: pointer;
       transition: background 0.14s, color 0.14s;
+      white-space: nowrap;
     }
     .sidebar-item svg {
       width: 18px;
@@ -306,14 +308,13 @@
 
     .content-area {
       flex: 1;
-      adding: 10px;       /* estava 20px */
+      padding: 16px;
       overflow-y: auto;
     }
     .content-header {
       margin-top: 10px;
       margin-bottom: 10px;
     }
-
     .content-title {
       font-size: 22px;
       font-weight: 700;
@@ -324,7 +325,7 @@
       color: var(--gray-600);
     }
 
-        .card {
+    .card {
       background: #ffffff;
       border-radius: 14px;
       padding: 18px 20px;
@@ -333,48 +334,7 @@
       margin-bottom: 16px;
     }
 
-    /* === Mapa DBC: grade 3×4 === */
-    .dbc-block-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .dbc-plot-cell {
-      border-radius: 10px;
-      padding: 6px 8px;
-      min-height: 64px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      font-size: 12px;
-      color: #111827;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: #f9fafb;
-    }
-
-    .dbc-plot-label-main {
-      font-weight: 600;
-      font-size: 12px;
-    }
-
-    .dbc-plot-label-sub {
-      font-size: 11px;
-      color: #374151;
-    }
-
-    /* Ajuste só para telas pequenas: permite rolar horizontal */
-    @media (max-width: 640px) {
-      .card {
-        overflow-x: auto;
-        padding: 18px 14px;
-      }
-
-      .dbc-block-grid {
-        min-width: 480px;
-      }
-    }
-
+    /* Tabelas gerais */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -394,17 +354,6 @@
     }
     tr:last-child td { border-bottom: none; }
 
-    .tag-role {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .tag-role.admin { background: rgba(22,101,52,0.16); color: var(--green-dark); }
-    .tag-role.collaborator { background: rgba(251,191,36,0.16); color: #92400e; }
-    .tag-role.visitor { background: rgba(156,163,175,0.16); color: #374151; }
-
     .btn-secondary {
       padding: 6px 10px;
       border-radius: 999px;
@@ -422,14 +371,6 @@
       color: #b91c1c;
       font-size: 12px;
       cursor: pointer;
-    }
-    .btn-link {
-      border: none;
-      background: none;
-      color: var(--green);
-      font-size: 13px;
-      cursor: pointer;
-      padding: 0;
     }
 
     .modal {
@@ -453,79 +394,6 @@
       box-shadow: 0 20px 40px rgba(15, 23, 42, 0.4);
       overflow-y: auto;
     }
-
-    /* Cronograma de experimentos */
-    .sched-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-      padding: 4px 6px;
-      border-radius: 4px;
-    }
-
-    .sched-row.sched-done {
-      background-color: #dcfce7;
-    }
-
-    .sched-row.sched-late {
-      background-color: #fee2e2;
-    }
-
-    .sched-status-btn {
-      width: 24px;
-      height: 24px;
-      border-radius: 999px;
-      border: 1px solid #9ca3af;
-      background: white;
-      font-size: 14px;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    .sched-row span {
-      flex: 1 1 auto;
-      min-width: 160px;
-    }
-
-    .sched-row input[type="date"] {
-      flex: 0 0 120px;
-    }
-
-    .sched-row .btn-danger {
-      padding: 2px 6px;
-    }
-/* Cronograma: melhor layout no mobile */
-@media (max-width: 640px) {
-  .sched-row {
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-
-  .sched-row span {
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  .sched-row input[type="date"] {
-    flex: 1 1 130px;
-    min-width: 0;
-  }
-
-  .sched-row .btn-danger {
-    flex: 0 0 auto;
-    margin-top: 4px;
-  }
-}
-
-/* Deixar o botão principal largo no mobile */
-@media (max-width: 640px) {
-  .modal-content .btn-primary {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
     .modal-header {
       display: flex;
       align-items: center;
@@ -545,115 +413,12 @@
       color: var(--gray-400);
     }
 
-/* barra lateral vira carrossel horizontal + ajuste de header no mobile */
-/* mobile */
-@media (max-width: 768px) {
-  .main-container {
-    display: block;
-    margin-top: 80px; /* se quiser um pouco menor; senão pode manter 70px */
-  }
-}
-
-  .sidebar {
-    position: fixed;
-    top: 65px;
-    left: 0;
-    width: 100%;
-    height: 48px;
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;      /* rolagem horizontal */
-    overflow-y: hidden;
-    border-right: none;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-    padding-inline: 4px;
-    padding-top: 0;
-    padding-bottom: 0;
-    box-sizing: border-box;
-  }
-
-  .sidebar-section {
-    display: flex;
-    border-bottom: none;
-  }
-
-  .sidebar-section-title {
-    display: none;
-  }
-
-  .sidebar-item {
-    padding: 10px 12px;
-    white-space: nowrap;
-    flex: 0 0 auto;        /* cada item ocupa só o que precisa */
-    align-items: center;   /* garante alinhamento vertical igual */
-  }
-
-  .content-area {
-    padding: 16px;
-    margin-top: 120px;
-  }
-}
-
-  /* cabeçalho: info à esquerda, botão sair à direita */
-  .header-content {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .header-right {
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-  }
-
-  .header-user {
-    font-size: 12px;
-    max-width: 160px;
-    white-space: normal;
-    word-break: break-word;
-  }
-
-  .btn-outline {
-    padding: 4px 10px;
-    font-size: 12px;
-    align-self: flex-end;
-    width: auto;
-    text-align: center;
-  }
-}
-
-  .sidebar-section { border-bottom: none; }
-  .sidebar-section-title { display: none; }
-
-  .sidebar-item {
-    padding: 10px 14px;
-    white-space: nowrap;
-    flex: 0 0 auto;         /* cada item só ocupa o próprio tamanho */
-  }
-
-  .content-area {
-    padding: 16px;
-    margin-top: 120px;
-  }
-}
-
-    /* === Mapa DBC: grade 3×4 === */
+    /* Mapa DBC básico */
     .dbc-block-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
-
     .dbc-plot-cell {
       border-radius: 10px;
       padding: 6px 8px;
@@ -667,77 +432,112 @@
       background: #f9fafb;
     }
 
-    .dbc-plot-label-main {
-      font-weight: 600;
-      font-size: 12px;
+    /* Mobile: sidebar vira barra horizontal */
+    @media (max-width: 768px) {
+      .main-container {
+        display: block;
+        margin-top: 80px;
+      }
+      .sidebar {
+        position: fixed;
+        top: 65px;
+        left: 0;
+        width: 100%;
+        height: 48px;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-right: none;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        padding-inline: 4px;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+      .sidebar-section {
+        display: flex;
+        border-bottom: none;
+      }
+      .sidebar-section-title {
+        display: none;
+      }
+      .sidebar-item {
+        padding: 10px 12px;
+        flex: 0 0 auto;
+        align-items: center;
+      }
+      .content-area {
+        padding: 16px;
+        margin-top: 120px;
+      }
     }
 
-    .dbc-plot-label-sub {
-      font-size: 11px;
-      color: #374151;
+    /* Estilos de impressão para etiquetas QR */
+    @media print {
+      @page {
+        size: A4;
+        margin: 0mm 0mm;
+      }
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        background: #ffffff;
+      }
+      .header,
+      .sidebar,
+      .content-header,
+      #authScreen,
+      #modalRoot,
+      button,
+      select,
+      label {
+        display: none !important;
+      }
+      #dbcTabQrArea,
+      #qrLabelsWrapper,
+      .qr-label-sheet,
+      .qr-label-card,
+      .qr-label-single-page {
+        display: block;
+      }
+      .qr-label-sheet {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: 70mm;
+        gap: 0mm;
+        page-break-inside: avoid;
+      }
+      .qr-label-card,
+      .qr-label-single-page {
+        width: 100mm;
+        height: 70mm;
+        border: none !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        padding: 4mm;
+        box-sizing: border-box;
+        page-break-inside: avoid;
+      }
     }
   </style>
 
-  <!-- Estilos específicos de impressão das etiquetas -->
-  <style>
-    /* Layout de impressão das etiquetas */
-   @media print {
-  @page {
-    size: A4;
-    margin: 0mm 0mm;
-  }
+  <!-- ================== SCRIPTS GLOBAIS (CDN) ================== -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    background: #ffffff;
-  }
+  <!-- SheetJS (XLSX) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 
-  /* Esconde interface do app */
-  .header,
-  .sidebar,
-  .content-header,
-  #authScreen,
-  #modalRoot,
-  button,
-  select,
-  label {
-    display: none !important;
-  }
+  <!-- PDF (html2pdf: inclui html2canvas + jsPDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+          integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-  /* Área de etiquetas */
-  #dbcTabQrArea,
-  #qrLabelsWrapper,
-  .qr-label-sheet,
-  .qr-label-card,
-  .qr-label-single-page {
-    display: block;
-  }
-
-  .qr-label-sheet {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 70mm;
-    gap: 0mm;
-    page-break-inside: avoid;
-  }
-
-  /* aqui tiramos borda e sombra */
-  .qr-label-card,
-  .qr-label-single-page {
-    width: 100mm;
-    height: 70mm;
-    border: none !important;
-    box-shadow: none !important;
-    background: #ffffff !important;
-    padding: 4mm;
-    box-sizing: border-box;
-    page-break-inside: avoid;
-  }
-}
-
-  </style>
+  <!-- QRCode -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
+
 <body>
   <!-- AUTH -->
   <div id="authScreen">
@@ -792,100 +592,82 @@
     </div>
 
     <div class="main-container">
-  <aside class="sidebar">
-  <!-- Seção principal -->
-  <div class="sidebar-section">
-    <div class="sidebar-section-title">Principal</div>
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Principal</div>
 
-    <!-- 1) Experimentos (primeiro item) -->
-    <div class="sidebar-item disabled" data-page="experiments">
-      <svg viewBox="0 0 24 24">
-        <path d="M9 2v2H5v2h4v6.586l-2.293 2.293A1 1 0 0 0 7 16h10a1 1 0 0 0 .707-1.707L15 12.586V6h4V4h-4V2H9zm2 4h2v7a1 1 0 0 0 .293.707L14.586 15H9.414l1.293-1.293A1 1 0 0 0 11 13V6z"/>
-      </svg>
-      Experimentos
-    </div>
+          <div class="sidebar-item disabled" data-page="experiments">
+            <svg viewBox="0 0 24 24">
+              <path d="M9 2v2H5v2h4v6.586l-2.293 2.293A1 1 0 0 0 7 16h10a1 1 0 0 0 .707-1.707L15 12.586V6h4V4h-4V2H9zm2 4h2v7a1 1 0 0 0 .293.707L14.586 15H9.414l1.293-1.293A1 1 0 0 0 11 13V6z"/>
+            </svg>
+            Experimentos
+          </div>
 
-    <!-- 2) Identificação (dashboard do experimento) -->
-    <div class="sidebar-item" data-page="experiment-dashboard">
-      <svg viewBox="0 0 24 24">
-        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"></path>
-      </svg>
-      Identificação
-    </div>
+          <div class="sidebar-item" data-page="experiment-dashboard">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"></path>
+            </svg>
+            Identificação
+          </div>
 
-    <!-- 3) Mapa DBC -->
-    <div class="sidebar-item disabled" data-page="dbc-map">
-      <svg viewBox="0 0 24 24">
-        <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"></path>
-      </svg>
-      Mapa DBC
-    </div>
-    
-    <div class="sidebar-item disabled" data-page="monitoring">
-  <!-- pode reaproveitar um ícone simples ou deixar só o texto -->
-  Monitoramento manual
-</div>
-    
-    <div class="sidebar-item disabled" data-page="monitoring-drone">
-  🛰️ Monitoramento drone
-</div>
+          <div class="sidebar-item disabled" data-page="dbc-map">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"></path>
+            </svg>
+            Mapa DBC
+          </div>
 
-    <div class="sidebar-item disabled" data-page="harvest">
-  🌾 Colheita
-</div>
+          <div class="sidebar-item disabled" data-page="monitoring">
+            Monitoramento manual
+          </div>
 
-    <div class="sidebar-item disabled" data-page="interventions">
-  📋 Intervenções
-</div>
+          <div class="sidebar-item disabled" data-page="monitoring-drone">
+            🛰️ Monitoramento drone
+          </div>
 
-    <div class="sidebar-item disabled" data-page="climate">
-  🌦 Dados climáticos
-</div>
+          <div class="sidebar-item disabled" data-page="harvest">
+            🌾 Colheita
+          </div>
 
-    <div class="sidebar-item disabled" data-page="charts">
-  📊 Gráficos
-</div>
+          <div class="sidebar-item disabled" data-page="interventions">
+            📋 Intervenções
+          </div>
 
-    <div class="sidebar-item disabled" data-page="reports">
-  📋 Relatórios
-</div>
+          <div class="sidebar-item disabled" data-page="climate">
+            🌦 Dados climáticos
+          </div>
 
-  </div>
+          <div class="sidebar-item disabled" data-page="charts">
+            📊 Gráficos
+          </div>
 
-  <!-- Seção de administração, agora junto do bloco principal -->
-<div class="sidebar-section">
-  <!-- pode manter ou remover esse título -->
-  <!-- <div class="sidebar-section-title">Administração</div> -->
+          <div class="sidebar-item disabled" data-page="reports">
+            📋 Relatórios
+          </div>
+        </div>
 
-  <div class="sidebar-item disabled" data-page="users">
-      <svg viewBox="0 0 24 24">
-        <path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3
-              1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34
-              3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3
-              3zm0 2c-2.33 0-7 1.17-7 3.5V20h7v-1c0-1.1.9-2 2-2h3.26C14.62
-              14.59 11.64 13 8 13zm8 0c-.29 0-.62.02-.97.05C16.21 13.84
-              18 15.23 18 17v3h4v-2.5c0-2.33-4.67-3.5-7-3.5z">
-        </path>
-      </svg>
-      Usuários
-    </div>
+        <div class="sidebar-section">
+          <div class="sidebar-item disabled" data-page="users">
+            <svg viewBox="0 0 24 24">
+              <path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h7v-1c0-1.1.9-2 2-2h3.26C14.62 14.59 11.64 13 8 13zm8 0c-.29 0-.62.02-.97.05C16.21 13.84 18 15.23 18 17v3h4v-2.5c0-2.33-4.67-3.5-7-3.5z"></path>
+            </svg>
+            Usuários
+          </div>
 
-    <div class="sidebar-item disabled" data-page="invites">
-      <svg viewBox="0 0 24 24">
-        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2
-              18c0 1.1.9 2 2 2h16c1.1 0 2-.9
-              2-2V6c0-1.1-.9-2-2-2zm-1 10H5v-2h14v2zm0-4H5V8h14v2z">
-        </path>
-      </svg>
-      Convites
+          <div class="sidebar-item disabled" data-page="invites">
+            <svg viewBox="0 0 24 24">
+              <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-1 10H5v-2h14v2zm0-4H5V8h14v2z"></path>
+            </svg>
+            Convites
+          </div>
+        </div>
+      </aside>
+
+      <main class="content-area" id="contentArea">
+        <!-- renderizado via JS -->
+      </main>
     </div>
   </div>
-</aside>
-
-  <main class="content-area" id="contentArea">
-    <!-- renderizado via JS -->
-  </main>
-</div>
 
   <!-- MODAL GENÉRICO -->
   <div id="modalRoot" class="modal">
@@ -897,11 +679,8 @@
       <div id="modalBody"></div>
     </div>
   </div>
-  
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+  <!-- ================== SCRIPTS DA APLICAÇÃO ================== -->
   <script src="app.js"></script>
   <script src="experiments.js"></script>
   <script src="monitoring.js"></script>
@@ -914,60 +693,5 @@
   <script src="cronograma.js"></script>
   <script src="mapadbc.js"></script>
   <script src="dashboard.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  </body>
+</body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
