@@ -244,10 +244,20 @@ function showApp() {
   $("authScreen").style.display = "none";
   $("appScreen").style.display = "flex";
 
+  NEW_STR:
   // preenche e-mail + role no cabeçalho
   if (currentUser) {
     const el = $("userEmail");
-    if (el) el.textContent = `${currentUser.email} · ${roleLabel(currentRole)}`;
+    if (el) {
+      el.innerHTML = `
+        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${currentUser.email}
+        </div>
+        <div style="font-size:11px; color:#d1d5db; margin-top:2px;">
+          ${roleLabel(currentRole)}
+        </div>
+      `;
+    }
   }
 
   const subtitle = document.getElementById("headerSubtitle");
@@ -823,6 +833,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
