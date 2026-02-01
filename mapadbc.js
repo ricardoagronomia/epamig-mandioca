@@ -435,7 +435,7 @@ async function initDbcQrArea() {
 
   // Função para montar URL do QR (ajuste a base depois)
   function buildQrUrl(expId, templateId) {
-    const base = "https://seusite.app/coleta";
+    const base = "https://vercel.com/ricardoagronomias-projects/maniva-tracker/ATjNgmFeqmwUx47dLQZS2nVJDL8j.app/coleta";
     return `${base}?exp=${encodeURIComponent(expId)}&pt=${encodeURIComponent(
       templateId
     )}`;
