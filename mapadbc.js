@@ -435,7 +435,7 @@ async function initDbcQrArea() {
 
   // Função para montar URL do QR (ajuste a base depois)
   function buildQrUrl(expId, templateId) {
-    const base = window.location.origin + "/collect.html";
+    const base = window.location.origin;
     return `${base}?exp=${encodeURIComponent(expId)}&pt=${encodeURIComponent(
       templateId
     )}`;
