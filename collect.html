@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🗣️ Coletor Voz - Offline</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; 
+      margin: 0; padding: 20px; 
+      background: linear-gradient(135deg,#f0fdf4,#dcfce7);
+      min-height: 100vh;
+    }
+    .container { max-width: 400px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .plot-info { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 20px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .voice-btn { 
+      background: linear-gradient(135deg,#10b981,#059669); 
+      color: white; 
+      border: none; 
+      padding: 20px; 
+      border-radius: 25px; 
+      font-size: 18px; 
+      width: 100%; 
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(16,185,129,0.3);
+    }
+    .voice-btn:active { transform: scale(0.98); }
+    #status { 
+      background: #f8fafc; 
+      padding: 15px; 
+      border-radius: 12px; 
+      margin: 15px 0; 
+      text-align: center; 
+      min-height: 60px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 16px;
+    }
+    .data-list { max-height: 300px; overflow-y: auto; }
+    .entry { 
+      background: white; 
+      padding: 15px; 
+      margin: 10px 0; 
+      border-radius: 15px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border-left: 4px solid #10b981;
+    }
+    .sync-bar { 
+      position: fixed; 
+      bottom: 20px; 
+      left: 20px; 
+      right: 20px; 
+      background: white; 
+      padding: 15px; 
+      border-radius: 20px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+    .qr-scan { text-align: center; padding: 40px 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🗣️ Coletor Voz</h1>
+      <p>Monitoramento e Colheita</p>
+    </div>
+
+    <div id="qrArea" class="qr-scan">
+      <p>📱 Escaneie o QR Code da parcela</p>
+      <video id="video" width="300" height="200" style="border-radius: 15px;"></video>
+      <p id="qrStatus" style="color:#6b7280;margin-top:15px;">Pressionar "ESCANEAR"</p>
+      <button onclick="startQR()" class="voice-btn" style="margin-top:20px;">🔍 ESCANEAR QR</button>
+    </div>
+
+    <div id="collectArea" style="display:none;">
+      <div class="plot-info">
+        <h3 id="plotTitle">Carregando parcela...</h3>
+        <p id="plotDetails">Bloco X - Tratamento Y</p>
+      </div>
+      
+      <button id="voiceBtn" class="voice-btn">🎤 Pressione para falar</button>
+      <div id="status">Diga: "altura planta 1 25 cm" ou "morta planta 3"</div>
+      
+      <div id="dataList" class="data-list"></div>
+    </div>
+
+    <div class="sync-bar">
+      <button id="syncBtn" onclick="syncAll()" class="voice-btn">
+        📤 Sincronizar <span id="pendingCount">0</span> registros
+      </button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script>
+    // Config PWA
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+    
+    let currentPlot = null;
+    let recognition = null;
+    let videoStream = null;
+    let codeReader = null;
+    let pendingCount = 0;
+    
+    // IndexedDB
+    const DB_NAME = 'VoiceFarmDB';
+    const DB_VERSION = 1;
+    let db;
+    
+    // Inicializar ao carregar
+    window.addEventListener('load', initApp);
+    
+    async function initApp() {
+      await initDB();
+      await loadPending();
+      checkOnlineStatus();
+      
+      // Auto-scan se já tem URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const expId = urlParams.get('exp');
+      const ptId = urlParams.get('pt');
+      if (expId && ptId) {
+        currentPlot = { expId, ptId };
+        showCollectArea();
+        document.getElementById('plotTitle').textContent = `Parcela carregada via QR`;
+      }
+    }
+    
+    async function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          db = request.result;
+          resolve();
+        };
+        request.onupgradeneeded = (e) => {
+          db = e.target.result;
+          const store = db.createObjectStore('voice_entries', { keyPath: 'id', autoIncrement: true });
+          store.createIndex('plot', 'plotId', { unique: false });
+          store.createIndex('synced', 'synced', { unique: false });
+        };
+      });
+    }
+    
+    // QR Scanner
+    async function startQR() {
+      codeReader = new window.ZXing.BrowserQRCodeReader();
+      try {
+        const result = await codeReader.decodeFromVideoDevice(
+          null, 'video', 
+          async (result, err, video) => {
+            if (result) {
+              parseQRCode(result.text);
+              codeReader.reset();
+              document.getElementById('video').style.display = 'none';
+            }
+          }
+        );
+      } catch (err) {
+        console.error('QR Error:', err);
+      }
+    }
+    
+    function parseQRCode(url) {
+      const params = new URLSearchParams(new URL(url).search);
+      const expId = params.get('exp');
+      const ptId = params.get('pt');
+      
+      if (expId && ptId) {
+        currentPlot = { expId, ptId, timestamp: Date.now() };
+        showCollectArea();
+        document.getElementById('plotTitle').textContent = `Parcela ${ptId}`;
+        document.getElementById('plotDetails').textContent = `Exp: ${expId.slice(0,8)}...`;
+        loadPlotData();
+      } else {
+        alert('QR inválido!');
+      }
+    }
+    
+    function showCollectArea() {
+      document.getElementById('qrArea').style.display = 'none';
+      document.getElementById('collectArea').style.display = 'block';
+    }
+    
+    // Voice Recognition
+    document.getElementById('voiceBtn').onclick = toggleVoice;
+    
+    function toggleVoice() {
+      if (recognition && recognition.running) {
+        recognition.stop();
+        return;
+      }
+      
+      if (!('webkitSpeechRecognition' in window)) {
+        alert('Seu navegador não suporta voz. Use Chrome/Safari no celular.');
+        return;
+      }
+      
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'pt-BR';
+      
+      recognition.onresult = async (e) => {
+        const final = Array.from(e.results)
+          .filter(r => r.isFinal)
+          .map(r => r[0].transcript)
+          .join('');
+        
+        if (final) await processCommand(final);
+      };
+      
+      recognition.onerror = (e) => {
+        document.getElementById('status').textContent = `Erro: ${e.error}`;
+      };
+      
+      recognition.start();
+      document.getElementById('voiceBtn').textContent = '🛑 Parando...';
+      document.getElementById('status').textContent = 'Diga comandos claros!';
+    }
+    
+    async function processCommand(text) {
+      // Exemplos: "altura planta 1 25", "morta planta 3", "diâmetro 5 1.2"
+      const patterns = {
+        altura: /altura\s+(\d+)\s+([\d.]+)/i,
+        diametro: /diâmetro\s+(\d+)\s+([\d.]+)/i,
+        morta: /morta\s+(\d+)/i,
+        viva: /viva\s+(\d+)/i,
+        sanidade: /sanidade\s+(\d+)\s+([\d.]+)/i
+      };
+      
+      for (let [type, regex] of Object.entries(patterns)) {
+        const match = text.match(regex);
+        if (match) {
+          const position = parseInt(match[1]);
+          const value = parseFloat(match[2]) || (type.includes('morta') ? 'dead' : 'alive');
+          
+          const entry = {
+            id: Date.now() + Math.random(),
+            plotId: `${currentPlot.expId}-${currentPlot.ptId}`,
+            expId: currentPlot.expId,
+            ptId: currentPlot.ptId,
+            type,
+            position,
+            value,
+            rawText: text,
+            timestamp: new Date().toISOString(),
+            synced: false
+          };
+          
+          await saveEntry(entry);
+          renderEntries();
+          speakFeedback(`${type} planta ${position} registrado!`);
+          return;
+        }
+      }
+      
+      speakFeedback('Comando não reconhecido. Tente: "altura planta 1 25"');
+    }
+    
+    async function saveEntry(entry) {
+      const tx = db.transaction('voice_entries', 'readwrite');
+      await tx.objectStore('voice_entries').add(entry);
+      pendingCount++;
+      updateUI();
+    }
+    
+    async function loadPending() {
+      const tx = db.transaction('voice_entries');
+      const entries = await tx.objectStore('voice_entries').getAll();
+      pendingCount = entries.filter(e => !e.synced).length;
+      renderEntries();
+      updateUI();
+    }
+    
+    function renderEntries() {
+      // Renderiza últimas 10 entradas da parcela atual
+      const tx = db.transaction('voice_entries');
+      tx.objectStore('voice_entries').index('plot').getAll(currentPlot?.plotId).onsuccess = (e) => {
+        const entries = e.target.result.slice(-10);
+        document.getElementById('dataList').innerHTML = entries.map(e => `
+          <div class="entry">
+            <strong>Planta ${e.position}</strong>: ${e.type} = ${e.value}<br>
+            <small>${new Date(e.timestamp).toLocaleString('pt-BR')}</small>
+            ${!e.synced ? ' ⏳' : ' ✅'}
+          </div>
+        `).join('');
+      };
+    }
+    
+    async function syncAll() {
+      if (!navigator.onLine || !currentPlot) return alert('Sem internet ou parcela!');
+      
+      const tx = db.transaction('voice_entries', 'readwrite');
+      const unsynced = await tx.objectStore('voice_entries')
+        .index('synced').getAll(IDBKeyRange.only(false));
+      
+      try {
+        const res = await fetch('/api/sync-voice-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(unsynced)
+        });
+        
+        if (res.ok) {
+          for (let entry of unsynced) {
+            await tx.objectStore('voice_entries').put({...entry, synced: true});
+          }
+          pendingCount = 0;
+          renderEntries();
+          updateUI();
+          speakFeedback('Sincronizado com sucesso!');
+        }
+      } catch (e) {
+        alert('Erro na sincronização. Tente novamente.');
+      }
+    }
+    
+    function updateUI() {
+      document.getElementById('pendingCount').textContent = pendingCount;
+      document.getElementById('syncBtn').style.background = 
+        pendingCount ? '#ef4444' : '#10b981';
+    }
+    
+    function speakFeedback(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR';
+      speechSynthesis.speak(utterance);
+    }
+    
+    // Online/offline
+    window.addEventListener('online', () => {
+      if (pendingCount > 0) syncAll();
+    });
+  </script>
+</body>
+</html>
