@@ -4,45 +4,88 @@
     <title>Coletor Voz - MandiocaTrack</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="data:application/manifest+json,{
+        'name': 'Coletor Voz MandiocaTrack',
+        'short_name': 'Coletor Voz',
+        'start_url': '/voice-collector.html',
+        'display': 'standalone',
+        'background_color': '#064e3b',
+        'theme_color': '#166534',
+        'icons': [{'src': 'data:image/svg+xml;base64,...', 'sizes': '192x192', 'type': 'image/png'}]
+    }">
     
     <style>
         body { 
             font-family: system-ui, sans-serif; 
             background: linear-gradient(135deg, #064e3b, #166534);
-            height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;
+            height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
         }
         .container { 
-            background: white; border-radius: 24px; padding: 32px; max-width: 380px; width: 90%; box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            background: white; border-radius: 24px; padding: 24px; max-width: 400px; 
+            margin: 0 auto; box-shadow: 0 25px 50px rgba(0,0,0,0.3);
         }
-        .title { color: #064e3b; font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 8px; }
-        .subtitle { color: #6b7280; text-align: center; margin-bottom: 32px; font-size: 16px; }
-        #pinInput { 
-            display: flex; gap: 12px; justify-content: center; margin-bottom: 24px;
-        }
+        .title { color: #064e3b; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        .subtitle { color: #6b7280; text-align: center; margin-bottom: 24px; font-size: 14px; }
+        
+        /* PIN */
+        #pinInput { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
         .pin-box { 
-            width: 64px; height: 64px; border: 2px solid #d1d5db; border-radius: 12px; 
-            font-size: 24px; text-align: center; font-weight: 600;
+            width: 56px; height: 56px; border: 2px solid #d1d5db; border-radius: 12px; 
+            font-size: 20px; text-align: center; font-weight: 600;
         }
         .pin-box:focus { border-color: #166534; outline: none; box-shadow: 0 0 0 3px rgba(22,101,52,0.2); }
-        button { 
-            width: 100%; padding: 14px; background: linear-gradient(135deg, #166534, #064e3b); 
-            color: white; border: none; border-radius: 999px; font-size: 18px; font-weight: 600; cursor: pointer;
-        }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .qr-preview {
-            width: 120px; height: 120px; margin: 20px auto; background: #f3f4f6; 
+        
+        /* Status QR */
+        .qr-status {
+            width: 100%; height: 100px; margin: 20px 0; background: #f3f4f6; 
             border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            font-size: 12px; color: #6b7280;
+            font-size: 16px; color: #6b7280; border: 2px dashed #d1d5db;
+        }
+        
+        /* Input Parcela/Bloco */
+        .input-row { display: flex; gap: 12px; margin-bottom: 20px; }
+        .input-group { flex: 1; }
+        label { font-size: 12px; color: #374151; margin-bottom: 4px; display: block; }
+        input { 
+            width: 100%; padding: 12px; border: 2px solid #d1d5db; border-radius: 12px; 
+            font-size: 18px; text-align: center; font-weight: 600;
+        }
+        input:focus { border-color: #166534; outline: none; }
+        
+        /* Botões */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        button { 
+            padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; 
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-start { background: linear-gradient(135deg, #166534, #064e3b); color: white; }
+        .btn-start:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-clear { background: #fee2e2; color: #b91c1c; }
+        .btn-sync { background: #fbbf24; color: #92400e; }
+        
+        /* Offline indicator */
+        .offline-badge {
+            position: fixed; top: 20px; right: 20px; background: #ef4444; color: white;
+            padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        }
+        .online-badge { background: #10b981; }
+        
+        /* Histórico */
+        .history { max-height: 200px; overflow-y: auto; }
+        .history-item {
+            background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 8px;
+            font-size: 14px; border-left: 4px solid #10b981;
         }
     </style>
 </head>
 <body>
+    <div class="offline-badge" id="networkStatus">🔴 OFFLINE</div>
+    
     <div class="container">
         <div class="title">🗣️ Coletor Voz</div>
-        <div class="subtitle">Digite o PIN da equipe</div>
+        <div class="subtitle" id="subtitle">Digite o PIN da equipe</div>
         
+        <!-- PIN -->
         <div id="pinInput">
             <input class="pin-box" maxlength="1" type="number">
             <input class="pin-box" maxlength="1" type="number">
@@ -50,30 +93,59 @@
             <input class="pin-box" maxlength="1" type="number">
         </div>
         
-        <div class="qr-preview" id="qrPreview">
-            📱 Escaneie QR Code
+        <!-- QR Status -->
+        <div class="qr-status" id="qrStatus">📱 Escaneie QR Code</div>
+        
+        <!-- Inputs Manual -->
+        <div id="manualInputs" style="display:none;">
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Parcela</label>
+                    <input type="number" id="parcelaInput" placeholder="ex: 25">
+                </div>
+                <div class="input-group">
+                    <label>Bloco</label>
+                    <input type="number" id="blocoInput" placeholder="ex: 1">
+                </div>
+            </div>
+            
+            <div class="btn-grid">
+                <button class="btn-start" id="btnSave">💾 Salvar</button>
+                <button class="btn-clear" id="btnClear">🗑️ Limpar</button>
+            </div>
         </div>
         
-        <button id="collectBtn" disabled>🔴 Parado</button>
+        <!-- Sync -->
+        <button class="btn-sync" id="btnSync" style="display:none;">📡 Sincronizar (0 pendente)</button>
+        
+        <!-- Histórico -->
+        <div class="history" id="history" style="display:none;"></div>
     </div>
 
     <script>
-        // 🔐 PIN DA EQUIPE (MUDE AQUI!)
-        const PIN_CORRETO = '2512'; // Mude para PIN da sua equipe
+        // 🔐 CONFIG
+        const PIN_CORRETO = '2512'; // MUDE AQUI!
         
+        // Elements
         const pinInputs = document.querySelectorAll('.pin-box');
-        const collectBtn = document.getElementById('collectBtn');
-        const qrPreview = document.getElementById('qrPreview');
-        let recognition = null;
-        let currentParcela = '';
-        let currentBloco = '';
+        const qrStatus = document.getElementById('qrStatus');
+        const subtitle = document.getElementById('subtitle');
+        const manualInputs = document.getElementById('manualInputs');
+        const btnSave = document.getElementById('btnSave');
+        const btnClear = document.getElementById('btnClear');
+        const btnSync = document.getElementById('btnSync');
+        const history = document.getElementById('history');
+        const networkStatus = document.getElementById('networkStatus');
+        const parcelaInput = document.getElementById('parcelaInput');
+        const blocoInput = document.getElementById('blocoInput');
+        
+        let collections = [];
+        let isOnline = false;
 
-        // PIN 4 dígitos
+        // PIN Logic
         pinInputs.forEach((input, index) => {
             input.addEventListener('input', (e) => {
-                if (e.target.value.length === 1 && index < 3) {
-                    pinInputs[index + 1].focus();
-                }
+                if (e.target.value.length === 1 && index < 3) pinInputs[index + 1].focus();
                 checkPin();
             });
             input.addEventListener('keydown', (e) => {
@@ -87,10 +159,10 @@
             const pin = Array.from(pinInputs).map(i => i.value).join('');
             if (pin.length === 4) {
                 if (pin === PIN_CORRETO) {
-                    document.querySelector('.subtitle').textContent = 'PIN correto! Fale agora';
-                    collectBtn.disabled = false;
-                    collectBtn.textContent = '🟢 Iniciar coleta';
+                    subtitle.textContent = 'PIN correto! Digite P/Bloco';
+                    manualInputs.style.display = 'block';
                     pinInputs.forEach(i => i.disabled = true);
+                    parcelaInput.focus();
                 } else {
                     setTimeout(() => {
                         pinInputs.forEach(i => i.value = '');
@@ -100,90 +172,121 @@
             }
         }
 
-        // Reconhecimento de voz
-        collectBtn.addEventListener('click', () => {
-            if (!recognition) {
-                initVoice();
-                collectBtn.textContent = '🟡 Escutando...';
-            } else {
-                stopVoice();
-                collectBtn.textContent = '🟢 Iniciar coleta';
-            }
+        // Salvar dados
+        btnSave.addEventListener('click', saveData);
+        parcelaInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') blocoInput.focus();
+        });
+        blocoInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveData();
         });
 
-        function initVoice() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
-            recognition.lang = 'pt-BR';
-            recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onresult = (event) => {
-                let transcript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
-                }
-                
-                // Extrai parcela/bloco
-                const match = transcript.match(/parcela\s*(\d+).*?bloco\s*(\d+)/i);
-                if (match) {
-                    currentParcela = match[1];
-                    currentBloco = match[2];
-                    qrPreview.innerHTML = `📍 P${currentParcela} B${currentBloco}`;
-                    
-                    // Salva localmente (offline)
-                    saveData(currentParcela, currentBloco, transcript);
-                }
-            };
-
-            recognition.onerror = (event) => {
-                console.error('Erro voz:', event.error);
-                collectBtn.textContent = '❌ Erro microfone';
-                setTimeout(() => {
-                    collectBtn.textContent = '🟢 Iniciar coleta';
-                }, 2000);
-            };
-
-            recognition.onend = () => {
-                recognition = null;
-                collectBtn.textContent = '🟢 Iniciar coleta';
-            };
-
-            recognition.start();
-        }
-
-        function stopVoice() {
-            if (recognition) {
-                recognition.stop();
-                recognition = null;
+        function saveData() {
+            const parcela = parcelaInput.value;
+            const bloco = blocoInput.value;
+            
+            if (!parcela || !bloco) {
+                qrStatus.textContent = '❌ Digite Parcela e Bloco';
+                return;
             }
-        }
-
-        function saveData(parcela, bloco, fala) {
+            
             const data = {
                 timestamp: new Date().toISOString(),
                 parcela: parcela,
                 bloco: bloco,
-                fala: fala,
+                fala: `P${parcela} B${bloco}`,
                 status: 'pendente'
             };
             
-            // Salva localStorage (offline)
-            let collections = JSON.parse(localStorage.getItem('voiceCollections') || '[]');
             collections.push(data);
             localStorage.setItem('voiceCollections', JSON.stringify(collections));
             
-            // Mostra confirmação
-            qrPreview.innerHTML = `✅ Salvo! P${parcela} B${bloco}`;
-            setTimeout(() => {
-                qrPreview.innerHTML = `📱 Escaneie QR Code`;
-            }, 1500);
+            qrStatus.innerHTML = `✅ Salvo! P${parcela} B${bloco}`;
+            parcelaInput.value = blocoInput.value = '';
+            parcelaInput.focus();
+            
+            updateHistory();
+            updateSyncButton();
         }
 
-        // PWA offline
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js');
+        btnClear.addEventListener('click', () => {
+            parcelaInput.value = blocoInput.value = '';
+            parcelaInput.focus();
+            qrStatus.textContent = '📱 Digite próximo';
+        });
+
+        // Load existing data
+        function loadData() {
+            const saved = localStorage.getItem('voiceCollections');
+            if (saved) {
+                collections = JSON.parse(saved);
+                updateHistory();
+                updateSyncButton();
+            }
         }
+
+        function updateHistory() {
+            history.innerHTML = collections.slice(-5).map(item => 
+                `<div class="history-item">
+                    P${item.parcela} B${item.bloco} 
+                    <small>${new Date(item.timestamp).toLocaleTimeString()}</small>
+                </div>`
+            ).reverse().join('');
+        }
+
+        function updateSyncButton() {
+            const pending = collections.filter(c => c.status === 'pendente').length;
+            btnSync.style.display = pending ? 'block' : 'none';
+            btnSync.textContent = `📡 Sincronizar (${pending} pendente)`;
+        }
+
+        // Network status
+        window.addEventListener('online', () => {
+            isOnline = true;
+            networkStatus.textContent = '🟢 ONLINE';
+            networkStatus.className = 'offline-badge online-badge';
+            checkSync();
+        });
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            networkStatus.textContent = '🔴 OFFLINE';
+            networkStatus.className = 'offline-badge';
+        });
+
+        async function checkSync() {
+            if (!isOnline) return;
+            
+            const pending = collections.filter(c => c.status === 'pendente');
+            if (pending.length === 0) return;
+            
+            try {
+                // SIMULE Supabase sync aqui
+                for (let item of pending) {
+                    // await supabase.from('collections').insert(item);
+                    item.status = 'sync';
+                }
+                localStorage.setItem('voiceCollections', JSON.stringify(collections));
+                updateSyncButton();
+                qrStatus.textContent = `✅ ${pending.length} sincronizados!`;
+            } catch(e) {
+                console.error('Sync falhou:', e);
+            }
+        }
+
+        btnSync.addEventListener('click', checkSync);
+
+        // Service Worker básico (cache HTML)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript;base64,' + 
+                btoa(`self.addEventListener('fetch', e => {
+                    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+                });`)
+            ).catch(() => {});
+        }
+
+        // Init
+        loadData();
+        if (navigator.onLine) window.dispatchEvent(new Event('online'));
     </script>
 </body>
 </html>
