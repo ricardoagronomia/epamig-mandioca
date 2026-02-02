@@ -745,13 +745,29 @@ window.sendInvite = async function () {
 
     const link = `${window.location.origin}?invite=${token}`;
 
-    // reabre o corpo do modal mostrando o link gerado
     $("modalBody").innerHTML = `
-      <p style="font-size:14px;color:#374151;margin-bottom:8px;">
-        Convite criado para <strong>${email}</strong> como <strong>${roleLabel(role)}</strong>.
-      </p>
-      ...
-    `;
+  <p style="font-size:14px;color:#374151;margin-bottom:8px;">
+    Convite criado para <strong>${email}</strong> como <strong>${roleLabel(role)}</strong>.
+  </p>
+
+  <label for="inviteLinkField">Link do convite</label>
+  <input id="inviteLinkField" type="text" value="${link}" readonly
+    style="width:100%; padding:8px 10px; border:1px solid #e5e7eb; border-radius:10px; font-size:13px;" />
+
+  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">
+    <button type="button" class="btn-secondary" onclick="copyInviteLinkFromModal()">
+      Copiar link
+    </button>
+    <a class="btn-primary" style="width:auto; padding-inline:18px; text-decoration:none;"
+       href="${link}" target="_blank" rel="noopener noreferrer">
+      Abrir link
+    </a>
+  </div>
+
+  <p style="font-size:12px;color:#6b7280;margin-top:10px;">
+    Observação: o sistema não envia e-mail automaticamente; copie o link e envie ao usuário.
+  </p>
+`;
 
     try { await navigator.clipboard.writeText(link); } catch (_) {}
 
@@ -832,6 +848,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
