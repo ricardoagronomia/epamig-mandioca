@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/voice-collector.html",
+      "destination": "/"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
