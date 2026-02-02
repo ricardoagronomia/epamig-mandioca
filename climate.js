@@ -333,16 +333,17 @@
     <td>${row.tmean_c != null ? row.tmean_c.toFixed(1) : "–"}</td>
     <td>${row.rh_mean != null ? row.rh_mean.toFixed(0) : "–"}</td>
     <td>
-      <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:flex-end;">
+      <div style="display:flex; gap:4px;">
         ${
           isVisitor
             ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
             : `
-              <button type="button" class="btn-secondary"
+              <button type="button" class="btn-secondary" 
                 style="font-size:12px; padding:4px 8px;"
-                onclick='openClimateDailyEdit(${JSON.stringify(row)})';
-                >Editar</button>
-              <button type="button" class="btn-danger"
+                onclick="openClimateDailyEdit(${JSON.stringify(row)})">
+                Editar
+              </button>
+              <button type="button" class="btn-danger" 
                 style="font-size:12px; padding:4px 8px;"
                 onclick="confirmDeleteClimateDaily('${row.id}')">
                 Excluir
