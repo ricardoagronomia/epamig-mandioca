@@ -493,62 +493,67 @@
   };
 
   window.loadClimateQuickSummary = async function loadClimateQuickSummary() {
-    if (typeof s === "undefined") return;
+  if (typeof s === "undefined") return;
 
-    const hoje = new Date();
-    const inicio = new Date();
-    inicio.setDate(hoje.getDate() - 6);
+  const hoje = new Date();
+  hoje.setHours(23, 59, 59, 999);  // Final do dia
 
-    const fmt = (d) => d.toISOString().slice(0, 10);
-    const dataInicio = fmt(inicio);
-    const dataFim = fmt(hoje);
+  const inicio = new Date(hoje);
+  inicio.setDate(hoje.getDate() - 6);  // 7 dias COMPLETOS
+  inicio.setHours(0, 0, 0, 0);         // Início do dia
 
-    try {
-      const { data, error } = await s
-        .from("climate_daily")
-        .select("rain_mm, tmax_c, tmin_c, rh_mean")
-        .gte("date", dataInicio)
-        .lte("date", dataFim);
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  const dataInicio = fmt(inicio);
+  const dataFim = fmt(hoje);
 
-      if (error) throw error;
+  console.log(`Resumo 7 dias: ${dataInicio} a ${dataFim}`);  // DEBUG
 
-      let rainSum = 0;
-      let rainCount = 0;
-      let tempSum = 0;
-      let tempCount = 0;
-      let rhSum = 0;
-      let rhCount = 0;
+  try {
+    const { data, error } = await s
+      .from("climate_daily")
+      .select("date, rain_mm, tmax_c, tmin_c, rh_mean")
+      .gte("date", dataInicio)
+      .lte("date", dataFim)
+      .order("date");
 
-      (data || []).forEach((row) => {
-        if (row.rain_mm != null) {
-          rainSum += Number(row.rain_mm);
-          rainCount += 1;
-        }
-        if (row.tmax_c != null && row.tmin_c != null) {
-          tempSum += (Number(row.tmax_c) + Number(row.tmin_c)) / 2;
-          tempCount += 1;
-        }
-        if (row.rh_mean != null) {
-          rhSum += Number(row.rh_mean);
-          rhCount += 1;
-        }
-      });
+    console.log("Dados 7 dias:", data?.length || 0, "registros");  // DEBUG
 
-      const rainText = rainCount ? rainSum.toFixed(1) + " mm" : "– mm";
-      const tempText = tempCount ? (tempSum / tempCount).toFixed(1) + " °C" : "– °C";
-      const rhText = rhCount ? (rhSum / rhCount).toFixed(0) + " %" : "– %";
+    if (error) throw error;
 
-      const rainSpan = document.getElementById("clQuickRain");
-      const tempSpan = document.getElementById("clQuickTemp");
-      const rhSpan = document.getElementById("clQuickRh");
+    let rainSum = 0, rainCount = 0;
+    let tempSum = 0, tempCount = 0;
+    let rhSum = 0, rhCount = 0;
 
-      if (rainSpan) rainSpan.textContent = rainText;
-      if (tempSpan) tempSpan.textContent = tempText;
-      if (rhSpan) rhSpan.textContent = rhText;
-    } catch (err) {
-      console.error("Erro no resumo rápido de clima:", err);
-    }
-  };
+    (data || []).forEach((row) => {
+      if (row.rain_mm != null && !isNaN(row.rain_mm)) {
+        rainSum += Number(row.rain_mm);
+        rainCount += 1;
+      }
+      if (row.tmax_c != null && row.tmin_c != null && 
+          !isNaN(row.tmax_c) && !isNaN(row.tmin_c)) {
+        tempSum += (Number(row.tmax_c) + Number(row.tmin_c)) / 2;
+        tempCount += 1;
+      }
+      if (row.rh_mean != null && !isNaN(row.rh_mean)) {
+        rhSum += Number(row.rh_mean);
+        rhCount += 1;
+      }
+    });
+
+    const rainText = rainCount ? rainSum.toFixed(1) + " mm" : "0.0 mm";
+    const tempText = tempCount ? (tempSum / tempCount).toFixed(1) + " °C" : "– °C";
+    const rhText = rhCount ? Math.round(rhSum / rhCount) + " %" : "– %";
+
+    document.getElementById("clQuickRain").textContent = rainText;
+    document.getElementById("clQuickTemp").textContent = tempText;
+    document.getElementById("clQuickRh").textContent = rhText;
+
+    console.log(`Resumo: Chuva=${rainText}, Temp=${tempText}, RH=${rhText}`);  // DEBUG
+
+  } catch (err) {
+    console.error("Erro resumo clima:", err);
+  }
+};
 
   window.openClimateDailyEdit = function openClimateDailyEdit(row) {
     if (window.currentRole === "visitor") {
