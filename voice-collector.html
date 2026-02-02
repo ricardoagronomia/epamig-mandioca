@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🗣️ Coletor Voz</title>
+  <meta name="viewport" content="width=device-width">
+  <style>
+    body { 
+      font-family: system-ui; 
+      padding: 20px; 
+      max-width: 400px; 
+      margin: auto;
+      background: #f0fdf4;
+    }
+    button { 
+      background: #10b981; 
+      color: white; 
+      border: none; 
+      padding: 15px 20px; 
+      border-radius: 10px; 
+      font-size: 16px; 
+      width: 100%; 
+      margin: 10px 0;
+    }
+    #status { 
+      background: white; 
+      padding: 15px; 
+      border-radius: 10px; 
+      text-align: center; 
+      min-height: 50px;
+    }
+    .entry { 
+      background: white; 
+      padding: 12px; 
+      margin: 8px 0; 
+      border-radius: 10px; 
+      border-left: 4px solid #10b981;
+    }
+  </style>
+</head>
+<body>
+  <h1>🗣️ Coletor Voz</h1>
+  
+  <div id="qrArea">
+    <p>📱 Escaneie QR da parcela</p>
+    <button onclick="scanQR()">🔍 ESCANEAR QR</button>
+  </div>
+  
+  <div id="dataArea" style="display:none;">
+    <h3 id="plotInfo">Carregando...</h3>
+    <button id="voiceBtn" onclick="toggleVoice()">🎤 Falar</button>
+    <div id="status">Diga: "altura planta 1 25"</div>
+    <div id="entries"></div>
+    <button onclick="testSave()">💾 Salvar Local (teste)</button>
+  </div>
+
+  <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+  <script>
+    let currentPlot = null;
+    let recognition = null;
+    
+    function scanQR() {
+      alert('QR Scanner funcionando! (simulação)');
+      // SIMULA QR do seu sistema
+      currentPlot = { exp: 'uuid123', pt: 'T1' };
+      document.getElementById('plotInfo').textContent = 'Parcela T1 - Bloco 1';
+      document.getElementById('qrArea').style.display = 'none';
+      document.getElementById('dataArea').style.display = 'block';
+    }
+    
+    function toggleVoice() {
+      if (recognition) {
+        recognition.stop();
+        return;
+      }
+      
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = 'pt-BR';
+      recognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        document.getElementById('status').textContent = text;
+        processVoice(text);
+      };
+      recognition.start();
+      document.getElementById('voiceBtn').textContent = '🛑 Parar';
+    }
+    
+    function processVoice(text) {
+      if (text.includes('altura') && text.match(/planta\s+(\d+)/)) {
+        const plant = text.match(/planta\s+(\d+)/)[1];
+        alert(`Altura planta ${plant} salva!`);
+        addEntry(`Altura Planta ${plant}: OK`);
+      }
+    }
+    
+    function addEntry(text) {
+      const entries = document.getElementById('entries');
+      entries.innerHTML += `<div class="entry">${text}</div>`;
+    }
+    
+    function testSave() {
+      alert('Dados salvos localmente! (LocalStorage teste)');
+      localStorage.setItem('test-voice', 'funcionando');
+    }
+  </script>
+</body>
+</html>
+
