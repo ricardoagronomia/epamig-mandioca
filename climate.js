@@ -298,7 +298,7 @@
     try {
       const { data, error } = await s
         .from("climate_daily")
-        .select("date, rain_mm, tmax_c, tmin_c, tmean_c, rh_mean")
+        .select("*")
         .order("date", { ascending: true });
 
       console.log("climate_daily data:", data, "error:", error);
