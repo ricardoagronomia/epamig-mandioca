@@ -4,289 +4,311 @@
     <title>Coletor Voz - MandiocaTrack</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="data:application/manifest+json,{
-        'name': 'Coletor Voz MandiocaTrack',
-        'short_name': 'Coletor Voz',
-        'start_url': '/voice-collector.html',
-        'display': 'standalone',
-        'background_color': '#064e3b',
-        'theme_color': '#166534',
-        'icons': [{'src': 'data:image/svg+xml;base64,...', 'sizes': '192x192', 'type': 'image/png'}]
-    }">
+    
+    <!-- PWA básico (sem service worker problemático) -->
+    <meta name="theme-color" content="#166534">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkNvbGV0b3IgVm96IE1hbmRpZWNhVHJhY2siLAogICJzaG9ydF9uYW1lIjogIkNvbGV0b3IiLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzA2NGUzYjIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTY2NTM0IiwKICAiaWNvbnMiOiBbXQp9">
     
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: system-ui, sans-serif; 
-            background: linear-gradient(135deg, #064e3b, #166534);
-            height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
+            background: linear-gradient(135deg, #064e3b 0%, #166534 100%);
+            min-height: 100vh; padding: 20px;
         }
         .container { 
-            background: white; border-radius: 24px; padding: 24px; max-width: 400px; 
+            background: #fff; border-radius: 24px; padding: 28px; max-width: 420px; 
             margin: 0 auto; box-shadow: 0 25px 50px rgba(0,0,0,0.3);
         }
-        .title { color: #064e3b; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; }
-        .subtitle { color: #6b7280; text-align: center; margin-bottom: 24px; font-size: 14px; }
+        .title { 
+            color: #064e3b; font-size: 28px; font-weight: 700; text-align: center; 
+            margin-bottom: 12px;
+        }
+        .subtitle { 
+            color: #6b7280; text-align: center; margin-bottom: 28px; font-size: 16px;
+        }
         
         /* PIN */
-        #pinInput { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
+        .pin-row { 
+            display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; 
+        }
         .pin-box { 
-            width: 56px; height: 56px; border: 2px solid #d1d5db; border-radius: 12px; 
-            font-size: 20px; text-align: center; font-weight: 600;
+            width: 60px; height: 60px; border: 2px solid #d1d5db; border-radius: 16px; 
+            font-size: 24px; text-align: center; font-weight: 700; background: #fafafa;
+            transition: all 0.2s;
         }
-        .pin-box:focus { border-color: #166534; outline: none; box-shadow: 0 0 0 3px rgba(22,101,52,0.2); }
+        .pin-box:focus { 
+            border-color: #166534; outline: none; box-shadow: 0 0 0 4px rgba(22,101,52,0.15); 
+            background: #fff;
+        }
+        .pin-box:disabled { opacity: 0.6; }
         
-        /* Status QR */
-        .qr-status {
-            width: 100%; height: 100px; margin: 20px 0; background: #f3f4f6; 
-            border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            font-size: 16px; color: #6b7280; border: 2px dashed #d1d5db;
+        /* Status */
+        .status-box {
+            height: 100px; margin: 20px 0; background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 16px; border: 2px dashed #cbd5e1; display: flex; align-items: center; 
+            justify-content: center; font-size: 18px; color: #475569; font-weight: 500; min-height: 80px;
         }
         
-        /* Input Parcela/Bloco */
-        .input-row { display: flex; gap: 12px; margin-bottom: 20px; }
+        /* Inputs */
+        .input-row { display: flex; gap: 16px; margin-bottom: 24px; }
         .input-group { flex: 1; }
-        label { font-size: 12px; color: #374151; margin-bottom: 4px; display: block; }
-        input { 
-            width: 100%; padding: 12px; border: 2px solid #d1d5db; border-radius: 12px; 
-            font-size: 18px; text-align: center; font-weight: 600;
+        label { 
+            display: block; font-size: 13px; color: #374151; margin-bottom: 6px; font-weight: 500;
         }
-        input:focus { border-color: #166534; outline: none; }
+        input { 
+            width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 12px; 
+            font-size: 20px; text-align: center; font-weight: 700; transition: all 0.2s;
+        }
+        input:focus { border-color: #166534; box-shadow: 0 0 0 4px rgba(22,101,52,0.1); }
         
         /* Botões */
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         button { 
-            padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; 
-            cursor: pointer; transition: all 0.2s;
+            padding: 16px 20px; border: none; border-radius: 16px; font-size: 16px; 
+            font-weight: 700; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
         }
-        .btn-start { background: linear-gradient(135deg, #166534, #064e3b); color: white; }
-        .btn-start:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-clear { background: #fee2e2; color: #b91c1c; }
-        .btn-sync { background: #fbbf24; color: #92400e; }
-        
-        /* Offline indicator */
-        .offline-badge {
-            position: fixed; top: 20px; right: 20px; background: #ef4444; color: white;
-            padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        .btn-primary { 
+            background: linear-gradient(135deg, #166534 0%, #064e3b 100%); color: white; 
         }
-        .online-badge { background: #10b981; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #fee2e2; color: #dc2626; }
+        .btn-sync { 
+            width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); 
+            color: white; margin-bottom: 16px;
+        }
         
         /* Histórico */
-        .history { max-height: 200px; overflow-y: auto; }
-        .history-item {
-            background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 8px;
-            font-size: 14px; border-left: 4px solid #10b981;
+        .history { 
+            max-height: 220px; overflow-y: auto; background: #f8fafc; border-radius: 12px; padding: 12px;
+        }
+        .history-item { 
+            display: flex; justify-content: space-between; align-items: center; padding: 10px; 
+            background: white; border-radius: 8px; margin-bottom: 8px; font-size: 14px; 
+            border-left: 4px solid #10b981;
+        }
+        
+        /* Network */
+        .network-status {
+            position: fixed; top: 20px; right: 20px; padding: 8px 16px; border-radius: 20px; 
+            font-size: 12px; font-weight: 700; z-index: 1000;
+        }
+        .online { background: #10b981; color: white; }
+        .offline { background: #ef4444; color: white; }
+        
+        /* Mobile */
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .container { padding: 20px; border-radius: 20px; }
+            .title { font-size: 24px; }
         }
     </style>
 </head>
 <body>
-    <div class="offline-badge" id="networkStatus">🔴 OFFLINE</div>
+    <!-- Status Rede -->
+    <div class="network-status offline" id="networkStatus">🔴 OFFLINE</div>
     
     <div class="container">
-        <div class="title">🗣️ Coletor Voz</div>
-        <div class="subtitle" id="subtitle">Digite o PIN da equipe</div>
+        <div class="title">🌾 Coletor MandiocaTrack</div>
+        <div class="subtitle" id="subtitle">Digite PIN da equipe</div>
         
-        <!-- PIN -->
-        <div id="pinInput">
-            <input class="pin-box" maxlength="1" type="number">
-            <input class="pin-box" maxlength="1" type="number">
-            <input class="pin-box" maxlength="1" type="number">
-            <input class="pin-box" maxlength="1" type="number">
+        <!-- PIN 4 dígitos -->
+        <div class="pin-row" id="pinRow">
+            <input class="pin-box" maxlength="1" type="number" autocomplete="one-time-code">
+            <input class="pin-box" maxlength="1" type="number" autocomplete="one-time-code">
+            <input class="pin-box" maxlength="1" type="number" autocomplete="one-time-code">
+            <input class="pin-box" maxlength="1" type="number" autocomplete="one-time-code">
         </div>
         
-        <!-- QR Status -->
-        <div class="qr-status" id="qrStatus">📱 Escaneie QR Code</div>
-        
-        <!-- Inputs Manual -->
-        <div id="manualInputs" style="display:none;">
+        <!-- Formulário coleta -->
+        <div id="collectForm" style="display: none;">
+            <div class="status-box" id="statusBox">📱 Digite próxima coleta</div>
+            
             <div class="input-row">
                 <div class="input-group">
                     <label>Parcela</label>
-                    <input type="number" id="parcelaInput" placeholder="ex: 25">
+                    <input type="number" id="parcela" placeholder="25">
                 </div>
                 <div class="input-group">
                     <label>Bloco</label>
-                    <input type="number" id="blocoInput" placeholder="ex: 1">
+                    <input type="number" id="bloco" placeholder="1">
                 </div>
             </div>
             
             <div class="btn-grid">
-                <button class="btn-start" id="btnSave">💾 Salvar</button>
-                <button class="btn-clear" id="btnClear">🗑️ Limpar</button>
+                <button class="btn-primary" id="btnSave">💾 Salvar</button>
+                <button class="btn-secondary" id="btnClear">🗑️ Limpar</button>
             </div>
+            
+            <button class="btn-sync" id="btnSync" style="display: none;">
+                📡 Sincronizar <span id="pendingCount">0</span> itens
+            </button>
         </div>
         
-        <!-- Sync -->
-        <button class="btn-sync" id="btnSync" style="display:none;">📡 Sincronizar (0 pendente)</button>
-        
         <!-- Histórico -->
-        <div class="history" id="history" style="display:none;"></div>
+        <div id="history" class="history" style="display: none;"></div>
     </div>
 
     <script>
-        // 🔐 CONFIG
-        const PIN_CORRETO = '2512'; // MUDE AQUI!
+        // 🔐 CONFIGURAÇÃO
+        const PIN_EQUIPE = '2512'; // MUDE AQUI!
         
-        // Elements
-        const pinInputs = document.querySelectorAll('.pin-box');
-        const qrStatus = document.getElementById('qrStatus');
+        // Elementos
+        const pinBoxes = document.querySelectorAll('.pin-box');
+        const collectForm = document.getElementById('collectForm');
+        const statusBox = document.getElementById('statusBox');
         const subtitle = document.getElementById('subtitle');
-        const manualInputs = document.getElementById('manualInputs');
         const btnSave = document.getElementById('btnSave');
         const btnClear = document.getElementById('btnClear');
         const btnSync = document.getElementById('btnSync');
-        const history = document.getElementById('history');
+        const historyEl = document.getElementById('history');
+        const parcelaInput = document.getElementById('parcela');
+        const blocoInput = document.getElementById('bloco');
         const networkStatus = document.getElementById('networkStatus');
-        const parcelaInput = document.getElementById('parcelaInput');
-        const blocoInput = document.getElementById('blocoInput');
+        const pendingCount = document.getElementById('pendingCount');
         
         let collections = [];
-        let isOnline = false;
-
-        // PIN Logic
-        pinInputs.forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                if (e.target.value.length === 1 && index < 3) pinInputs[index + 1].focus();
+        
+        // === PIN ===
+        pinBoxes.forEach((box, i) => {
+            box.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && i < 3) pinBoxes[i + 1].focus();
                 checkPin();
             });
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                    pinInputs[index - 1].focus();
+            box.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && i > 0) {
+                    pinBoxes[i - 1].focus();
                 }
             });
         });
-
+        
         function checkPin() {
-            const pin = Array.from(pinInputs).map(i => i.value).join('');
+            const pin = Array.from(pinBoxes).map(b => b.value).join('');
             if (pin.length === 4) {
-                if (pin === PIN_CORRETO) {
-                    subtitle.textContent = 'PIN correto! Digite P/Bloco';
-                    manualInputs.style.display = 'block';
-                    pinInputs.forEach(i => i.disabled = true);
+                if (pin === PIN_EQUIPE) {
+                    subtitle.textContent = '✅ PIN correto! Coleta liberada';
+                    collectForm.style.display = 'block';
+                    pinBoxes.forEach(b => b.disabled = true);
                     parcelaInput.focus();
+                    loadCollections();
                 } else {
                     setTimeout(() => {
-                        pinInputs.forEach(i => i.value = '');
-                        pinInputs[0].focus();
-                    }, 500);
+                        pinBoxes.forEach(b => b.value = '');
+                        pinBoxes[0].focus();
+                    }, 300);
                 }
             }
         }
-
-        // Salvar dados
-        btnSave.addEventListener('click', saveData);
+        
+        // === COLETA ===
+        btnSave.addEventListener('click', saveCollection);
+        
         parcelaInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') blocoInput.focus();
         });
         blocoInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') saveData();
+            if (e.key === 'Enter') saveCollection();
         });
-
-        function saveData() {
-            const parcela = parcelaInput.value;
-            const bloco = blocoInput.value;
+        
+        function saveCollection() {
+            const parcela = parcelaInput.value.trim();
+            const bloco = blocoInput.value.trim();
             
             if (!parcela || !bloco) {
-                qrStatus.textContent = '❌ Digite Parcela e Bloco';
+                statusBox.innerHTML = '❌ Digite Parcela e Bloco';
+                setTimeout(() => statusBox.textContent = '📱 Digite próxima coleta', 1500);
                 return;
             }
             
             const data = {
+                id: Date.now() + Math.random(),
                 timestamp: new Date().toISOString(),
-                parcela: parcela,
-                bloco: bloco,
-                fala: `P${parcela} B${bloco}`,
-                status: 'pendente'
+                parcela: parcela.padStart(2, '0'),
+                bloco: bloco.padStart(2, '0'),
+                status: navigator.onLine ? 'sync' : 'pending'
             };
             
-            collections.push(data);
+            collections.unshift(data);
             localStorage.setItem('voiceCollections', JSON.stringify(collections));
             
-            qrStatus.innerHTML = `✅ Salvo! P${parcela} B${bloco}`;
+            statusBox.innerHTML = `✅ Salvo! P${data.parcela} B${data.bloco}`;
             parcelaInput.value = blocoInput.value = '';
             parcelaInput.focus();
             
-            updateHistory();
-            updateSyncButton();
+            updateUI();
+            setTimeout(() => statusBox.textContent = '📱 Digite próxima coleta', 1500);
         }
-
+        
         btnClear.addEventListener('click', () => {
             parcelaInput.value = blocoInput.value = '';
             parcelaInput.focus();
-            qrStatus.textContent = '📱 Digite próximo';
         });
-
-        // Load existing data
-        function loadData() {
-            const saved = localStorage.getItem('voiceCollections');
-            if (saved) {
-                collections = JSON.parse(saved);
-                updateHistory();
-                updateSyncButton();
-            }
-        }
-
-        function updateHistory() {
-            history.innerHTML = collections.slice(-5).map(item => 
-                `<div class="history-item">
-                    P${item.parcela} B${item.bloco} 
-                    <small>${new Date(item.timestamp).toLocaleTimeString()}</small>
-                </div>`
-            ).reverse().join('');
-        }
-
-        function updateSyncButton() {
-            const pending = collections.filter(c => c.status === 'pendente').length;
-            btnSync.style.display = pending ? 'block' : 'none';
-            btnSync.textContent = `📡 Sincronizar (${pending} pendente)`;
-        }
-
-        // Network status
-        window.addEventListener('online', () => {
-            isOnline = true;
-            networkStatus.textContent = '🟢 ONLINE';
-            networkStatus.className = 'offline-badge online-badge';
-            checkSync();
-        });
-        window.addEventListener('offline', () => {
-            isOnline = false;
-            networkStatus.textContent = '🔴 OFFLINE';
-            networkStatus.className = 'offline-badge';
-        });
-
-        async function checkSync() {
-            if (!isOnline) return;
-            
-            const pending = collections.filter(c => c.status === 'pendente');
-            if (pending.length === 0) return;
-            
+        
+        // === LOCAL STORAGE ===
+        function loadCollections() {
             try {
-                // SIMULE Supabase sync aqui
-                for (let item of pending) {
-                    // await supabase.from('collections').insert(item);
-                    item.status = 'sync';
-                }
-                localStorage.setItem('voiceCollections', JSON.stringify(collections));
-                updateSyncButton();
-                qrStatus.textContent = `✅ ${pending.length} sincronizados!`;
+                const saved = localStorage.getItem('voiceCollections');
+                collections = saved ? JSON.parse(saved) : [];
+                updateUI();
             } catch(e) {
-                console.error('Sync falhou:', e);
+                collections = [];
             }
         }
-
-        btnSync.addEventListener('click', checkSync);
-
-        // Service Worker básico (cache HTML)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('data:text/javascript;base64,' + 
-                btoa(`self.addEventListener('fetch', e => {
-                    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-                });`)
-            ).catch(() => {});
+        
+        function updateUI() {
+            const pending = collections.filter(c => c.status === 'pending');
+            
+            // Histórico (últimos 8)
+            historyEl.innerHTML = collections.slice(0, 8).map(c => `
+                <div class="history-item">
+                    <span>P${c.parcela} B${c.bloco}</span>
+                    <span style="color: ${c.status === 'pending' ? '#f59e0b' : '#10b981'}; font-size: 11px;">
+                        ${new Date(c.timestamp).toLocaleString('pt-BR', {timeStyle: 'short'})}
+                        ${c.status === 'pending' ? '⏳' : '✅'}
+                    </span>
+                </div>
+            `).join('');
+            
+            historyEl.style.display = collections.length ? 'block' : 'none';
+            pendingCount.textContent = pending.length;
+            btnSync.style.display = pending.length ? 'block' : 'none';
         }
-
-        // Init
-        loadData();
-        if (navigator.onLine) window.dispatchEvent(new Event('online'));
+        
+        // === REDE ===
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        
+        function updateNetworkStatus() {
+            const isOnline = navigator.onLine;
+            networkStatus.textContent = isOnline ? '🟢 ONLINE' : '🔴 OFFLINE';
+            networkStatus.className = `network-status ${isOnline ? 'online' : 'offline'}`;
+            
+            if (isOnline) trySync();
+        }
+        
+        // === SYNC (placeholder para Supabase) ===
+        async function trySync() {
+            const pending = collections.filter(c => c.status === 'pending');
+            if (!pending.length) return;
+            
+            statusBox.innerHTML = `📡 Sincronizando ${pending.length} itens...`;
+            
+            // SIMULA sync com Supabase
+            // await supabase.from('collections').insert(pending);
+            
+            pending.forEach(item => item.status = 'sync');
+            localStorage.setItem('voiceCollections', JSON.stringify(collections));
+            
+            updateUI();
+            statusBox.innerHTML = `✅ ${pending.length} itens sincronizados!`;
+            setTimeout(() => statusBox.textContent = '📱 Digite próxima coleta', 2000);
+        }
+        
+        btnSync.addEventListener('click', trySync);
+        
+        // === INIT ===
+        updateNetworkStatus();
+        loadCollections();
     </script>
 </body>
 </html>
