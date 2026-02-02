@@ -832,12 +832,6 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
-// Após login bem-sucedido, verifica redirecionamento
-if (window.location.pathname === '/' && sessionStorage.getItem('redirectAfterLogin')) {
-    const target = sessionStorage.getItem('redirectAfterLogin');
-    sessionStorage.removeItem('redirectAfterLogin');
-    window.location.href = target;
-}
 
 
 
