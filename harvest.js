@@ -342,7 +342,7 @@
                     : `
                       <button type="button" class="btn-secondary"
                         style="font-size:11px; padding:4px 6px; white-space:nowrap;"
-                        onclick='editHarvest(JSON.parse("${safeRowJson}"))'>
+                        onclick="editHarvest('${row.id}')">
                         ✏️ Editar
                       </button>
                       <button type="button" class="btn-danger"
@@ -381,11 +381,19 @@
     }
   }
 
-  // Agora recebe o objeto já parseado (vindo do JSON.parse no onclick)
-  window.editHarvest = function editHarvest(row) {
-    if (window.currentRole === "visitor") return;
-    if (!row || !row.id) {
-      alert("Dados inválidos para edição.");
+  window.editHarvest = async function editHarvest(id) {
+  if (window.currentRole === "visitor") return;
+
+  try {
+    const { data: row, error } = await s
+      .from("harvest_records")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    if (!row) {
+      alert("Colheita não encontrada.");
       return;
     }
 
@@ -405,7 +413,11 @@
       document.getElementById("harvestSample").value = row.sample_code ?? "";
       document.getElementById("harvestNotes").value = row.notes ?? "";
     }, 50);
-  };
+  } catch (err) {
+    console.error("Erro ao carregar colheita para edição:", err);
+    alert("Erro ao carregar colheita.");
+  }
+};
 
   window.clearHarvestForm = function clearHarvestForm() {
     currentHarvestId = null;
