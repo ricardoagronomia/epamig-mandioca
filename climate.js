@@ -285,104 +285,106 @@
   };
 
   window.loadClimateDailyReadings = async function loadClimateDailyReadings() {
-    console.log("loadClimateDailyReadings: chamada ao entrar na página de clima");
+  console.log("loadClimateDailyReadings: chamada ao entrar na página de clima");
 
-    if (typeof s === "undefined") {
-      console.warn("Supabase client não disponível.");
-      return;
-    }
+  if (typeof s === "undefined") {
+    console.warn("Supabase client não disponível.");
+    return;
+  }
 
-    const tbody = document.querySelector("#climateDailyTableBody");
-    if (!tbody) return;
+  const tbody = document.querySelector("#climateDailyTableBody");
+  if (!tbody) return;
 
-    try {
-      const { data, error } = await s
-        .from("climate_daily")
-        .select("*")
-        .order("date", { ascending: true });
+  try {
+    const { data, error } = await s
+      .from("climate_daily")
+      .select("*")
+      .order("date", { ascending: true });
 
-      console.log("climate_daily data:", data, "error:", error);
+    console.log("climate_daily data:", data, "error:", error);
 
-      const formatDate = (iso) => {
-        if (!iso) return "";
-        const [y, m, d] = iso.split("-");
-        return `${d}-${m}-${y}`;
-      };
+    const formatDate = (iso) => {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      return `${d}-${m}-${y}`;
+    };
 
-      if (error) throw error;
+    if (error) throw error;
 
-      if (!data || data.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align:center; font-size:13px; color:#6b7280;">
-              Nenhum registro climático diário ainda.
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-            const isVisitor = window.currentRole === "visitor";
-
-      tbody.innerHTML = data.map((row) => {
-        const date = formatDate(row.date);
-        const rain = row.rain_mm != null ? row.rain_mm.toFixed(1) : "–";
-        const tmax = row.tmax_c != null ? row.tmax_c.toFixed(1) : "–";
-        const tmin = row.tmin_c != null ? row.tmin_c.toFixed(1) : "–";
-        const tmean = row.tmean_c != null ? row.tmean_c.toFixed(1) : "–";
-        const rh = row.rh_mean != null ? row.rh_mean.toFixed(0) : "–";
-
-        // monta um objeto JS como string, mas sem quebrar o HTML
-        const rowArg =
-          `{` +
-          `id:'${row.id}',` +
-          `date:'${row.date}',` +
-          `rain_mm:${row.rain_mm ?? 'null'},` +
-          `tmax_c:${row.tmax_c ?? 'null'},` +
-          `tmin_c:${row.tmin_c ?? 'null'},` +
-          `tmean_c:${row.tmean_c ?? 'null'},` +
-          `rh_mean:${row.rh_mean ?? 'null'}` +
-          `}`;
-
-        const actions = isVisitor
-          ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
-          : `
-            <button type="button" class="btn-secondary"
-              style="font-size:12px; padding:4px 8px;"
-              onclick="openClimateDailyEdit(${rowArg})">
-              Editar
-            </button>
-            <button type="button" class="btn-danger"
-              style="font-size:12px; padding:4px 8px;"
-              onclick="confirmDeleteClimateDaily('${row.id}')">
-              Excluir
-            </button>
-          `;
-
-        return `
-          <tr>
-            <td>${date}</td>
-            <td>${rain}</td>
-            <td>${tmax}</td>
-            <td>${tmin}</td>
-            <td>${tmean}</td>
-            <td>${rh}</td>
-            <td><div style="display:flex; gap:4px;">${actions}</div></td>
-          </tr>
-        `;
-      }).join("");
-
-    } catch (err) {
-      console.error("Erro ao carregar registros climáticos diários:", err);
+    if (!data || data.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align:center; font-size:13px; color:#b91c1c;">
-            Erro ao carregar registros climáticos.
+          <td colspan="7" style="text-align:center; font-size:13px; color:#6b7280;">
+            Nenhum registro climático diário ainda.
           </td>
         </tr>
       `;
+      return;
     }
-  };
+
+    const isVisitor = window.currentRole === "visitor";
+
+    tbody.innerHTML = data.map((row) => {
+      const date = formatDate(row.date);
+      const rain = row.rain_mm != null ? row.rain_mm.toFixed(1) : "–";
+      const tmax = row.tmax_c != null ? row.tmax_c.toFixed(1) : "–";
+      const tmin = row.tmin_c != null ? row.tmin_c.toFixed(1) : "–";
+      const tmean = row.tmean_c != null ? row.tmean_c.toFixed(1) : "–";
+      const rh = row.rh_mean != null ? row.rh_mean.toFixed(0) : "–";
+
+      // ✅ CORREÇÃO: Criação segura do objeto com JSON.stringify
+      const rowData = {
+        id: row.id,
+        date: row.date,
+        rain_mm: row.rain_mm,
+        tmax_c: row.tmax_c,
+        tmin_c: row.tmin_c,
+        tmean_c: row.tmean_c,
+        rh_mean: row.rh_mean
+      };
+      
+      // Escapa o JSON para uso seguro no HTML
+      const safeRowJson = JSON.stringify(rowData).replace(/"/g, '&quot;');
+
+      const actions = isVisitor
+        ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
+        : `
+          <button type="button" class="btn-secondary"
+            style="font-size:12px; padding:4px 8px;"
+            onclick="openClimateDailyEdit(JSON.parse('${safeRowJson}'))">
+            Editar
+          </button>
+          <button type="button" class="btn-danger"
+            style="font-size:12px; padding:4px 8px;"
+            onclick="confirmDeleteClimateDaily('${row.id}')">
+            Excluir
+          </button>
+        `;
+
+      return `
+        <tr>
+          <td>${date}</td>
+          <td>${rain}</td>
+          <td>${tmax}</td>
+          <td>${tmin}</td>
+          <td>${tmean}</td>
+          <td>${rh}</td>
+          <td><div style="display:flex; gap:4px;">${actions}</div></td>
+        </tr>
+      `;
+    }).join("");
+
+  } catch (err) {
+    console.error("Erro ao carregar registros climáticos diários:", err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center; font-size:13px; color:#b91c1c;">
+          Erro ao carregar registros climáticos.
+        </td>
+      </tr>
+    `;
+  }
+};
   
   window.loadClimateMonthlySummary = async function loadClimateMonthlySummary() {
     if (typeof s === "undefined") {
@@ -570,21 +572,32 @@
 };
 
   window.openClimateDailyEdit = function openClimateDailyEdit(row) {
-    if (window.currentRole === "visitor") {
-      return;
-    }
-    currentClimateEditId = row.id;
+  if (window.currentRole === "visitor") {
+    return;
+  }
+  
+  // ✅ Validação de segurança
+  if (!row || !row.id) {
+    console.error("Dados inválidos para edição:", row);
+    alert("Erro: dados inválidos para edição.");
+    return;
+  }
 
-    document.getElementById("clDate").value = row.date || "";
-    document.getElementById("clRain").value = row.rain_mm ?? "";
-    document.getElementById("clTmax").value = row.tmax_c ?? "";
-    document.getElementById("clTmin").value = row.tmin_c ?? "";
-    document.getElementById("clTmean").value = row.tmean_c ?? "";
-    document.getElementById("clRh").value = row.rh_mean ?? "";
+  currentClimateEditId = row.id;
 
-    const btn = document.querySelector('button[onclick="saveClimateDailyRecord()"]');
-    if (btn) btn.textContent = "Atualizar registro diário";
-  };
+  document.getElementById("clDate").value = row.date || "";
+  document.getElementById("clRain").value = row.rain_mm != null ? row.rain_mm : "";
+  document.getElementById("clTmax").value = row.tmax_c != null ? row.tmax_c : "";
+  document.getElementById("clTmin").value = row.tmin_c != null ? row.tmin_c : "";
+  document.getElementById("clTmean").value = row.tmean_c != null ? row.tmean_c : "";
+  document.getElementById("clRh").value = row.rh_mean != null ? row.rh_mean : "";
+
+  const btn = document.querySelector('button[onclick="saveClimateDailyRecord()"]');
+  if (btn) btn.textContent = "Atualizar registro diário";
+  
+  // Scroll suave para o formulário
+  document.getElementById("clDate")?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
 
   window.confirmDeleteClimateDaily = async function confirmDeleteClimateDaily(id) {
     if (window.currentRole === "visitor") {
