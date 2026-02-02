@@ -322,43 +322,55 @@
         return;
       }
 
-      const isVisitor = window.currentRole === "visitor";
+            const isVisitor = window.currentRole === "visitor";
 
-      // VERSÃO SIMPLIFICADA QUE FUNCIONA
-tbody.innerHTML = data.map(row => {
-  const date = formatDate(row.date);
-  const rain = row.rain_mm != null ? row.rain_mm.toFixed(1) : "–";
-  const tmax = row.tmax_c != null ? row.tmax_c.toFixed(1) : "–";
-  const tmin = row.tmin_c != null ? row.tmin_c.toFixed(1) : "–";
-  const tmean = row.tmean_c != null ? row.tmean_c.toFixed(1) : "–";
-  const rh = row.rh_mean != null ? row.rh_mean.toFixed(0) : "–";
-  
-  return `
-    <tr>
-      <td>${date}</td>
-      <td>${rain}</td>
-      <td>${tmax}</td>
-      <td>${tmin}</td>
-      <td>${tmean}</td>
-      <td>${rh}</td>
-      <td style="white-space:nowrap;">
-        ${isVisitor 
-          ? '<span style="font-size:11px;color:#9ca3af;">Somente leitura</span>'
+      tbody.innerHTML = data.map((row) => {
+        const date = formatDate(row.date);
+        const rain = row.rain_mm != null ? row.rain_mm.toFixed(1) : "–";
+        const tmax = row.tmax_c != null ? row.tmax_c.toFixed(1) : "–";
+        const tmin = row.tmin_c != null ? row.tmin_c.toFixed(1) : "–";
+        const tmean = row.tmean_c != null ? row.tmean_c.toFixed(1) : "–";
+        const rh = row.rh_mean != null ? row.rh_mean.toFixed(0) : "–";
+
+        // monta um objeto JS como string, mas sem quebrar o HTML
+        const rowArg =
+          `{` +
+          `id:'${row.id}',` +
+          `date:'${row.date}',` +
+          `rain_mm:${row.rain_mm ?? 'null'},` +
+          `tmax_c:${row.tmax_c ?? 'null'},` +
+          `tmin_c:${row.tmin_c ?? 'null'},` +
+          `tmean_c:${row.tmean_c ?? 'null'},` +
+          `rh_mean:${row.rh_mean ?? 'null'}` +
+          `}`;
+
+        const actions = isVisitor
+          ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
           : `
-            <button class="btn-secondary" style="font-size:12px;padding:4px 8px;" 
-              onclick="openClimateDailyEdit({id:'${row.id}',date:'${row.date}',rain_mm:${row.rain_mm||'null'},tmax_c:${row.tmax_c||'null'},tmin_c:${row.tmin_c||'null'},tmean_c:${row.tmean_c||'null'},rh_mean:${row.rh_mean||'null'}})">
+            <button type="button" class="btn-secondary"
+              style="font-size:12px; padding:4px 8px;"
+              onclick="openClimateDailyEdit(${rowArg})">
               Editar
             </button>
-            <button class="btn-danger" style="font-size:12px;padding:4px 8px;" 
+            <button type="button" class="btn-danger"
+              style="font-size:12px; padding:4px 8px;"
               onclick="confirmDeleteClimateDaily('${row.id}')">
               Excluir
             </button>
-          `
-        }
-      </td>
-    </tr>
-  `;
-}).join("");
+          `;
+
+        return `
+          <tr>
+            <td>${date}</td>
+            <td>${rain}</td>
+            <td>${tmax}</td>
+            <td>${tmin}</td>
+            <td>${tmean}</td>
+            <td>${rh}</td>
+            <td><div style="display:flex; gap:4px;">${actions}</div></td>
+          </tr>
+        `;
+      }).join("");
 
     } catch (err) {
       console.error("Erro ao carregar registros climáticos diários:", err);
