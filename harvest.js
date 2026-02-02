@@ -1,5 +1,5 @@
 // harvest.js
-// Página de Colheita - VERSÃO CORRIGIDA 2026
+// Página de Colheita
 
 (function () {
   let currentHarvestId = null;
@@ -109,7 +109,7 @@
           <label for="harvestRoots">Nº raízes comerciais</label>
           <input type="number" id="harvestRoots" placeholder="Ex. 32" ${isVisitor ? "disabled" : ""} />
         </div>
-        <div style="flex:1 1 160px;">
+        <div style="flex:1 1 160px%;">
           <label for="harvestDiameter">Diâmetro médio (cm)</label>
           <input type="number" step="0.1" id="harvestDiameter" placeholder="Ex. 6.5" ${isVisitor ? "disabled" : ""} />
         </div>
@@ -129,4 +129,315 @@
       <div style="margin-bottom:10px;">
         <label for="harvestNotes">Observações</label>
         <textarea id="harvestNotes" rows="3" ${isVisitor ? "disabled" : ""}
-          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid
+          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+          placeholder="Notas sobre a colheita, problemas de campo, qualidade visual, etc."></textarea>
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        ${currentHarvestId ? `
+          <button class="btn-secondary" onclick="clearHarvestForm()" ${isVisitor ? "disabled" : ""}>
+            Cancelar
+          </button>
+        ` : ""}
+        <button class="btn-primary" style="width:auto; padding-inline:18px;"
+          onclick="saveHarvest()" ${isVisitor ? "disabled" : ""}>
+          ${currentHarvestId ? "Atualizar colheita" : "Salvar colheita"}
+        </button>
+      </div>
+    `;
+
+    // Auto-preencher código da amostra quando bloco/parcela mudarem
+    setTimeout(() => {
+      const blockInput = document.getElementById("harvestBlock");
+      const plotInput = document.getElementById("harvestPlot");
+      const sampleInput = document.getElementById("harvestSample");
+
+      function updateSampleCode() {
+        if (blockInput && plotInput && sampleInput && !currentHarvestId) {
+          const block = blockInput.value;
+          const plot = plotInput.value;
+
+          if (block && plot) {
+            const prefix = `B${block}${plot}-`;
+            const currentValue = sampleInput.value;
+            if (!currentValue || currentValue.match(/^B\d+T\d*-?$/)) {
+              sampleInput.value = prefix;
+            }
+          }
+        }
+      }
+
+      if (blockInput) blockInput.addEventListener("change", updateSampleCode);
+      if (plotInput) plotInput.addEventListener("change", updateSampleCode);
+
+      updateSampleCode();
+    }, 50);
+  }
+
+  window.saveHarvest = async function saveHarvest() {
+    if (window.currentRole === "visitor") {
+      alert("Visitantes têm acesso somente leitura.");
+      return;
+    }
+
+    const experiment = window.currentExperiment;
+    if (!experiment || !experiment.id) {
+      alert("Nenhum experimento selecionado.");
+      return;
+    }
+
+    const block = parseInt(document.getElementById("harvestBlock")?.value, 10) || 1;
+    const plotCode = document.getElementById("harvestPlot")?.value.trim();
+    const date = document.getElementById("harvestDate")?.value || null;
+    const weight = document.getElementById("harvestWeight")?.value || null;
+    const roots = document.getElementById("harvestRoots")?.value || null;
+    const diameter = document.getElementById("harvestDiameter")?.value || null;
+    const quality = document.getElementById("harvestQuality")?.value || null;
+    const sample = document.getElementById("harvestSample")?.value.trim() || null;
+    const notes = document.getElementById("harvestNotes")?.value.trim() || null;
+
+    if (!plotCode) {
+      alert("Selecione uma parcela.");
+      return;
+    }
+
+    if (!date) {
+      alert("Informe a data da colheita.");
+      return;
+    }
+
+    const payload = {
+      experiment_id: experiment.id,
+      plot_code: plotCode,
+      block_number: block,
+      harvest_date: date,
+      total_weight: weight ? Number(weight) : null,
+      commercial_roots: roots ? Number(roots) : null,
+      mean_diameter_cm: diameter ? Number(diameter) : null,
+      quality_score: quality ? Number(quality) : null,
+      sample_code: sample,
+      notes: notes,
+    };
+
+    try {
+      const isEditing = !!currentHarvestId;
+
+      if (currentHarvestId) {
+        const { error } = await s
+          .from("harvest_records")
+          .update(payload)
+          .eq("id", currentHarvestId);
+
+        if (error) throw error;
+      } else {
+        const { error } = await s
+          .from("harvest_records")
+          .insert(payload);
+
+        if (error) throw error;
+      }
+
+      await loadHarvestList();
+
+      if (isEditing) {
+        alert("Colheita atualizada com sucesso.");
+        clearHarvestForm();
+      } else {
+        alert("Colheita registrada com sucesso.");
+        document.getElementById("harvestDate").value = "";
+        document.getElementById("harvestWeight").value = "";
+        document.getElementById("harvestRoots").value = "";
+        document.getElementById("harvestDiameter").value = "";
+        document.getElementById("harvestQuality").value = "";
+        document.getElementById("harvestSample").value = "";
+        document.getElementById("harvestNotes").value = "";
+      }
+    } catch (err) {
+      console.error("Erro ao salvar colheita:", err);
+      alert(`Erro ao salvar colheita: ${err.message || "Erro desconhecido"}`);
+    }
+  };
+
+  async function loadHarvestList() {
+    const experiment = window.currentExperiment;
+    if (!experiment || !experiment.id) return;
+
+    const listDiv = document.getElementById("harvestList");
+    const counterSpan = document.getElementById("harvestCounter");
+    if (!listDiv) return;
+
+    try {
+      const { data, error } = await s
+        .from("harvest_records")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("harvest_date", { ascending: false });
+
+      if (error) throw error;
+
+      const sortedData = (data || []).sort((a, b) => {
+        if (a.harvest_date !== b.harvest_date) {
+          return b.harvest_date.localeCompare(a.harvest_date);
+        }
+        if (a.block_number !== b.block_number) {
+          return a.block_number - b.block_number;
+        }
+        const numA = parseInt((a.plot_code || "").replace(/\D/g, ""), 10) || 0;
+        const numB = parseInt((b.plot_code || "").replace(/\D/g, ""), 10) || 0;
+        return numA - numB;
+      });
+
+      if (counterSpan) {
+        counterSpan.textContent = `${sortedData.length} colheitas registradas`;
+      }
+
+      if (!sortedData || sortedData.length === 0) {
+        listDiv.innerHTML = `<p style="font-size:13px; color:#6b7280;">Nenhuma colheita registrada ainda.</p>`;
+        return;
+      }
+
+      const formatDate = (iso) => {
+        if (!iso) return "";
+        const [y, m, d] = iso.split("-");
+        return `${d}/${m}/${y}`;
+      };
+
+      const isVisitor = window.currentRole === "visitor";
+
+      listDiv.innerHTML = `
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Parcela</th>
+                <th>Bloco</th>
+                <th>Peso (kg)</th>
+                <th>Raízes</th>
+                <th>Diâm. (cm)</th>
+                <th>Qualidade</th>
+                <th>Amostra</th>
+                <th style="width:180px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedData
+                .map((row) => {
+                  const rowData = {
+                    id: row.id,
+                    block_number: row.block_number,
+                    plot_code: row.plot_code,
+                    harvest_date: row.harvest_date,
+                    total_weight: row.total_weight,
+                    commercial_roots: row.commercial_roots,
+                    mean_diameter_cm: row.mean_diameter_cm,
+                    quality_score: row.quality_score,
+                    sample_code: row.sample_code,
+                    notes: row.notes,
+                  };
+                  const safeRowJson = JSON.stringify(rowData).replace(/"/g, "&quot;");
+
+                  const actions = isVisitor
+                    ? `<span style="font-size:11px; color:#9ca3af;">Somente leitura</span>`
+                    : `
+                      <button type="button" class="btn-secondary"
+                        style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                        onclick='editHarvest(JSON.parse("${safeRowJson}"))'>
+                        ✏️ Editar
+                      </button>
+                      <button type="button" class="btn-danger"
+                        style="font-size:11px; padding:4px 6px; white-space:nowrap;"
+                        onclick="confirmDeleteHarvest('${row.id}')">
+                        🗑️ Excluir
+                      </button>
+                    `;
+
+                  return `
+                    <tr>
+                      <td>${formatDate(row.harvest_date)}</td>
+                      <td>${row.plot_code || "-"}</td>
+                      <td>${row.block_number || "-"}</td>
+                      <td>${row.total_weight ?? "-"}</td>
+                      <td>${row.commercial_roots ?? "-"}</td>
+                      <td>${row.mean_diameter_cm ?? "-"}</td>
+                      <td>${row.quality_score ?? "-"}</td>
+                      <td>${row.sample_code || "-"}</td>
+                      <td>
+                        <div style="display:flex; gap:4px; align-items:center; justify-content:flex-start;">
+                          ${actions}
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                })
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      console.error("Erro ao carregar colheitas:", err);
+      listDiv.innerHTML = `<p style="font-size:13px; color:#b91c1c;">Erro ao carregar colheitas.</p>`;
+    }
+  }
+
+  // Agora recebe o objeto já parseado (vindo do JSON.parse no onclick)
+  window.editHarvest = function editHarvest(row) {
+    if (window.currentRole === "visitor") return;
+    if (!row || !row.id) {
+      alert("Dados inválidos para edição.");
+      return;
+    }
+
+    currentHarvestId = row.id;
+
+    const experiment = window.currentExperiment;
+    setupHarvestForm(document.getElementById("harvestFormCard"), experiment);
+
+    setTimeout(() => {
+      document.getElementById("harvestBlock").value = String(row.block_number || 1);
+      document.getElementById("harvestPlot").value = row.plot_code || "";
+      document.getElementById("harvestDate").value = row.harvest_date || "";
+      document.getElementById("harvestWeight").value = row.total_weight ?? "";
+      document.getElementById("harvestRoots").value = row.commercial_roots ?? "";
+      document.getElementById("harvestDiameter").value = row.mean_diameter_cm ?? "";
+      document.getElementById("harvestQuality").value = row.quality_score ?? "";
+      document.getElementById("harvestSample").value = row.sample_code ?? "";
+      document.getElementById("harvestNotes").value = row.notes ?? "";
+    }, 50);
+  };
+
+  window.clearHarvestForm = function clearHarvestForm() {
+    currentHarvestId = null;
+    const experiment = window.currentExperiment;
+    setupHarvestForm(document.getElementById("harvestFormCard"), experiment);
+  };
+
+  window.confirmDeleteHarvest = async function confirmDeleteHarvest(id) {
+    if (window.currentRole === "visitor") {
+      alert("Visitantes não podem excluir colheitas.");
+      return;
+    }
+
+    if (!confirm("Deseja excluir este registro de colheita?")) return;
+
+    try {
+      const { error } = await s.from("harvest_records").delete().eq("id", id);
+      if (error) throw error;
+      loadHarvestList();
+    } catch (err) {
+      console.error("Erro ao excluir colheita:", err);
+      alert("Erro ao excluir colheita.");
+    }
+  };
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "'")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+})();
