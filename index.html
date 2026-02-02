@@ -1,14 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <script>
-// 🔒 PROTEÇÃO DE AUTENTICAÇÃO PARA COLETOR
-if (window.location.pathname.includes('voice-collector.html') && !sessionStorage.getItem('user')) {
-    sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-    window.location.href = '/';
-}
-</script>
-
-<head>
+  <head>
   <meta charset="UTF-8" />
   <title>MandiocaTrack - Gestão de Pesquisa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -703,4 +695,5 @@ if (window.location.pathname.includes('voice-collector.html') && !sessionStorage
   <script src="dashboard.js"></script>
 </body>
 </html>
+
 
