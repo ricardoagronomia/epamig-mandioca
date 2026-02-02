@@ -719,7 +719,7 @@ window.sendInvite = async function () {
 
   if (!email) {
     alert("Informe um e-mail para o convite.");
-    return;
+    return
   }
 
   // colaborador NÃO pode criar admin
@@ -832,6 +832,7 @@ window.cancelInvite = async function (id) {
     alert(err.message || "Erro ao cancelar convite.");
   }
 };
+
 
 
 
