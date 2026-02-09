@@ -523,7 +523,7 @@
     console.log('[DEBUG] Tentando buscar monitoramento:', currentMonitoringId);
 
     const { data, error } = await s
-      .from('monitoringevents')
+      .from('monitoring_events')
       .select('*')
       .eq('id', currentMonitoringId)
       .single();
@@ -605,7 +605,7 @@
 
   if (currentMonitoringId) {
     const { data, error } = await s
-      .from('monitoringevents')
+      .from('monitoring_events')
       .select('*')
       .eq('id', currentMonitoringId)
       .single();
@@ -668,7 +668,7 @@ async function renderMonitoringTabPlantasTombadas(container, experiment, selecti
 
   if (currentMonitoringId) {
     const { data, error } = await s
-      .from('monitoringevents')
+      .from('monitoring_events')
       .select('*')
       .eq('id', currentMonitoringId)
       .single();
@@ -779,7 +779,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
     if (currentMonitoringId) {
       // Modo de edição
       const { error } = await s
-        .from('monitoringevents')
+        .from('monitoring_events')
         .update(payload)
         .eq('id', currentMonitoringId);
 
@@ -794,7 +794,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
     } else {
       // Modo de criação
       const { data, error } = await s
-        .from('monitoringevents')
+        .from('monitoring_events')
         .insert(payload)
         .select('*');
 
