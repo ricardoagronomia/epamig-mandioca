@@ -1368,12 +1368,13 @@
       opacity = 1;
     }
 
-    const onclick = canToggle ? `togglePlantLodging(${n})` : 'void(0)';
+    // ✅ CORREÇÃO AQUI: criar variável clickHandler
+    const clickHandler = canToggle ? `togglePlantLodging(${n})` : 'void(0)';
 
     return `
       <button type="button"
         class="plant-circle"
-        onclick="${onclick}"
+        onclick="${clickHandler}"
         style="
           width:42px; height:42px; border-radius:999px;
           border:2px solid ${borderColor};
@@ -1396,7 +1397,7 @@
     </div>
 
     <div style="margin-bottom:10px; font-size:12px; color:#6b7280;">
-      <strong>Verde</strong> = Não tombada · <strong>Amarelo</strong> = Tombada · <strong>Cinza</strong> = Não aplicável
+      <strong>🟢 Verde</strong> = Não tombada · <strong>🟡 Amarelo</strong> = Tombada · <strong>⚪ Cinza</strong> = Não aplicável
       <br>Clique nas plantas <strong>vivas</strong> para marcar como tombadas.
     </div>
 
@@ -1421,14 +1422,21 @@
 };
 
   window.togglePlantLodging = function togglePlantLodging(position) {
+  console.log("[DEBUG] togglePlantLodging chamado para planta:", position);
+
   const bio = currentBiometrics[position];
   const status = currentPlantStatuses[position] || 'not_sprouted';
 
   const isAlive = bio && bio.has_sprouted === true && (!status || status === 'alive');
-  if (!isAlive) return;
+  if (!isAlive) {
+    console.log("[DEBUG] Planta não pode ser marcada (não está viva)");
+    return;
+  }
 
   // Alternar estado de tombamento
   currentLodgingStatuses[position] = !currentLodgingStatuses[position];
+
+  console.log("[DEBUG] Novo estado de tombamento:", currentLodgingStatuses[position]);
 
   // Re-renderizar para mostrar a mudança de cor
   openPlantLodgingDialog();
