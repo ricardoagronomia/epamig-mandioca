@@ -450,228 +450,254 @@
   }
 
   function renderMonitoringTabIniciar(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
-    const isEditing = !!currentMonitoringId;
+  const isVisitor = window.currentRole === "visitor";
+  const isEditing = !!currentMonitoringId;
 
-    container.innerHTML = `
-      ${isEditing ? `
-        <div style="margin-bottom:12px; padding:12px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:8px;">
-          <div style="font-size:13px; font-weight:600; color:#92400e;">
-            ✏️ Modo de edição ativo
-          </div>
-          <div style="font-size:12px; color:#78350f; margin-top:4px;">
-            Você está editando um monitoramento existente. As alterações afetarão apenas este registro.
-          </div>
+  container.innerHTML = `
+    ${isEditing ? `
+      <div style="margin-bottom:12px; padding:12px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:8px;">
+        <div style="font-size:13px; font-weight:600; color:#92400e;">
+          ⚠️ Modo de edição ativo
         </div>
-      ` : ''}
-
-      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-        ${selection.plotCode ? `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}` : "Selecione uma parcela para começar"}
-      </div>
-
-      <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-        <div style="flex:0 0 180px;">
-          <label for="monDate">Data do monitoramento</label>
-          <input type="date" id="monDate" ${isVisitor ? "disabled" : ""} />
+        <div style="font-size:12px; color:#78350f; margin-top:4px;">
+          Você está editando um monitoramento existente. As alterações afetarão apenas este registro.
+          <br>Para iniciar um novo monitoramento, clique em <strong>"Finalizar e Novo Monitoramento"</strong>.
         </div>
       </div>
+    ` : ''}
 
-      <div style="margin-bottom:10px;">
-        <label for="monNotes">Observações gerais da parcela</label>
-        <textarea id="monNotes" rows="3" ${isVisitor ? "disabled" : ""}
-          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
-          placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
+    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      ${selection.plotCode ? 
+        `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}` : 
+        'Selecione uma parcela para começar'}
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+      <div style="flex:0 0 180px;">
+        <label for="monDate">Data do monitoramento</label>
+        <input type="date" id="monDate" ${isVisitor ? 'disabled' : ''}>
       </div>
+    </div>
 
-      <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
-        ${isEditing 
-          ? 'Atualize as informações gerais e clique em "Atualizar" para salvar as mudanças.'
-          : 'Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.'}
-      </div>
+    <div style="margin-bottom:10px;">
+      <label for="monNotes">Observações gerais da parcela</label>
+      <textarea id="monNotes" rows="3" ${isVisitor ? 'disabled' : ''}
+        style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+        placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
+    </div>
 
-      <button class="btn-primary" style="width:auto; padding-inline:18px;" 
-        onclick="saveMonitoringInit()" ${isVisitor ? "disabled" : ""}>
-        ${isEditing ? "Atualizar informações gerais" : "Iniciar monitoramento"}
+    <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+      ${isEditing ? 
+        'Atualize as informações gerais e clique em <strong>Atualizar</strong> para salvar as mudanças.' :
+        'Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.'}
+    </div>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn-primary" style="flex:1; min-width:180px;"
+        onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
+        ${isEditing ? '💾 Atualizar informações gerais' : '🚀 Iniciar monitoramento'}
       </button>
+
       ${isEditing ? `
-        <button class="btn-secondary" style="margin-left:8px;" onclick="cancelMonitoringEdit()">
-          Cancelar edição
+        <button class="btn-primary" style="flex:1; min-width:180px; background:#10b981; border-color:#10b981;"
+          onclick="finishMonitoringAndStartNew()">
+          ✅ Finalizar e Novo Monitoramento
         </button>
-      ` : ""}
-    `;
-  }
+
+        <button class="btn-secondary" style="width:auto;"
+          onclick="cancelMonitoringEdit()">
+          ❌ Cancelar edição
+        </button>
+      ` : ''}
+    </div>
+  `;
+}
 
   async function renderMonitoringTabBiometria(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
+  const isVisitor = window.currentRole === "visitor";
 
-    let monitoringToUse;
-
-    if (currentMonitoringId) {
-      const { data, error } = await s
-        .from("monitoring_events")
-        .select("*")
-        .eq("id", currentMonitoringId)
-        .single();
-
-      monitoringToUse = data;
-      console.log("[DEBUG] Usando monitoramento em edição:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
-    } else {
-      monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-      console.log("[DEBUG] Usando último monitoramento:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
-    }
-
-    if (!monitoringToUse) {
-      container.innerHTML = `
-        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Inicie um monitoramento na aba <strong>Iniciar monitoramento</strong> primeiro.
-        </p>
-      `;
-      return;
-    }
-
-    currentMonitoringId = monitoringToUse.id;
-    await loadBiometricsData(monitoringToUse.id);
-
-    const totalPlants = 9;
-    const filled = Object.keys(currentBiometrics).length;
-    const progress = Math.round((filled / totalPlants) * 100);
-
-    container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
-      </div>
-
-      <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:10px;">
-        <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">
-          Progresso: <strong>${filled}/${totalPlants} plantas</strong> (${progress}%)
-        </div>
-        <div style="width:100%; height:8px; background:#e5e7eb; border-radius:4px; overflow:hidden;">
-          <div style="width:${progress}%; height:100%; background:#10b981; transition:width 0.3s;"></div>
-        </div>
-      </div>
-
-      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
-        <button class="btn-secondary" onclick="openBiometricCollectionDialog()" ${isVisitor ? "disabled" : ""}>
-          Coletar dados biométricos (grade 3×3)
-        </button>
-      </div>
-
-      <div style="font-size:12px; color:#6b7280;">
-        Clique no botão acima para abrir a grade de plantas e registrar medições de <strong>cada haste</strong>: 
-        <strong>altura (cm)</strong>, <strong>diâmetro (cm)</strong> e <strong>sanidade geral (1-5)</strong> para cada planta.
-        <br>Selecione até <strong>3 plantas de referência</strong> para validação dos dados do drone.
-      </div>
-    `;
+  let monitoringToUse;
+  if (currentMonitoringId) {
+    const { data, error } = await s
+      .from('monitoringevents')
+      .select()
+      .eq('id', currentMonitoringId)
+      .single();
+    monitoringToUse = data;
+    console.log('[DEBUG] Usando monitoramento em edição:', monitoringToUse?.id, monitoringToUse?.monitoringdate);
+  } else {
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    console.log('[DEBUG] Usando último monitoramento:', monitoringToUse?.id, monitoringToUse?.monitoringdate);
   }
+
+  if (!monitoringToUse) {
+    container.innerHTML = `
+      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      </div>
+      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+        Nenhum monitoramento registrado ainda para esta parcela.
+        <br>Inicie um monitoramento na aba <strong>Iniciar monitoramento</strong> primeiro.
+      </p>
+    `;
+    return;
+  }
+
+  currentMonitoringId = monitoringToUse.id;
+  await loadBiometricsData(monitoringToUse.id);
+
+  const totalPlants = 9;
+  const filled = Object.keys(currentBiometrics).length;
+  const progress = Math.round((filled / totalPlants) * 100);
+
+  container.innerHTML = `
+    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
+    </div>
+
+    <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:10px;">
+      <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">
+        Progresso: <strong>${filled}/${totalPlants} plantas</strong> (${progress}%)
+      </div>
+      <div style="width:100%; height:8px; background:#e5e7eb; border-radius:4px; overflow:hidden;">
+        <div style="width:${progress}%; height:100%; background:#10b981; transition:width 0.3s;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+      <button class="btn-secondary" style="flex:1; min-width:200px;"
+        onclick="openBiometricCollectionDialog()" ${isVisitor ? 'disabled' : ''}>
+        📊 Coletar dados biométricos (grade 3×3)
+      </button>
+
+      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;"
+        onclick="finishMonitoringAndStartNew()">
+        ✅ Concluir Coleta
+      </button>
+    </div>
+
+    <div style="font-size:12px; color:#6b7280;">
+      Clique no botão acima para abrir a grade de plantas e registrar medições de <strong>cada haste</strong>: 
+      <strong>altura (cm)</strong>, <strong>diâmetro (cm)</strong> e <strong>sanidade geral (1-5)</strong> para cada planta.
+      <br>Selecione até <strong>3 plantas de referência</strong> para validação dos dados do drone.
+    </div>
+  `;
+}
 
   async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
+  const isVisitor = window.currentRole === "visitor";
 
-    let monitoringToUse;
-
-    if (currentMonitoringId) {
-      const { data } = await s
-        .from("monitoring_events")
-        .select("*")
-        .eq("id", currentMonitoringId)
-        .single();
-      monitoringToUse = data;
-    } else {
-      monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-    }
-
-    if (!monitoringToUse) {
-      container.innerHTML = `
-        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Inicie um monitoramento primeiro.
-        </p>
-      `;
-      return;
-    }
-
-    currentMonitoringId = monitoringToUse.id;
-    await loadPlantDataForEdit(monitoringToUse.id);
-    await loadBiometricsData(monitoringToUse.id);
-
-    container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
-      </div>
-
-      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
-        <button class="btn-secondary" onclick="openPlantStatusDialog()" ${isVisitor ? "disabled" : ""}>
-          Marcar mortalidade
-        </button>
-      </div>
-
-      <div style="font-size:12px; color:#6b7280;">
-        As plantas marcadas como <strong>"Brotou"</strong> na aba Biometria aparecem automaticamente como <strong>vivas</strong> (verde).
-        <br>Clique no botão para marcar plantas que morreram (ficarão vermelhas).
-      </div>
-    `;
+  let monitoringToUse;
+  if (currentMonitoringId) {
+    const { data } = await s
+      .from('monitoringevents')
+      .select()
+      .eq('id', currentMonitoringId)
+      .single();
+    monitoringToUse = data;
+  } else {
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
   }
+
+  if (!monitoringToUse) {
+    container.innerHTML = `
+      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      </div>
+      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+        Nenhum monitoramento registrado ainda para esta parcela.
+        <br>Inicie um monitoramento primeiro.
+      </p>
+    `;
+    return;
+  }
+
+  currentMonitoringId = monitoringToUse.id;
+  await loadPlantDataForEdit(monitoringToUse.id);
+  await loadBiometricsData(monitoringToUse.id);
+
+  container.innerHTML = `
+    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+      <button class="btn-secondary" style="flex:1; min-width:200px;"
+        onclick="openPlantStatusDialog()" ${isVisitor ? 'disabled' : ''}>
+        ☠️ Marcar mortalidade
+      </button>
+
+      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;"
+        onclick="finishMonitoringAndStartNew()">
+        ✅ Concluir Coleta
+      </button>
+    </div>
+
+    <div style="font-size:12px; color:#6b7280;">
+      As plantas marcadas como <strong>Brotou</strong> na aba Biometria aparecem automaticamente como <strong>vivas</strong> (verde).
+      <br>Clique no botão para marcar plantas que morreram (ficarão vermelhas).
+    </div>
+  `;
+}
 
   async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
-    const isVisitor = window.currentRole === "visitor";
+  const isVisitor = window.currentRole === "visitor";
 
-    let monitoringToUse;
-
-    if (currentMonitoringId) {
-      const { data } = await s
-        .from("monitoring_events")
-        .select("*")
-        .eq("id", currentMonitoringId)
-        .single();
-      monitoringToUse = data;
-    } else {
-      monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-    }
-
-    if (!monitoringToUse) {
-      container.innerHTML = `
-        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
-        </div>
-        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-          Nenhum monitoramento registrado ainda para esta parcela.
-          <br>Inicie um monitoramento primeiro.
-        </p>
-      `;
-      return;
-    }
-
-    currentMonitoringId = monitoringToUse.id;
-    await loadPlantDataForEdit(monitoringToUse.id);
-    await loadBiometricsData(monitoringToUse.id);
-
-    container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
-      </div>
-
-      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
-        <button class="btn-secondary" onclick="openPlantLodgingDialog()" ${isVisitor ? "disabled" : ""}>
-          Marcar plantas tombadas
-        </button>
-      </div>
-
-      <div style="font-size:12px; color:#6b7280;">
-        Somente plantas <strong>brotadas e vivas</strong> podem ser marcadas como tombadas.
-        <br>Plantas aparecem automaticamente baseadas nos dados de biometria e mortalidade.
-      </div>
-    `;
+  let monitoringToUse;
+  if (currentMonitoringId) {
+    const { data } = await s
+      .from('monitoringevents')
+      .select()
+      .eq('id', currentMonitoringId)
+      .single();
+    monitoringToUse = data;
+  } else {
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
   }
+
+  if (!monitoringToUse) {
+    container.innerHTML = `
+      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      </div>
+      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+        Nenhum monitoramento registrado ainda para esta parcela.
+        <br>Inicie um monitoramento primeiro.
+      </p>
+    `;
+    return;
+  }
+
+  currentMonitoringId = monitoringToUse.id;
+  await loadPlantDataForEdit(monitoringToUse.id);
+  await loadBiometricsData(monitoringToUse.id);
+
+  container.innerHTML = `
+    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+      <button class="btn-secondary" style="flex:1; min-width:200px;"
+        onclick="openPlantLodgingDialog()" ${isVisitor ? 'disabled' : ''}>
+        🌾 Marcar plantas tombadas
+      </button>
+
+      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;"
+        onclick="finishMonitoringAndStartNew()">
+        ✅ Concluir Coleta
+      </button>
+    </div>
+
+    <div style="font-size:12px; color:#6b7280;">
+      Somente plantas <strong>brotadas e vivas</strong> podem ser marcadas como tombadas.
+      <br>Plantas aparecem automaticamente baseadas nos dados de biometria e mortalidade.
+    </div>
+  `;
+}
 
   window.saveMonitoringInit = async function saveMonitoringInit() {
     if (window.currentRole === "visitor") {
@@ -754,31 +780,38 @@
     }
   };
 
-  window.cancelMonitoringEdit = function cancelMonitoringEdit() {
-    if (!confirm("Deseja cancelar a edição? As alterações não salvas serão perdidas.")) {
-      return;
-    }
+  window.finishMonitoringAndStartNew = function finishMonitoringAndStartNew() {
+  if (!confirm('Deseja finalizar este monitoramento e iniciar um novo?\n\nTodos os dados já foram salvos automaticamente.')) {
+    return;
+  }
 
-    resetMonitoringForm();
+  console.log("[INFO] Finalizando monitoramento:", currentMonitoringId);
 
-    const experiment = window.currentExperiment;
-    const contentEl = document.getElementById("monitoringTabContent");
+  // Resetar estado (limpa currentMonitoringId e dados em memória)
+  resetMonitoringForm();
 
-    if (contentEl) {
-      renderMonitoringTabIniciar(contentEl, experiment, { block: 1, plotCode: "" });
-    }
+  // Re-renderizar a aba Iniciar
+  const experiment = window.currentExperiment;
+  const contentEl = document.getElementById('monitoringTabContent');
+  const blockInput = document.getElementById('monitorBlock');
+  const plotInput = document.getElementById('monitorPlot');
 
-    const blockInput = document.getElementById("monitorBlock");
-    const plotInput = document.getElementById("monitorPlot");
-    if (blockInput) blockInput.value = "1";
-    if (plotInput) plotInput.value = "";
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value.trim() || '';
 
-    const tabsEl = document.getElementById("monitoringTabs");
-    if (tabsEl) {
-      tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-      tabsEl.querySelector("[data-tab='iniciar']")?.classList.add("active");
-    }
-  };
+  if (contentEl) {
+    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+  }
+
+  // Ativar a aba Iniciar
+  const tabsEl = document.getElementById('monitoringTabs');
+  if (tabsEl) {
+    tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add('active');
+  }
+
+  alert('✅ Monitoramento finalizado com sucesso!\n\nVocê pode iniciar um novo monitoramento agora.');
+};
 
   window.openBiometricCollectionDialog = async function openBiometricCollectionDialog() {
     if (window.currentRole === "visitor") return;
