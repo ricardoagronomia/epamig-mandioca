@@ -820,6 +820,85 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
     alert('Erro ao salvar monitoramento.');
   }
 };
+  // ============================================
+// FUNÇÃO: finishMonitoringAndStartNew
+// ============================================
+window.finishMonitoringAndStartNew = function finishMonitoringAndStartNew() {
+  if (!confirm('Deseja finalizar este monitoramento e iniciar um novo?\n\nOs dados do monitoramento atual serão mantidos.')) {
+    return;
+  }
+
+  console.log('[INFO] Finalizando monitoramento atual:', currentMonitoringId);
+
+  // Resetar o formulário (limpa currentMonitoringId e dados)
+  resetMonitoringForm();
+
+  // Buscar valores atuais dos selects
+  const blockInput = document.getElementById('monitorBlock');
+  const plotInput = document.getElementById('monitorPlot');
+  
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value?.trim() || '';
+
+  // Re-renderizar aba Iniciar (volta ao modo de criação)
+  const experiment = window.currentExperiment;
+  const contentEl = document.getElementById('monitoringTabContent');
+  
+  if (contentEl) {
+    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+  }
+
+  // Ativar aba Iniciar
+  const tabsEl = document.getElementById('monitoringTabs');
+  if (tabsEl) {
+    tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add('active');
+  }
+
+  // Recarregar lista
+  loadMonitoringList();
+  
+  alert('Monitoramento finalizado! Você pode iniciar um novo agora.');
+  console.log('[INFO] Pronto para novo monitoramento');
+};
+
+// ============================================
+// FUNÇÃO: cancelMonitoringEdit
+// ============================================
+window.cancelMonitoringEdit = function cancelMonitoringEdit() {
+  if (!confirm('Deseja cancelar a edição? As alterações não salvas serão perdidas.')) {
+    return;
+  }
+
+  console.log('[INFO] Cancelando edição do monitoramento:', currentMonitoringId);
+
+  // Resetar formulário (limpa currentMonitoringId e dados em memória)
+  resetMonitoringForm();
+
+  // Buscar valores atuais dos selects
+  const blockInput = document.getElementById('monitorBlock');
+  const plotInput = document.getElementById('monitorPlot');
+  
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value?.trim() || '';
+
+  // Re-renderizar aba Iniciar (volta ao estado inicial)
+  const experiment = window.currentExperiment;
+  const contentEl = document.getElementById('monitoringTabContent');
+  
+  if (contentEl) {
+    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+  }
+
+  // Ativar aba Iniciar
+  const tabsEl = document.getElementById('monitoringTabs');
+  if (tabsEl) {
+    tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add('active');
+  }
+  
+  console.log('[INFO] Edição cancelada. Formulário resetado.');
+};
 
   window.openBiometricCollectionDialog = async function openBiometricCollectionDialog() {
     if (window.currentRole === "visitor") return;
