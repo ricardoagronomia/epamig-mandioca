@@ -518,11 +518,18 @@
 
   let monitoringToUse;
   if (currentMonitoringId) {
+    // ✅ CORREÇÃO: adicionar `error` no destructuring
     const { data, error } = await s
       .from('monitoringevents')
       .select()
       .eq('id', currentMonitoringId)
       .single();
+
+    if (error) {
+      console.error('Erro ao buscar monitoramento:', error);
+      return;
+    }
+
     monitoringToUse = data;
     console.log('[DEBUG] Usando monitoramento em edição:', monitoringToUse?.id, monitoringToUse?.monitoringdate);
   } else {
@@ -565,15 +572,9 @@
       </div>
     </div>
 
-    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-      <button class="btn-secondary" style="flex:1; min-width:200px;"
-        onclick="openBiometricCollectionDialog()" ${isVisitor ? 'disabled' : ''}>
-        📊 Coletar dados biométricos (grade 3×3)
-      </button>
-
-      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;"
-        onclick="finishMonitoringAndStartNew()">
-        ✅ Concluir Coleta
+    <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+      <button class="btn-secondary" onclick="openBiometricCollectionDialog()" ${isVisitor ? 'disabled' : ''}>
+        Coletar dados biométricos (grade 3×3)
       </button>
     </div>
 
@@ -590,11 +591,18 @@
 
   let monitoringToUse;
   if (currentMonitoringId) {
-    const { data } = await s
+    // ✅ CORREÇÃO: adicionar `error` no destructuring
+    const { data, error } = await s
       .from('monitoringevents')
       .select()
       .eq('id', currentMonitoringId)
       .single();
+
+    if (error) {
+      console.error('Erro ao buscar monitoramento:', error);
+      return;
+    }
+
     monitoringToUse = data;
   } else {
     monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
@@ -623,15 +631,9 @@
       <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
     </div>
 
-    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-      <button class="btn-secondary" style="flex:1; min-width:200px;"
-        onclick="openPlantStatusDialog()" ${isVisitor ? 'disabled' : ''}>
-        ☠️ Marcar mortalidade
-      </button>
-
-      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;"
-        onclick="finishMonitoringAndStartNew()">
-        ✅ Concluir Coleta
+    <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+      <button class="btn-secondary" onclick="openPlantStatusDialog()" ${isVisitor ? 'disabled' : ''}>
+        Marcar mortalidade
       </button>
     </div>
 
@@ -647,11 +649,18 @@
 
   let monitoringToUse;
   if (currentMonitoringId) {
-    const { data } = await s
+    // ✅ CORREÇÃO: adicionar `error` no destructuring
+    const { data, error } = await s
       .from('monitoringevents')
       .select()
       .eq('id', currentMonitoringId)
       .single();
+
+    if (error) {
+      console.error('Erro ao buscar monitoramento:', error);
+      return;
+    }
+
     monitoringToUse = data;
   } else {
     monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
@@ -680,15 +689,9 @@
       <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
     </div>
 
-    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-      <button class="btn-secondary" style="flex:1; min-width:200px;"
-        onclick="openPlantLodgingDialog()" ${isVisitor ? 'disabled' : ''}>
-        🌾 Marcar plantas tombadas
-      </button>
-
-      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;"
-        onclick="finishMonitoringAndStartNew()">
-        ✅ Concluir Coleta
+    <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+      <button class="btn-secondary" onclick="openPlantLodgingDialog()" ${isVisitor ? 'disabled' : ''}>
+        Marcar plantas tombadas
       </button>
     </div>
 
@@ -779,6 +782,40 @@
       alert("Erro ao salvar monitoramento.");
     }
   };
+  window.cancelMonitoringEdit = function cancelMonitoringEdit() {
+  if (!confirm('Deseja cancelar a edição? As alterações não salvas serão perdidas.')) {
+    return;
+  }
+
+  console.log('[INFO] Cancelando edição do monitoramento:', currentMonitoringId);
+
+  // Resetar formulário
+  resetMonitoringForm();
+
+  // Buscar valores atuais dos selects
+  const blockInput = document.getElementById('monitorBlock');
+  const plotInput = document.getElementById('monitorPlot');
+  
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value?.trim() || '';
+
+  // Re-renderizar aba Iniciar
+  const experiment = window.currentExperiment;
+  const contentEl = document.getElementById('monitoringTabContent');
+  
+  if (contentEl) {
+    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+  }
+
+  // Ativar aba Iniciar
+  const tabsEl = document.getElementById('monitoringTabs');
+  if (tabsEl) {
+    tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add('active');
+  }
+  
+  console.log('[INFO] Edição cancelada. Formulário resetado.');
+};
 
   window.finishMonitoringAndStartNew = function finishMonitoringAndStartNew() {
   if (!confirm('Deseja finalizar este monitoramento e iniciar um novo?\n\nTodos os dados já foram salvos automaticamente.')) {
