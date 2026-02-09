@@ -94,7 +94,7 @@
   }
 
   // --- Resumo estatístico do monitoramento manual ---
-  async function loadMonitoringSummary(experimentId) {
+  async function loadMonitoringSummary(experiment_id) {
     if (typeof s === "undefined") return;
 
     const summaryEl = document.getElementById("monitoringSummary");
@@ -107,7 +107,7 @@
       const { count: monitoringCount, error: countError } = await s
         .from("monitoring_events")
         .select("*", { count: "exact", head: true })
-        .eq("experiment_id", experimentId);
+        .eq("experiment_id", experiment_id);
 
       if (countError) {
         console.error("Erro ao contar monitoramentos:", countError);
@@ -117,7 +117,7 @@
       const { data: allMonitorings, error: monError } = await s
         .from("monitoring_events")
         .select("id, plot_code, block_number, monitoring_date")
-        .eq("experiment_id", experimentId)
+        .eq("experiment_id", experiment_id)
         .order("monitoring_date", { ascending: false });
 
       if (monError) {
@@ -426,8 +426,8 @@
       const blockInput = document.getElementById("monitorBlock");
       const plotInput = document.getElementById("monitorPlot");
       const block = blockInput && blockInput.value ? parseInt(blockInput.value, 10) : 1;
-      const plotCode = (plotInput && plotInput.value.trim()) || "";
-      return { block, plotCode };
+      const plot_code = (plotInput && plotInput.value.trim()) || "";
+      return { block, plot_code };
     };
 
     tabsEl.querySelectorAll("button").forEach((btn) => {
@@ -467,8 +467,8 @@
     ` : ''}
 
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      ${selection.plotCode ? 
-        `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}` : 
+      ${selection.plot_code ? 
+        `<strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}` : 
         'Selecione uma parcela para começar'}
     </div>
 
@@ -534,14 +534,14 @@
       currentMonitoringId = null;
     } else {
       monitoringToUse = data;
-      console.log('[DEBUG] Monitoramento encontrado:', monitoringToUse.id, monitoringToUse.monitoringdate);
+      console.log('[DEBUG] Monitoramento encontrado:', monitoringToUse.id, monitoringToUse.monitoring_date);
     }
   }
 
   // Se não tem monitoramento atual, buscar o último
   if (!monitoringToUse) {
-    console.log('[DEBUG] Buscando último monitoramento para:', selection.plotCode, selection.block);
-    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    console.log('[DEBUG] Buscando último monitoramento para:', selection.plot_code, selection.block);
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plot_code, selection.block);
 
     if (monitoringToUse) {
       console.log('[DEBUG] Último monitoramento encontrado:', monitoringToUse.id);
@@ -552,7 +552,7 @@
   if (!monitoringToUse) {
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+        <strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}
       </div>
       <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
         Nenhum monitoramento registrado ainda para esta parcela.
@@ -571,8 +571,8 @@
 
   container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
-      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
+      <strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
     </div>
 
     <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:10px;">
@@ -619,7 +619,7 @@
   }
 
   if (!monitoringToUse) {
-    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plot_code, selection.block);
     if (monitoringToUse) {
       currentMonitoringId = monitoringToUse.id;
     }
@@ -628,7 +628,7 @@
   if (!monitoringToUse) {
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+        <strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}
       </div>
       <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
         Nenhum monitoramento registrado ainda para esta parcela.
@@ -644,8 +644,8 @@
 
   container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
-      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
+      <strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
     </div>
 
     <div style="margin-bottom:10px; font-size:13px; color:#374151;">
@@ -682,7 +682,7 @@ async function renderMonitoringTabPlantasTombadas(container, experiment, selecti
   }
 
   if (!monitoringToUse) {
-    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plot_code, selection.block);
     if (monitoringToUse) {
       currentMonitoringId = monitoringToUse.id;
     }
@@ -691,7 +691,7 @@ async function renderMonitoringTabPlantasTombadas(container, experiment, selecti
   if (!monitoringToUse) {
     container.innerHTML = `
       <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+        <strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}
       </div>
       <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
         Nenhum monitoramento registrado ainda para esta parcela.
@@ -707,8 +707,8 @@ async function renderMonitoringTabPlantasTombadas(container, experiment, selecti
 
   container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
-      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoringdate)}</span>
+      <strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}
+      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
     </div>
 
     <div style="margin-bottom:10px; font-size:13px; color:#374151;">
@@ -744,9 +744,9 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
   const blockInput = document.getElementById('monitorBlock');
   const plotInput = document.getElementById('monitorPlot');
   const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-  const plotCode = plotInput?.value.trim();
+  const plot_code = plotInput?.value.trim();
 
-  if (!plotCode) {
+  if (!plot_code) {
     alert('Selecione uma parcela.');
     return;
   }
@@ -760,12 +760,13 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
   }
 
   const payload = {
-    experimentid: experiment.id,
-    plotcode: plotCode,
-    blocknumber: block,
-    monitoringdate: date,
-    notes: notes || null,
-  };
+  experiment_id: experiment.id,
+  plot_code: plot_code,
+  block_number: block,
+  monitoring_date: date,
+  notes: notes || null,
+};
+
 
   try {
     const isEditing = !!currentMonitoringId;
@@ -826,7 +827,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
     const blockInput = document.getElementById("monitorBlock");
     const plotInput = document.getElementById("monitorPlot");
     const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || "";
+    const plot_code = plotInput?.value.trim() || "";
 
     // ✅ CARREGAR dados de status e tombamento ANTES de renderizar
     if (currentMonitoringId) {
@@ -891,7 +892,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
 
     const bodyHtml = `
       <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-        Biometria individual – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+        Biometria individual – Parcela ${escapeHtml(plot_code)}, bloco ${block}.
       </div>
 
       <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
@@ -1211,7 +1212,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
     const blockInput = document.getElementById("monitorBlock");
     const plotInput = document.getElementById("monitorPlot");
     const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim() || "";
+    const plot_code = plotInput?.value.trim() || "";
 
     for (let pos = 1; pos <= 9; pos++) {
       const bio = currentBiometrics[pos];
@@ -1280,7 +1281,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
 
     const bodyHtml = `
       <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-        Plantas úteis – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+        Plantas úteis – Parcela ${escapeHtml(plot_code)}, bloco ${block}.
       </div>
 
       <div style="margin-bottom:10px; font-size:12px; color:#6b7280;">
@@ -1363,7 +1364,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
   const blockInput = document.getElementById("monitorBlock");
   const plotInput = document.getElementById("monitorPlot");
   const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-  const plotCode = plotInput?.value.trim() || "";
+  const plot_code = plotInput?.value.trim() || "";
 
   // ✅ CORREÇÃO: Só carregar do banco na primeira vez
   if (currentMonitoringId && !skipReload) {
@@ -1437,7 +1438,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
 
   const bodyHtml = `
     <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-      Plantas tombadas – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+      Plantas tombadas – Parcela ${escapeHtml(plot_code)}, bloco ${block}.
     </div>
 
     <div style="margin-bottom:10px; font-size:12px; color:#6b7280;">
@@ -1586,15 +1587,15 @@ window.togglePlantLodging = function togglePlantLodging(position) {
     }
   }
 
-  async function loadLatestMonitoringForPlot(experimentId, plotCode, blockNumber) {
-    if (!plotCode) return null;
+  async function loadLatestMonitoringForPlot(experiment_id, plot_code, blockNumber) {
+    if (!plot_code) return null;
 
     try {
       const { data, error } = await s
         .from("monitoring_events")
         .select("*")
-        .eq("experiment_id", experimentId)
-        .eq("plot_code", plotCode)
+        .eq("experiment_id", experiment_id)
+        .eq("plot_code", plot_code)
         .eq("block_number", blockNumber)
         .order("monitoring_date", { ascending: false })
         .limit(1)
@@ -1704,7 +1705,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         const experiment = window.currentExperiment;
         renderMonitoringTabIniciar(contentEl, experiment, {
           block: monitoring.block_number,
-          plotCode: monitoring.plot_code
+          plot_code: monitoring.plot_code
         });
 
         setTimeout(() => {
