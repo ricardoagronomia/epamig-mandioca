@@ -780,7 +780,7 @@
     }
   };
 
-  window.openBiometricCollectionDialog = function openBiometricCollectionDialog() {
+  window.openBiometricCollectionDialog = async function openBiometricCollectionDialog() {
     if (window.currentRole === "visitor") return;
 
     const blockInput = document.getElementById("monitorBlock");
@@ -788,17 +788,43 @@
     const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
     const plotCode = plotInput?.value.trim() || "";
 
+    // ✅ CARREGAR dados de status e tombamento ANTES de renderizar
+    if (currentMonitoringId) {
+      await loadPlantDataForEdit(currentMonitoringId);
+    }
+
     const total = 9;
     const itemsHtml = Array.from({ length: total }).map((_, idx) => {
       const n = idx + 1;
       const bio = currentBiometrics[n];
 
+      // ✅ BUSCAR status e tombamento
+      const status = currentPlantStatuses[n];
+      const isLodged = currentLodgingStatuses[n];
+
       const hasSprouted = bio?.has_sprouted === true;
       const isReference = bio?.is_reference_plant === true;
 
-      const bg = hasSprouted ? '#dcfce7' : '#f3f4f6';
-      const color = hasSprouted ? '#065f46' : '#6b7280';
-      const borderColor = hasSprouted ? '#10b981' : '#d1d5db';
+      // ✅ LÓGICA DE CORES CORRIGIDA
+      let bg = '#f3f4f6';      // cinza claro - sem dados
+      let color = '#6b7280';
+      let borderColor = '#d1d5db';
+
+      if (hasSprouted) {
+        if (status === 'dead') {
+          bg = '#fee2e2';        // 🔴 vermelho - morta
+          color = '#7f1d1d';
+          borderColor = '#dc2626';
+        } else if (isLodged) {
+          bg = '#fef3c7';        // 🟡 amarelo - tombada
+          color = '#92400e';
+          borderColor = '#f59e0b';
+        } else {
+          bg = '#dcfce7';        // 🟢 verde - viva
+          color = '#065f46';
+          borderColor = '#10b981';
+        }
+      }
 
       const referenceStar = isReference ? '<div style="position:absolute; top:-4px; right:-4px; font-size:16px;">⭐</div>' : '';
 
@@ -829,8 +855,8 @@
       </div>
 
       <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-        Clique em cada planta para registrar: <strong>altura e diâmetro de cada haste, sanidade</strong>.
-        Plantas com dados preenchidos ficam verdes. ⭐ = Planta de referência (validação drone).
+        <strong>🟢 Verde</strong> = Viva · <strong>🔴 Vermelho</strong> = Morta · <strong>🟡 Amarelo</strong> = Tombada · <strong>⚪ Cinza</strong> = Sem dados
+        <br>Clique em cada planta para registrar ou editar dados.
       </div>
 
       <div style="
