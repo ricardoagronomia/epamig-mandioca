@@ -453,23 +453,16 @@
   const isVisitor = window.currentRole === "visitor";
   const isEditing = !!currentMonitoringId;
 
-  container.innerHTML = `
-    ${isEditing ? `
-      <div style="margin-bottom:12px; padding:12px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:8px;">
-        <div style="font-size:13px; font-weight:600; color:#92400e;">
-          ⚠️ Modo de edição ativo
-        </div>
-        <div style="font-size:12px; color:#78350f; margin-top:4px;">
-          Você está editando um monitoramento existente. As alterações afetarão apenas este registro.
-          <br>Para iniciar um novo monitoramento, clique em <strong>"Finalizar e Novo Monitoramento"</strong>.
-        </div>
-      </div>
-    ` : ''}
+  // ✅ NOVO: Se está editando, carregar dados do monitoramento atual
+  if (isEditing && currentMonitoringId) {
+    renderMonitoringActiveState(container, experiment, selection);
+    return;
+  }
 
+  // Modo de criação normal
+  container.innerHTML = `
     <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      ${selection.plot_code ? 
-        `<strong>Parcela:</strong> ${escapeHtml(selection.plot_code)}, Bloco ${selection.block}` : 
-        'Selecione uma parcela para começar'}
+      ${selection.plotCode ? `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}` : 'Selecione uma parcela para começar'}
     </div>
 
     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
@@ -481,37 +474,205 @@
 
     <div style="margin-bottom:10px;">
       <label for="monNotes">Observações gerais da parcela</label>
-      <textarea id="monNotes" rows="3" ${isVisitor ? 'disabled' : ''}
-        style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+      <textarea id="monNotes" rows="3" ${isVisitor ? 'disabled' : ''} 
+        style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;" 
         placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
     </div>
 
     <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
-      ${isEditing ? 
-        'Atualize as informações gerais e clique em <strong>Atualizar</strong> para salvar as mudanças.' :
-        'Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.'}
+      Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
     </div>
 
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button class="btn-primary" style="flex:1; min-width:180px;"
-        onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
-        ${isEditing ? '💾 Atualizar informações gerais' : '🚀 Iniciar monitoramento'}
+    <button class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
+      Iniciar monitoramento
+    </button>
+  `;
+}
+
+async function renderMonitoringActiveState(container, experiment, selection) {
+  const isVisitor = window.currentRole === "visitor";
+
+  // Buscar dados do monitoramento atual
+  const { data: monitoring, error } = await s
+    .from('monitoring_events')
+    .select('*')
+    .eq('id', currentMonitoringId)
+    .single();
+
+  if (error || !monitoring) {
+    console.error('[ERRO] Monitoramento não encontrado:', error);
+    currentMonitoringId = null;
+    renderMonitoringTabIniciar(container, experiment, selection);
+    return;
+  }
+
+  // Calcular progresso
+  await loadBiometricsData(currentMonitoringId);
+  const totalPlants = 9;
+  const filled = Object.keys(currentBiometrics).length;
+  const progress = Math.round((filled / totalPlants) * 100);
+
+  container.innerHTML = `
+    <div style="margin-bottom:16px; padding:16px; background:#f0fdf4; border-left:4px solid #10b981; border-radius:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+        <div>
+          <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:4px;">
+            ✅ Monitoramento ativo
+          </div>
+          <div style="font-size:13px; color:#4b5563;">
+            <strong>Parcela:</strong> ${escapeHtml(monitoring.plot_code)}, Bloco ${monitoring.block_number}
+            <br><strong>Data:</strong> ${formatDateShort(monitoring.monitoring_date)}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:20px; font-weight:600; color:#10b981;">${progress}%</div>
+          <div style="font-size:11px; color:#6b7280; text-transform:uppercase;">Completo</div>
+        </div>
+      </div>
+
+      ${monitoring.notes ? `
+        <div style="margin-top:12px; padding:10px; background:#fff; border-radius:6px; font-size:12px; color:#6b7280;">
+          <strong style="color:#065f46;">Observações:</strong><br>
+          ${escapeHtml(monitoring.notes)}
+        </div>
+      ` : ''}
+
+      <div style="margin-top:12px; padding:10px; background:#dcfce7; border-radius:6px; font-size:12px; color:#065f46;">
+        <strong>${filled}/${totalPlants} plantas</strong> com dados coletados.
+        ${filled < totalPlants ? 'Continue registrando nas abas acima.' : '✅ Coleta completa!'}
+      </div>
+    </div>
+
+    <div style="font-size:13px; color:#6b7280; margin-bottom:12px;">
+      <strong>Próximos passos:</strong>
+      <ul style="margin:8px 0; padding-left:20px;">
+        <li>Use as abas <strong>Biometria</strong>, <strong>Plantas Úteis</strong> e <strong>Plantas Tombadas</strong> para registrar dados</li>
+        <li>Quando terminar, clique em <strong>Finalizar e Novo Monitoramento</strong> para salvar e iniciar outro</li>
+        <li>Para ajustar data ou observações, clique em <strong>Editar Informações</strong> abaixo</li>
+      </ul>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;" 
+        onclick="finishMonitoringAndStartNew()" ${isVisitor ? 'disabled' : ''}>
+        ✅ Finalizar e Novo Monitoramento
       </button>
 
-      ${isEditing ? `
-        <button class="btn-primary" style="flex:1; min-width:180px; background:#10b981; border-color:#10b981;"
-          onclick="finishMonitoringAndStartNew()">
-          ✅ Finalizar e Novo Monitoramento
-        </button>
+      <button class="btn-secondary" style="flex:1; min-width:200px;" 
+        onclick="editCurrentMonitoring()" ${isVisitor ? 'disabled' : ''}>
+        ✏️ Editar Informações (data/notas)
+      </button>
+    </div>
 
-        <button class="btn-secondary" style="width:auto;"
-          onclick="cancelMonitoringEdit()">
-          ❌ Cancelar edição
-        </button>
-      ` : ''}
+    <div style="margin-top:16px; padding:12px; background:#fef3c7; border-radius:8px; font-size:12px; color:#92400e;">
+      <strong>💡 Dica:</strong> Você pode alternar entre as abas livremente. Seus dados estão sendo salvos automaticamente.
     </div>
   `;
 }
+
+window.editCurrentMonitoring = async function editCurrentMonitoring() {
+  if (!currentMonitoringId) {
+    alert('Nenhum monitoramento ativo.');
+    return;
+  }
+
+  // Buscar dados atuais
+  const { data: monitoring, error } = await s
+    .from('monitoring_events')
+    .select('*')
+    .eq('id', currentMonitoringId)
+    .single();
+
+  if (error || !monitoring) {
+    alert('Erro ao carregar dados do monitoramento.');
+    return;
+  }
+
+  const bodyHtml = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px; color:#4b5563; margin-bottom:12px;">
+        <strong>Parcela:</strong> ${escapeHtml(monitoring.plot_code)}, Bloco ${monitoring.block_number}
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label for="editMonDate" style="display:block; margin-bottom:4px; font-size:13px; font-weight:500;">
+          Data do monitoramento
+        </label>
+        <input type="date" id="editMonDate" value="${monitoring.monitoring_date}" 
+          style="width:100%; padding:8px; border-radius:8px; border:1px solid #e5e7eb;">
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label for="editMonNotes" style="display:block; margin-bottom:4px; font-size:13px; font-weight:500;">
+          Observações gerais
+        </label>
+        <textarea id="editMonNotes" rows="4" 
+          style="width:100%; padding:8px; border-radius:8px; border:1px solid #e5e7eb; font-size:13px; resize:vertical;"
+          placeholder="Condições climáticas, estado geral da parcela, etc.">${monitoring.notes || ''}</textarea>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button class="btn-primary" onclick="saveMonitoringEdits()" style="flex:1;">
+        Salvar Alterações
+      </button>
+      <button class="btn-secondary" onclick="closeModal()" style="flex:1;">
+        Cancelar
+      </button>
+    </div>
+  `;
+
+  if (typeof openModal === 'function') {
+    openModal('✏️ Editar Informações do Monitoramento', bodyHtml);
+  }
+};
+
+window.saveMonitoringEdits = async function saveMonitoringEdits() {
+  const date = document.getElementById('editMonDate')?.value;
+  const notes = document.getElementById('editMonNotes')?.value;
+
+  if (!date) {
+    alert('Informe a data do monitoramento.');
+    return;
+  }
+
+  try {
+    const { error } = await s
+      .from('monitoring_events')
+      .update({
+        monitoring_date: date,
+        notes: notes || null
+      })
+      .eq('id', currentMonitoringId);
+
+    if (error) throw error;
+
+    alert('Informações atualizadas com sucesso!');
+
+    if (typeof closeModal === 'function') {
+      closeModal();
+    }
+
+    // Recarregar aba Iniciar
+    const experiment = window.currentExperiment;
+    const contentEl = document.getElementById('monitoringTabContent');
+    const blockInput = document.getElementById('monitorBlock');
+    const plotInput = document.getElementById('monitorPlot');
+
+    if (contentEl) {
+      const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+      const plotCode = plotInput?.value?.trim() || '';
+      renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+    }
+
+    // Recarregar lista
+    loadMonitoringList();
+
+  } catch (err) {
+    console.error('[ERRO] Ao atualizar:', err);
+    alert('Erro ao atualizar informações.');
+  }
+};
 
   async function renderMonitoringTabBiometria(container, experiment, selection) {
   const isVisitor = window.currentRole === "visitor";
