@@ -1317,7 +1317,7 @@
     }
   };
 
-  window.openPlantLodgingDialog = async function openPlantLodgingDialog() {
+  window.openPlantLodgingDialog = async function openPlantLodgingDialog(skipReload = false) {
   if (window.currentRole === "visitor") return;
 
   const blockInput = document.getElementById("monitorBlock");
@@ -1326,9 +1326,12 @@
   const plotCode = plotInput?.value.trim() || "";
 
   // Carregar dados de status e tombamento do banco
-  if (currentMonitoringId) {
-    await loadPlantDataForEdit(currentMonitoringId);
-  }
+  if (currentMonitoringId && !skipReload) {
+  console.log("[DEBUG] Carregando dados do banco...");
+  await loadPlantDataForEdit(currentMonitoringId);
+} else {
+  console.log("[DEBUG] Pulando recarga (re-renderização)");
+}
 
   // Sincronizar status com dados de brotação
   for (let pos = 1; pos <= 9; pos++) {
@@ -1439,7 +1442,7 @@
   console.log("[DEBUG] Novo estado de tombamento:", currentLodgingStatuses[position]);
 
   // Re-renderizar para mostrar a mudança de cor
-  openPlantLodgingDialog();
+  openPlantLodgingDialog(true);  // true = não recarregar
 };
   
   window.savePlantLodging = async function savePlantLodging() {
