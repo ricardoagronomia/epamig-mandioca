@@ -521,7 +521,7 @@
     // ✅ CORREÇÃO: adicionar `error` no destructuring
     const { data, error } = await s
       .from('monitoringevents')
-      .select()
+      .select('*')
       .eq('id', currentMonitoringId)
       .single();
 
@@ -594,7 +594,7 @@
     // ✅ CORREÇÃO: adicionar `error` no destructuring
     const { data, error } = await s
       .from('monitoringevents')
-      .select()
+      .select('*')
       .eq('id', currentMonitoringId)
       .single();
 
@@ -652,7 +652,7 @@
     // ✅ CORREÇÃO: adicionar `error` no destructuring
     const { data, error } = await s
       .from('monitoringevents')
-      .select()
+      .select('*')
       .eq('id', currentMonitoringId)
       .single();
 
