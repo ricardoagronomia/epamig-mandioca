@@ -796,7 +796,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
       const { data, error } = await s
         .from('monitoringevents')
         .insert(payload)
-        .select();
+        .select('*');
 
       if (error) {
         console.error('[ERRO] Ao inserir:', error);
@@ -1171,7 +1171,7 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
         const { data, error } = await s
           .from("plant_biometrics")
           .insert(payload)
-          .select();
+          .select('*');
         if (error) throw error;
         biometricId = data[0].id;
       }
