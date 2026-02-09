@@ -1,306 +1,324 @@
 // monitoring.js
 // Página de Monitoramento Manual (biometria individual, plantas úteis, plantas tombadas)
+// Versão atualizada: suporte a múltiplas hastes com medições individuais e plantas de referência
 
 (function () {
   let currentMonitoringId = null;
   let currentPlantStatuses = {}; // { position: 'not_sprouted' | 'alive' | 'dead' }
   let currentLodgingStatuses = {}; // { position: true/false }
-  let currentBiometrics = {}; // { position: { height_cm, stem_count, diameters: [d1,d2,d3], sanity } }
+  let currentBiometrics = {}; // { position: { height_cm, stem_count, stems: [{stem_number, height_cm, diameter_cm}], sanity, is_reference_plant } }
 
   window.renderMonitoringPage = renderMonitoringPage;
 
   function renderMonitoringPage(container) {
-  const experiment = window.currentExperiment;
+    const experiment = window.currentExperiment;
 
-  if (!experiment) {
-    container.innerHTML = `
-      <div class="card">
-        <p style="color:#6b7280;">
-          Nenhum experimento selecionado. Selecione um experimento na página "Experimentos" para registrar monitoramentos.
-        </p>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="content-header">
-      <div class="content-title">Monitoramento manual</div>
-      <div class="content-subtitle">
-        Registre medições biométricas individuais e o estado das plantas úteis e tombadas em cada parcela.
-      </div>
-    </div>
-
-    <div class="card" id="monitoringHeaderCard">
-      <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center;">
-        <div style="font-size:14px; color:#4b5563;">
-          Experimento <strong>${escapeHtml(experiment.code || "")}</strong> · 
-          ${escapeHtml(experiment.name || "Sem nome")}<br>
-          <span style="font-size:12px; color:#6b7280;">
-            Selecione bloco e parcela para registrar medições individuais por planta.
-          </span>
+    if (!experiment) {
+      container.innerHTML = `
+        <div class="card">
+          <p style="color:#6b7280;">
+            Nenhum experimento selecionado. Selecione um experimento na página "Experimentos" para registrar monitoramentos.
+          </p>
         </div>
-      </div>
-      <div style="margin-top:10px; font-size:13px; color:#6b7280;">
-        <span id="monitoringCounter">– monitoramentos registrados</span>
-      </div>
-    </div>
-
-    <!-- Card de estatísticas -->
-    <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
-      <div style="width:48px; height:48px; border-radius:14px; background:#dcfce7; display:flex; align-items:center; justify-content:center; color:#065f46; font-size:24px;">
-        🌱
-      </div>
-      <div style="flex:1 1 180px;">
-        <div style="font-size:14px; font-weight:600; color:#1f2937;">Estatísticas do experimento</div>
-        <div id="monitoringSummary" style="font-size:13px; color:#6b7280;">
-          Carregando estatísticas...
-        </div>
-      </div>
-    </div>
-
-    <div class="card" id="monitoringTabsCard"></div>
-
-    <div class="card" id="monitoringListCard">
-      <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-        Registros anteriores
-      </div>
-      <div id="monitoringList"></div>
-    </div>
-  `;
-
-  setupMonitoringTabs(document.getElementById("monitoringTabsCard"), experiment);
-  loadMonitoringList();
-  loadMonitoringSummary(experiment.id); // ✅ Nova função
-}
-  // --- Resumo estatístico do monitoramento manual ---
-async function loadMonitoringSummary(experimentId) {
-  if (typeof s === "undefined") return;
-
-  const summaryEl = document.getElementById("monitoringSummary");
-  if (!summaryEl) return;
-
-  summaryEl.textContent = "Carregando estatísticas...";
-
-  try {
-    // 1) Contar total de monitoramentos
-    const { count: monitoringCount, error: countError } = await s
-      .from("monitoring_events")
-      .select("*", { count: "exact", head: true })
-      .eq("experiment_id", experimentId);
-
-    if (countError) {
-      console.error("Erro ao contar monitoramentos:", countError);
-    }
-
-    // 2) Buscar TODOS os monitoramentos com suas datas
-    const { data: allMonitorings, error: monError } = await s
-      .from("monitoring_events")
-      .select("id, plot_code, block_number, monitoring_date")
-      .eq("experiment_id", experimentId)
-      .order("monitoring_date", { ascending: false });
-
-    if (monError) {
-      console.error("Erro ao buscar monitoramentos:", monError);
-    }
-
-    if (!allMonitorings || !allMonitorings.length) {
-      summaryEl.innerHTML = `
-        Nenhum monitoramento registrado ainda.<br>
-        <span style="font-size:12px;">Use as abas acima para iniciar o primeiro monitoramento.</span>
       `;
       return;
     }
 
-    // Pegar apenas o último monitoramento de cada parcela/bloco
-    const latestByPlot = {};
-    allMonitorings.forEach(m => {
-      const key = `${m.block_number}_${m.plot_code}`;
-      if (!latestByPlot[key]) {
-        latestByPlot[key] = m;
-      }
-    });
+    container.innerHTML = `
+      <div class="content-header">
+        <div class="content-title">Monitoramento manual</div>
+        <div class="content-subtitle">
+          Registre medições biométricas individuais e o estado das plantas úteis e tombadas em cada parcela.
+        </div>
+      </div>
 
-    const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
-
-    // 3) Buscar biometrias APENAS dos últimos monitoramentos
-    const { data: biometrics, error: bioError } = await s
-      .from("plant_biometrics")
-      .select("*")
-      .in("monitoring_event_id", latestMonitoringIds);
-
-    if (bioError) {
-      console.error("Erro ao buscar biometrias:", bioError);
-    }
-
-    // 4) Buscar status APENAS dos últimos monitoramentos
-    const { data: statuses, error: statusError } = await s
-      .from("plant_status")
-      .select("*")
-      .in("monitoring_event_id", latestMonitoringIds);
-
-    if (statusError) {
-      console.error("Erro ao buscar status:", statusError);
-    }
-
-    const totalMonitorings = typeof monitoringCount === "number" ? monitoringCount : 0;
-    const bioData = biometrics || [];
-    const statusData = statuses || [];
-
-    // ✅ CORRIGIDO: Calcular total de plantas = número de parcelas × 9
-    const totalPlots = Object.keys(latestByPlot).length;
-    const totalPlants = totalPlots * 9;
-
-    // Criar mapa de status
-    const statusMap = {};
-    statusData.forEach(s => {
-      const key = `${s.monitoring_event_id}_${s.plant_position}`;
-      statusMap[key] = s.status;
-    });
-
-    // Calcular plantas brotadas
-    const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
-    const totalSprouted = sproutedPlants.length;
-    
-    // Contar plantas vivas = brotadas E NÃO marcadas como mortas
-    const alivePlants = sproutedPlants.filter(b => {
-      const key = `${b.monitoring_event_id}_${b.plant_position}`;
-      const status = statusMap[key];
-      return !status || status === 'alive';
-    }).length;
-    
-    // ✅ CORRIGIDO: Porcentagem sobre TOTAL de plantas plantadas
-    const alivePercentage = totalPlants > 0 
-      ? ((alivePlants / totalPlants) * 100).toFixed(1)
-      : "0.0";
-
-    // Altura média (apenas plantas VIVAS com altura preenchida)
-    const plantsWithHeight = sproutedPlants.filter(b => {
-      const key = `${b.monitoring_event_id}_${b.plant_position}`;
-      const status = statusMap[key];
-      const isAlive = !status || status === 'alive';
-      return isAlive && b.height_cm != null && b.height_cm > 0;
-    });
-    
-    const avgHeight = plantsWithHeight.length > 0
-      ? (plantsWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / plantsWithHeight.length).toFixed(1)
-      : "–";
-
-    // Diâmetro médio (apenas plantas VIVAS)
-    const plantsWithDiameter = sproutedPlants.filter(b => {
-      const key = `${b.monitoring_event_id}_${b.plant_position}`;
-      const status = statusMap[key];
-      const isAlive = !status || status === 'alive';
-      return isAlive && (
-        (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
-        (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
-        (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
-      );
-    });
-    
-    let avgDiameter = "–";
-    if (plantsWithDiameter.length > 0) {
-      let totalDiameters = 0;
-      let diameterCount = 0;
-      
-      plantsWithDiameter.forEach(b => {
-        if (b.stem_diameter_1_cm && b.stem_diameter_1_cm > 0) { 
-          totalDiameters += b.stem_diameter_1_cm; 
-          diameterCount++; 
-        }
-        if (b.stem_diameter_2_cm && b.stem_diameter_2_cm > 0) { 
-          totalDiameters += b.stem_diameter_2_cm; 
-          diameterCount++; 
-        }
-        if (b.stem_diameter_3_cm && b.stem_diameter_3_cm > 0) { 
-          totalDiameters += b.stem_diameter_3_cm; 
-          diameterCount++; 
-        }
-      });
-      
-      if (diameterCount > 0) {
-        avgDiameter = (totalDiameters / diameterCount).toFixed(2);
-      }
-    }
-
-    // Sanidade média (apenas plantas VIVAS)
-    const plantsWithSanity = sproutedPlants.filter(b => {
-      const key = `${b.monitoring_event_id}_${b.plant_position}`;
-      const status = statusMap[key];
-      const isAlive = !status || status === 'alive';
-      return isAlive && b.sanity_score != null && b.sanity_score > 0;
-    });
-    
-    const avgSanity = plantsWithSanity.length > 0
-      ? (plantsWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / plantsWithSanity.length).toFixed(1)
-      : "–";
-
-    summaryEl.innerHTML = `
-      <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin-top:4px;">
-
-        <!-- Bloco: Total de monitoramentos -->
-        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#f0fdf4; display:flex; align-items:center; gap:8px;">
-          <div style="width:28px; height:28px; border-radius:999px; background:#dcfce7; display:flex; align-items:center; justify-content:center; font-size:16px;">
-            📋
-          </div>
-          <div>
-            <div style="font-size:18px; font-weight:600; color:#111827;">${totalMonitorings}</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Coletas</div>
+      <div class="card" id="monitoringHeaderCard">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center;">
+          <div style="font-size:14px; color:#4b5563;">
+            Experimento <strong>${escapeHtml(experiment.code || "")}</strong> · 
+            ${escapeHtml(experiment.name || "Sem nome")}<br>
+            <span style="font-size:12px; color:#6b7280;">
+              Selecione bloco e parcela para registrar medições individuais por planta.
+            </span>
           </div>
         </div>
+        <div style="margin-top:10px; font-size:13px; color:#6b7280;">
+          <span id="monitoringCounter">– monitoramentos registrados</span>
+        </div>
+      </div>
 
-        <!-- Bloco: Plantas vivas -->
-        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#ecfdf3; display:flex; align-items:center; gap:8px;">
-          <div style="width:28px; height:28px; border-radius:999px; background:#bbf7d0; display:flex; align-items:center; justify-content:center; font-size:16px;">
-            🌿
-          </div>
-          <div>
-            <div style="font-size:18px; font-weight:600; color:#14532d;">${alivePercentage}%</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas (${alivePlants}/${totalPlants})</div>
+      <!-- Card de estatísticas -->
+      <div class="card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+        <div style="width:48px; height:48px; border-radius:14px; background:#dcfce7; display:flex; align-items:center; justify-content:center; color:#065f46; font-size:24px;">
+          🌱
+        </div>
+        <div style="flex:1 1 180px;">
+          <div style="font-size:14px; font-weight:600; color:#1f2937;">Estatísticas do experimento</div>
+          <div id="monitoringSummary" style="font-size:13px; color:#6b7280;">
+            Carregando estatísticas...
           </div>
         </div>
+      </div>
 
-        <!-- Bloco: Altura média -->
-        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fefce8; display:flex; align-items:center; gap:8px;">
-          <div style="width:28px; height:28px; border-radius:999px; background:#fef3c7; display:flex; align-items:center; justify-content:center; font-size:16px;">
-            📏
-          </div>
-          <div>
-            <div style="font-size:18px; font-weight:600; color:#713f12;">${avgHeight}${avgHeight !== "–" ? " cm" : ""}</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Altura${plantsWithHeight.length > 0 ? ` (${plantsWithHeight.length})` : ""}</div>
-          </div>
+      <div class="card" id="monitoringTabsCard"></div>
+
+      <div class="card" id="monitoringListCard">
+        <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+          Registros anteriores
         </div>
-
-        <!-- Bloco: Diâmetro médio -->
-        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; gap:8px;">
-          <div style="width:28px; height:28px; border-radius:999px; background:#dbeafe; display:flex; align-items:center; justify-content:center; font-size:16px;">
-            ⭕
-          </div>
-          <div>
-            <div style="font-size:18px; font-weight:600; color:#1e3a8a;">${avgDiameter}${avgDiameter !== "–" ? " cm" : ""}</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Diâmetro${plantsWithDiameter.length > 0 ? ` (${plantsWithDiameter.length})` : ""}</div>
-          </div>
-        </div>
-
-        <!-- Bloco: Sanidade média -->
-        <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fef2f2; display:flex; align-items:center; gap:8px;">
-          <div style="width:28px; height:28px; border-radius:999px; background:#fecaca; display:flex; align-items:center; justify-content:center; font-size:16px;">
-            ❤️
-          </div>
-          <div>
-            <div style="font-size:18px; font-weight:600; color:#7f1d1d;">${avgSanity}${avgSanity !== "–" ? "/5" : ""}</div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Sanidade${plantsWithSanity.length > 0 ? ` (${plantsWithSanity.length})` : ""}</div>
-          </div>
-        </div>
-
+        <div id="monitoringList"></div>
       </div>
     `;
 
-  } catch (err) {
-    console.error("Erro inesperado ao carregar estatísticas:", err);
-    summaryEl.textContent = "Erro ao carregar estatísticas.";
+    setupMonitoringTabs(document.getElementById("monitoringTabsCard"), experiment);
+    loadMonitoringList();
+    loadMonitoringSummary(experiment.id);
   }
-}
+
+  // --- Resumo estatístico do monitoramento manual ---
+  async function loadMonitoringSummary(experimentId) {
+    if (typeof s === "undefined") return;
+
+    const summaryEl = document.getElementById("monitoringSummary");
+    if (!summaryEl) return;
+
+    summaryEl.textContent = "Carregando estatísticas...";
+
+    try {
+      // 1) Contar total de monitoramentos
+      const { count: monitoringCount, error: countError } = await s
+        .from("monitoring_events")
+        .select("*", { count: "exact", head: true })
+        .eq("experiment_id", experimentId);
+
+      if (countError) {
+        console.error("Erro ao contar monitoramentos:", countError);
+      }
+
+      // 2) Buscar TODOS os monitoramentos com suas datas
+      const { data: allMonitorings, error: monError } = await s
+        .from("monitoring_events")
+        .select("id, plot_code, block_number, monitoring_date")
+        .eq("experiment_id", experimentId)
+        .order("monitoring_date", { ascending: false });
+
+      if (monError) {
+        console.error("Erro ao buscar monitoramentos:", monError);
+      }
+
+      if (!allMonitorings || !allMonitorings.length) {
+        summaryEl.innerHTML = `
+          Nenhum monitoramento registrado ainda.<br>
+          <span style="font-size:12px;">Use as abas acima para iniciar o primeiro monitoramento.</span>
+        `;
+        return;
+      }
+
+      // Pegar apenas o último monitoramento de cada parcela/bloco
+      const latestByPlot = {};
+      allMonitorings.forEach(m => {
+        const key = `${m.block_number}_${m.plot_code}`;
+        if (!latestByPlot[key]) {
+          latestByPlot[key] = m;
+        }
+      });
+
+      const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
+
+      // 3) Buscar biometrias APENAS dos últimos monitoramentos
+      const { data: biometrics, error: bioError } = await s
+        .from("plant_biometrics")
+        .select("*")
+        .in("monitoring_event_id", latestMonitoringIds);
+
+      if (bioError) {
+        console.error("Erro ao buscar biometrias:", bioError);
+      }
+
+      // 4) Buscar status APENAS dos últimos monitoramentos
+      const { data: statuses, error: statusError } = await s
+        .from("plant_status")
+        .select("*")
+        .in("monitoring_event_id", latestMonitoringIds);
+
+      if (statusError) {
+        console.error("Erro ao buscar status:", statusError);
+      }
+
+      // 5) Buscar medições das hastes para cálculo de médias
+      const biometricIds = (biometrics || []).map(b => b.id);
+      const { data: stemMeasurements, error: stemError } = await s
+        .from("plant_stem_measurements")
+        .select("*")
+        .in("biometric_id", biometricIds);
+
+      if (stemError) {
+        console.error("Erro ao buscar medições de hastes:", stemError);
+      }
+
+      const totalMonitorings = typeof monitoringCount === "number" ? monitoringCount : 0;
+      const bioData = biometrics || [];
+      const statusData = statuses || [];
+      const stemData = stemMeasurements || [];
+
+      // Calcular total de plantas
+      const totalPlots = Object.keys(latestByPlot).length;
+      const totalPlants = totalPlots * 9;
+
+      // Criar mapa de status
+      const statusMap = {};
+      statusData.forEach(s => {
+        const key = `${s.monitoring_event_id}_${s.plant_position}`;
+        statusMap[key] = s.status;
+      });
+
+      // Calcular plantas brotadas
+      const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
+      const totalSprouted = sproutedPlants.length;
+
+      // Contar plantas vivas = brotadas E NÃO marcadas como mortas
+      const alivePlants = sproutedPlants.filter(b => {
+        const key = `${b.monitoring_event_id}_${b.plant_position}`;
+        const status = statusMap[key];
+        return !status || status === 'alive';
+      }).length;
+
+      const alivePercentage = totalPlants > 0 
+        ? ((alivePlants / totalPlants) * 100).toFixed(1)
+        : "0.0";
+
+      // Criar mapa de hastes por biometric_id
+      const stemsByBiometric = {};
+      stemData.forEach(stem => {
+        if (!stemsByBiometric[stem.biometric_id]) {
+          stemsByBiometric[stem.biometric_id] = [];
+        }
+        stemsByBiometric[stem.biometric_id].push(stem);
+      });
+
+      // Altura média (média das hastes de plantas VIVAS)
+      const alivePlantsWithStems = sproutedPlants.filter(b => {
+        const key = `${b.monitoring_event_id}_${b.plant_position}`;
+        const status = statusMap[key];
+        const isAlive = !status || status === 'alive';
+        return isAlive && stemsByBiometric[b.id] && stemsByBiometric[b.id].length > 0;
+      });
+
+      let avgHeight = "–";
+      let heightCount = 0;
+      if (alivePlantsWithStems.length > 0) {
+        let totalHeight = 0;
+        alivePlantsWithStems.forEach(b => {
+          const stems = stemsByBiometric[b.id] || [];
+          stems.forEach(stem => {
+            if (stem.height_cm && stem.height_cm > 0) {
+              totalHeight += stem.height_cm;
+              heightCount++;
+            }
+          });
+        });
+        if (heightCount > 0) {
+          avgHeight = (totalHeight / heightCount).toFixed(1);
+        }
+      }
+
+      // Diâmetro médio (média das hastes de plantas VIVAS)
+      let avgDiameter = "–";
+      let diameterCount = 0;
+      if (alivePlantsWithStems.length > 0) {
+        let totalDiameter = 0;
+        alivePlantsWithStems.forEach(b => {
+          const stems = stemsByBiometric[b.id] || [];
+          stems.forEach(stem => {
+            if (stem.diameter_cm && stem.diameter_cm > 0) {
+              totalDiameter += stem.diameter_cm;
+              diameterCount++;
+            }
+          });
+        });
+        if (diameterCount > 0) {
+          avgDiameter = (totalDiameter / diameterCount).toFixed(2);
+        }
+      }
+
+      // Sanidade média (apenas plantas VIVAS)
+      const plantsWithSanity = sproutedPlants.filter(b => {
+        const key = `${b.monitoring_event_id}_${b.plant_position}`;
+        const status = statusMap[key];
+        const isAlive = !status || status === 'alive';
+        return isAlive && b.sanity_score != null && b.sanity_score > 0;
+      });
+
+      const avgSanity = plantsWithSanity.length > 0
+        ? (plantsWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / plantsWithSanity.length).toFixed(1)
+        : "–";
+
+      summaryEl.innerHTML = `
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin-top:4px;">
+
+          <!-- Bloco: Total de monitoramentos -->
+          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#f0fdf4; display:flex; align-items:center; gap:8px;">
+            <div style="width:28px; height:28px; border-radius:999px; background:#dcfce7; display:flex; align-items:center; justify-content:center; font-size:16px;">
+              📋
+            </div>
+            <div>
+              <div style="font-size:18px; font-weight:600; color:#111827;">${totalMonitorings}</div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Coletas</div>
+            </div>
+          </div>
+
+          <!-- Bloco: Plantas vivas -->
+          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#ecfdf3; display:flex; align-items:center; gap:8px;">
+            <div style="width:28px; height:28px; border-radius:999px; background:#bbf7d0; display:flex; align-items:center; justify-content:center; font-size:16px;">
+              🌿
+            </div>
+            <div>
+              <div style="font-size:18px; font-weight:600; color:#14532d;">${alivePercentage}%</div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas (${alivePlants}/${totalPlants})</div>
+            </div>
+          </div>
+
+          <!-- Bloco: Altura média -->
+          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fefce8; display:flex; align-items:center; gap:8px;">
+            <div style="width:28px; height:28px; border-radius:999px; background:#fef3c7; display:flex; align-items:center; justify-content:center; font-size:16px;">
+              📏
+            </div>
+            <div>
+              <div style="font-size:18px; font-weight:600; color:#713f12;">${avgHeight}${avgHeight !== "–" ? " cm" : ""}</div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Altura${heightCount > 0 ? ` (${heightCount})` : ""}</div>
+            </div>
+          </div>
+
+          <!-- Bloco: Diâmetro médio -->
+          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; gap:8px;">
+            <div style="width:28px; height:28px; border-radius:999px; background:#dbeafe; display:flex; align-items:center; justify-content:center; font-size:16px;">
+              ⭕
+            </div>
+            <div>
+              <div style="font-size:18px; font-weight:600; color:#1e3a8a;">${avgDiameter}${avgDiameter !== "–" ? " cm" : ""}</div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Diâmetro${diameterCount > 0 ? ` (${diameterCount})` : ""}</div>
+            </div>
+          </div>
+
+          <!-- Bloco: Sanidade média -->
+          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fef2f2; display:flex; align-items:center; gap:8px;">
+            <div style="width:28px; height:28px; border-radius:999px; background:#fecaca; display:flex; align-items:center; justify-content:center; font-size:16px;">
+              ❤️
+            </div>
+            <div>
+              <div style="font-size:18px; font-weight:600; color:#7f1d1d;">${avgSanity}${avgSanity !== "–" ? "/5" : ""}</div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Sanidade${plantsWithSanity.length > 0 ? ` (${plantsWithSanity.length})` : ""}</div>
+            </div>
+          </div>
+
+        </div>
+      `;
+
+    } catch (err) {
+      console.error("Erro inesperado ao carregar estatísticas:", err);
+      summaryEl.textContent = "Erro ao carregar estatísticas.";
+    }
+  }
 
   function setupMonitoringTabs(container, experiment) {
     const isVisitor = window.currentRole === "visitor";
@@ -354,7 +372,6 @@ async function loadMonitoringSummary(experimentId) {
 
     if (!tabsEl || !contentEl) return;
 
-    // Detectar mudanças de bloco ou parcela e resetar formulário
     const blockInput = document.getElementById("monitorBlock");
     const plotInput = document.getElementById("monitorPlot");
 
@@ -366,13 +383,13 @@ async function loadMonitoringSummary(experimentId) {
       });
     }
 
-if (plotInput) {
-  plotInput.addEventListener("change", () => {
-    resetMonitoringForm();
-    const tab = tabsEl.querySelector("button.active")?.dataset.tab || "iniciar";
-    renderCurrentTab(tab);
-  });
-}
+    if (plotInput) {
+      plotInput.addEventListener("change", () => {
+        resetMonitoringForm();
+        const tab = tabsEl.querySelector("button.active")?.dataset.tab || "iniciar";
+        renderCurrentTab(tab);
+      });
+    }
 
     const renderCurrentTab = async (tab) => {
       const state = getCurrentSelection();
@@ -406,93 +423,101 @@ if (plotInput) {
 
     renderCurrentTab("iniciar");
   }
-  
+
   function resetMonitoringForm() {
-  currentMonitoringId = null;
-  currentPlantStatuses = {};
-  currentLodgingStatuses = {};
-  currentBiometrics = {};
-}
+    currentMonitoringId = null;
+    currentPlantStatuses = {};
+    currentLodgingStatuses = {};
+    currentBiometrics = {};
+  }
 
   function renderMonitoringTabIniciar(container, experiment, selection) {
-  const isVisitor = window.currentRole === "visitor";
+    const isVisitor = window.currentRole === "visitor";
+    const isEditing = !!currentMonitoringId;
 
-  container.innerHTML = `
-    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      ${selection.plotCode ? `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}` : "Selecione uma parcela para começar"}
-    </div>
+    container.innerHTML = `
+      ${isEditing ? `
+        <div style="margin-bottom:12px; padding:12px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:8px;">
+          <div style="font-size:13px; font-weight:600; color:#92400e;">
+            ✏️ Modo de edição ativo
+          </div>
+          <div style="font-size:12px; color:#78350f; margin-top:4px;">
+            Você está editando um monitoramento existente. As alterações afetarão apenas este registro.
+          </div>
+        </div>
+      ` : ''}
 
-    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-      <div style="flex:0 0 180px;">
-        <label for="monDate">Data do monitoramento</label>
-        <input type="date" id="monDate" ${isVisitor ? "disabled" : ""} />
+      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+        ${selection.plotCode ? `<strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}` : "Selecione uma parcela para começar"}
       </div>
-    </div>
 
-    <div style="margin-bottom:10px;">
-      <label for="monNotes">Observações gerais da parcela</label>
-      <textarea id="monNotes" rows="3" ${isVisitor ? "disabled" : ""}
-        style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
-        placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
-    </div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <div style="flex:0 0 180px;">
+          <label for="monDate">Data do monitoramento</label>
+          <input type="date" id="monDate" ${isVisitor ? "disabled" : ""} />
+        </div>
+      </div>
 
-    <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
-      Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
-    </div>
+      <div style="margin-bottom:10px;">
+        <label for="monNotes">Observações gerais da parcela</label>
+        <textarea id="monNotes" rows="3" ${isVisitor ? "disabled" : ""}
+          style="width:100%; padding:9px 11px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px; resize:vertical;"
+          placeholder="Condições climáticas, estado geral da parcela, etc."></textarea>
+      </div>
 
-    <button class="btn-primary" style="width:auto; padding-inline:18px;" 
-      onclick="saveMonitoringInit()" ${isVisitor ? "disabled" : ""}>
-      ${currentMonitoringId ? "Atualizar informações gerais" : "Iniciar monitoramento"}
-    </button>
-    ${currentMonitoringId ? `
-      <button class="btn-secondary" style="margin-left:8px;" onclick="clearMonitoringForm()">
-        Cancelar edição
+      <div style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+        ${isEditing 
+          ? 'Atualize as informações gerais e clique em "Atualizar" para salvar as mudanças.'
+          : 'Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.'}
+      </div>
+
+      <button class="btn-primary" style="width:auto; padding-inline:18px;" 
+        onclick="saveMonitoringInit()" ${isVisitor ? "disabled" : ""}>
+        ${isEditing ? "Atualizar informações gerais" : "Iniciar monitoramento"}
       </button>
-    ` : ""}
-  `;
-}
+      ${isEditing ? `
+        <button class="btn-secondary" style="margin-left:8px;" onclick="cancelMonitoringEdit()">
+          Cancelar edição
+        </button>
+      ` : ""}
+    `;
+  }
 
   async function renderMonitoringTabBiometria(container, experiment, selection) {
-  const isVisitor = window.currentRole === "visitor";
-  
-  // Se já existe um monitoramento sendo editado, usa ele
-  let monitoringToUse;
-  
-  if (currentMonitoringId) {
-    // Está editando - buscar dados do monitoramento específico
-    const { data, error } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("id", currentMonitoringId)
-      .single();
-    
-    monitoringToUse = data;
-    console.log("[DEBUG] Usando monitoramento em edição:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
-  } else {
-    // Não está editando - buscar o mais recente
-    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-    console.log("[DEBUG] Usando último monitoramento:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
-  }
+    const isVisitor = window.currentRole === "visitor";
 
-  if (!monitoringToUse) {
-    container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
-      </div>
-      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-        Nenhum monitoramento registrado ainda para esta parcela.
-        <br>Inicie um monitoramento na aba <strong>Iniciar monitoramento</strong> primeiro.
-      </p>
-    `;
-    return;
-  }
+    let monitoringToUse;
 
-  currentMonitoringId = monitoringToUse.id;
-  await loadBiometricsData(monitoringToUse.id);
-  
-  // Resto do código continua igual...
+    if (currentMonitoringId) {
+      const { data, error } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("id", currentMonitoringId)
+        .single();
 
-    // Calcular progresso
+      monitoringToUse = data;
+      console.log("[DEBUG] Usando monitoramento em edição:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
+    } else {
+      monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+      console.log("[DEBUG] Usando último monitoramento:", monitoringToUse?.id, monitoringToUse?.monitoring_date);
+    }
+
+    if (!monitoringToUse) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+        </div>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+          Nenhum monitoramento registrado ainda para esta parcela.
+          <br>Inicie um monitoramento na aba <strong>Iniciar monitoramento</strong> primeiro.
+        </p>
+      `;
+      return;
+    }
+
+    currentMonitoringId = monitoringToUse.id;
+    await loadBiometricsData(monitoringToUse.id);
+
     const totalPlants = 9;
     const filled = Object.keys(currentBiometrics).length;
     const progress = Math.round((filled / totalPlants) * 100);
@@ -519,200 +544,223 @@ if (plotInput) {
       </div>
 
       <div style="font-size:12px; color:#6b7280;">
-        Clique no botão acima para abrir a grade de plantas e registrar:
-        <strong>altura (cm)</strong>, <strong>nº hastes</strong>, <strong>3 medidas de diâmetro (cm)</strong> e <strong>sanidade (1-5)</strong> para cada planta.
+        Clique no botão acima para abrir a grade de plantas e registrar medições de <strong>cada haste</strong>: 
+        <strong>altura (cm)</strong>, <strong>diâmetro (cm)</strong> e <strong>sanidade geral (1-5)</strong> para cada planta.
+        <br>Selecione até <strong>3 plantas de referência</strong> para validação dos dados do drone.
       </div>
     `;
   }
 
   async function renderMonitoringTabPlantasUteis(container, experiment, selection) {
-  const isVisitor = window.currentRole === "visitor";
-  
-  let monitoringToUse;
-  
-  if (currentMonitoringId) {
-    const { data } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("id", currentMonitoringId)
-      .single();
-    monitoringToUse = data;
-  } else {
-    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-  }
+    const isVisitor = window.currentRole === "visitor";
 
-  if (!monitoringToUse) {
+    let monitoringToUse;
+
+    if (currentMonitoringId) {
+      const { data } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("id", currentMonitoringId)
+        .single();
+      monitoringToUse = data;
+    } else {
+      monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    }
+
+    if (!monitoringToUse) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+        </div>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+          Nenhum monitoramento registrado ainda para esta parcela.
+          <br>Inicie um monitoramento primeiro.
+        </p>
+      `;
+      return;
+    }
+
+    currentMonitoringId = monitoringToUse.id;
+    await loadPlantDataForEdit(monitoringToUse.id);
+    await loadBiometricsData(monitoringToUse.id);
+
     container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
       </div>
-      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-        Nenhum monitoramento registrado ainda para esta parcela.
-        <br>Inicie um monitoramento primeiro.
-      </p>
+
+      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+        <button class="btn-secondary" onclick="openPlantStatusDialog()" ${isVisitor ? "disabled" : ""}>
+          Marcar mortalidade
+        </button>
+      </div>
+
+      <div style="font-size:12px; color:#6b7280;">
+        As plantas marcadas como <strong>"Brotou"</strong> na aba Biometria aparecem automaticamente como <strong>vivas</strong> (verde).
+        <br>Clique no botão para marcar plantas que morreram (ficarão vermelhas).
+      </div>
     `;
-    return;
   }
-
-  currentMonitoringId = monitoringToUse.id;
-  await loadPlantDataForEdit(monitoringToUse.id);
-  await loadBiometricsData(monitoringToUse.id);
-
-  container.innerHTML = `
-    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-      <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
-    </div>
-
-    <div style="margin-bottom:10px; font-size:13px; color:#374151;">
-      <button class="btn-secondary" onclick="openPlantStatusDialog()" ${isVisitor ? "disabled" : ""}>
-        Marcar mortalidade
-      </button>
-    </div>
-
-    <div style="font-size:12px; color:#6b7280;">
-      As plantas marcadas como <strong>"Brotou"</strong> na aba Biometria aparecem automaticamente como <strong>vivas</strong> (verde).
-      <br>Clique no botão para marcar plantas que morreram (ficarão vermelhas).
-    </div>
-  `;
-}
 
   async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
-  const isVisitor = window.currentRole === "visitor";
-  
-  let monitoringToUse;
-  
-  if (currentMonitoringId) {
-    const { data } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("id", currentMonitoringId)
-      .single();
-    monitoringToUse = data;
-  } else {
-    monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-  }
+    const isVisitor = window.currentRole === "visitor";
 
-  if (!monitoringToUse) {
+    let monitoringToUse;
+
+    if (currentMonitoringId) {
+      const { data } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("id", currentMonitoringId)
+        .single();
+      monitoringToUse = data;
+    } else {
+      monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    }
+
+    if (!monitoringToUse) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
+          <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+        </div>
+        <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
+          Nenhum monitoramento registrado ainda para esta parcela.
+          <br>Inicie um monitoramento primeiro.
+        </p>
+      `;
+      return;
+    }
+
+    currentMonitoringId = monitoringToUse.id;
+    await loadPlantDataForEdit(monitoringToUse.id);
+    await loadBiometricsData(monitoringToUse.id);
+
     container.innerHTML = `
-      <div style="margin-bottom:10px; font-size:13px; color:#b91c1c;">
-        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)}, Bloco ${selection.block}
+      <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
+        <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
+        <br><span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
       </div>
-      <p style="font-size:13px; color:#6b7280; margin-bottom:8px;">
-        Nenhum monitoramento registrado ainda para esta parcela.
-        <br>Inicie um monitoramento primeiro.
-      </p>
+
+      <div style="margin-bottom:10px; font-size:13px; color:#374151;">
+        <button class="btn-secondary" onclick="openPlantLodgingDialog()" ${isVisitor ? "disabled" : ""}>
+          Marcar plantas tombadas
+        </button>
+      </div>
+
+      <div style="font-size:12px; color:#6b7280;">
+        Somente plantas <strong>brotadas e vivas</strong> podem ser marcadas como tombadas.
+        <br>Plantas aparecem automaticamente baseadas nos dados de biometria e mortalidade.
+      </div>
     `;
-    return;
   }
-
-  currentMonitoringId = monitoringToUse.id;
-  await loadPlantDataForEdit(monitoringToUse.id);
-  await loadBiometricsData(monitoringToUse.id);
-
-  container.innerHTML = `
-    <div style="margin-bottom:10px; font-size:13px; color:#4b5563;">
-      <strong>Parcela:</strong> ${escapeHtml(selection.plotCode)} · Bloco ${selection.block}
-      <br<span style="font-size:12px; color:#6b7280;">Monitoramento de ${formatDateShort(monitoringToUse.monitoring_date)}</span>
-    </div>
-
-    <div style="margin-bottom:10px; font-size:13px; color:#374151;">
-      <button class="btn-secondary" onclick="openPlantLodgingDialog()" ${isVisitor ? "disabled" : ""}>
-        Marcar plantas tombadas
-      </button>
-    </div>
-
-    <div style="font-size:12px; color:#6b7280;">
-      Somente plantas <strong>brotadas e vivas</strong> podem ser marcadas como tombadas.
-      <br>Plantas aparecem automaticamente baseadas nos dados de biometria e mortalidade.
-    </div>
-  `;
-}
 
   window.saveMonitoringInit = async function saveMonitoringInit() {
-  if (window.currentRole === "visitor") {
-    alert("Visitantes têm acesso somente leitura.");
-    return;
-  }
+    if (window.currentRole === "visitor") {
+      alert("Visitantes têm acesso somente leitura.");
+      return;
+    }
 
-  if (typeof s === "undefined") {
-    alert("Cliente Supabase não disponível.");
-    return;
-  }
+    if (typeof s === "undefined") {
+      alert("Cliente Supabase não disponível.");
+      return;
+    }
 
-  const experiment = window.currentExperiment;
-  if (!experiment || !experiment.id) {
-    alert("Nenhum experimento selecionado.");
-    return;
-  }
+    const experiment = window.currentExperiment;
+    if (!experiment || !experiment.id) {
+      alert("Nenhum experimento selecionado.");
+      return;
+    }
 
-  const blockInput = document.getElementById("monitorBlock");
-  const plotInput = document.getElementById("monitorPlot");
-  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-  const plotCode = plotInput?.value.trim();
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+    const plotCode = plotInput?.value.trim();
 
-  if (!plotCode) {
-    alert("Selecione uma parcela.");
-    return;
-  }
+    if (!plotCode) {
+      alert("Selecione uma parcela.");
+      return;
+    }
 
-  const date = document.getElementById("monDate")?.value || null;
-  const notes = document.getElementById("monNotes")?.value || null;
+    const date = document.getElementById("monDate")?.value || null;
+    const notes = document.getElementById("monNotes")?.value || null;
 
-  if (!date) {
-    alert("Informe a data do monitoramento.");
-    return;
-  }
+    if (!date) {
+      alert("Informe a data do monitoramento.");
+      return;
+    }
 
-  const payload = {
-    experiment_id: experiment.id,
-    plot_code: plotCode,
-    block_number: block,
-    monitoring_date: date,
-    notes: notes || null,
+    const payload = {
+      experiment_id: experiment.id,
+      plot_code: plotCode,
+      block_number: block,
+      monitoring_date: date,
+      notes: notes || null,
+    };
+
+    try {
+      const isEditing = !!currentMonitoringId;
+
+      if (currentMonitoringId) {
+        const { error } = await s
+          .from("monitoring_events")
+          .update(payload)
+          .eq("id", currentMonitoringId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await s.from("monitoring_events").insert(payload).select();
+        if (error) throw error;
+        currentMonitoringId = data[0]?.id;
+      }
+
+      loadMonitoringList();
+
+      if (isEditing) {
+        alert("Monitoramento atualizado com sucesso.");
+        resetMonitoringForm();
+
+        const contentEl = document.getElementById("monitoringTabContent");
+        if (contentEl) {
+          renderMonitoringTabIniciar(contentEl, experiment, { block: 1, plotCode: "" });
+        }
+
+        if (blockInput) blockInput.value = "1";
+        if (plotInput) plotInput.value = "";
+      } else {
+        alert("Monitoramento iniciado com sucesso. Agora você pode coletar os dados biométricos na aba 'Biometria individual'.");
+      }
+
+    } catch (err) {
+      console.error("Erro ao salvar monitoramento:", err);
+      alert("Erro ao salvar monitoramento.");
+    }
   };
 
-  try {
-    const isEditing = !!currentMonitoringId; // Salva o estado ANTES de modificar
-    
-    if (currentMonitoringId) {
-      const { error } = await s
-        .from("monitoring_events")
-        .update(payload)
-        .eq("id", currentMonitoringId);
-      if (error) throw error;
-    } else {
-      const { data, error } = await s.from("monitoring_events").insert(payload).select();
-      if (error) throw error;
-      currentMonitoringId = data[0]?.id;
+  window.cancelMonitoringEdit = function cancelMonitoringEdit() {
+    if (!confirm("Deseja cancelar a edição? As alterações não salvas serão perdidas.")) {
+      return;
     }
 
-    loadMonitoringList();
+    resetMonitoringForm();
 
-    // ✅ ADICIONAR: Resetar formulário após edição
-    if (isEditing) {
-      alert("Monitoramento atualizado com sucesso.");
-      // Limpar estado e resetar formulário
-      resetMonitoringForm();
-      
-      // Re-renderizar a aba "Iniciar" com formulário limpo
-      const contentEl = document.getElementById("monitoringTabContent");
-      if (contentEl) {
-        renderMonitoringTabIniciar(contentEl, experiment, { block: 1, plotCode: "" });
-      }
-      
-      // Resetar os selects
-      if (blockInput) blockInput.value = "1";
-      if (plotInput) plotInput.value = "";
-    } else {
-      alert("Monitoramento iniciado com sucesso. Agora você pode coletar os dados biométricos na aba 'Biometria individual'.");
+    const experiment = window.currentExperiment;
+    const contentEl = document.getElementById("monitoringTabContent");
+
+    if (contentEl) {
+      renderMonitoringTabIniciar(contentEl, experiment, { block: 1, plotCode: "" });
     }
-    
-  } catch (err) {
-    console.error("Erro ao salvar monitoramento:", err);
-    alert("Erro ao salvar monitoramento.");
-  }
-};
+
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+    if (blockInput) blockInput.value = "1";
+    if (plotInput) plotInput.value = "";
+
+    const tabsEl = document.getElementById("monitoringTabs");
+    if (tabsEl) {
+      tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+      tabsEl.querySelector("[data-tab='iniciar']")?.classList.add("active");
+    }
+  };
 
   window.openBiometricCollectionDialog = function openBiometricCollectionDialog() {
     if (window.currentRole === "visitor") return;
@@ -726,19 +774,24 @@ if (plotInput) {
     const itemsHtml = Array.from({ length: total }).map((_, idx) => {
       const n = idx + 1;
       const bio = currentBiometrics[n];
-  
-      // ✅ Verde APENAS se brotou
+
       const hasSprouted = bio?.has_sprouted === true;
+      const isReference = bio?.is_reference_plant === true;
+
       const bg = hasSprouted ? '#dcfce7' : '#f3f4f6';
       const color = hasSprouted ? '#065f46' : '#6b7280';
+      const borderColor = hasSprouted ? '#10b981' : '#d1d5db';
+
+      const referenceStar = isReference ? '<div style="position:absolute; top:-4px; right:-4px; font-size:16px;">⭐</div>' : '';
 
       return `
         <button type="button"
           class="plant-circle"
           onclick="openPlantBiometricForm(${n})"
           style="
+            position:relative;
             width:42px; height:42px; border-radius:999px;
-            border:2px solid ${hasSprouted ? '#10b981' : '#d1d5db'};  // ✅ Corrigido!
+            border:2px solid ${borderColor};
             background:${bg};
             color:${color};
             font-size:14px;
@@ -747,6 +800,7 @@ if (plotInput) {
             cursor:pointer;
           ">
           ${n}
+          ${referenceStar}
         </button>
       `;
     }).join("");
@@ -757,8 +811,8 @@ if (plotInput) {
       </div>
 
       <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-        Clique em cada planta para registrar: <strong>altura, hastes, 3 diâmetros, sanidade</strong>.
-        Plantas com dados preenchidos ficam verdes.
+        Clique em cada planta para registrar: <strong>altura e diâmetro de cada haste, sanidade</strong>.
+        Plantas com dados preenchidos ficam verdes. ⭐ = Planta de referência (validação drone).
       </div>
 
       <div style="
@@ -782,946 +836,797 @@ if (plotInput) {
   };
 
   window.openPlantBiometricForm = function openPlantBiometricForm(position) {
-  const bio = currentBiometrics[position] || {};
+    const bio = currentBiometrics[position] || {};
+    const stemCount = bio.stem_count || 0;
 
-  const bodyHtml = `
-    <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:8px;">
-      Planta ${position}
-    </div>
+    const stemFieldsHtml = stemCount > 0 
+      ? Array.from({ length: stemCount }, (_, i) => {
+          const stemNum = i + 1;
+          const existingStem = (bio.stems || []).find(s => s.stem_number === stemNum) || {};
 
-    <div style="margin-bottom:12px; padding:10px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
-      <div style="font-size:13px; font-weight:600; color:#065f46; margin-bottom:6px;">
-        Estágio fenológico
+          return `
+            <div style="padding:10px; margin-bottom:8px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+              <div style="font-weight:600; color:#065f46; margin-bottom:6px;">
+                Haste ${stemNum}
+              </div>
+              <div style="display:flex; gap:8px;">
+                <div style="flex:1;">
+                  <label for="stemHeight_${stemNum}">Altura (cm)</label>
+                  <input type="number" step="0.1" id="stemHeight_${stemNum}" 
+                    value="${existingStem.height_cm || ''}" />
+                </div>
+                <div style="flex:1;">
+                  <label for="stemDiameter_${stemNum}">Diâmetro (cm)</label>
+                  <input type="number" step="0.01" id="stemDiameter_${stemNum}" 
+                    value="${existingStem.diameter_cm || ''}" />
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')
+      : `<div style="font-size:12px; color:#6b7280; padding:10px; background:#f8fafc; border-radius:8px;">Informe o número de hastes primeiro</div>`;
+
+    const bodyHtml = `
+      <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:8px;">
+        Planta ${position}
       </div>
-      <div style="display:flex; gap:12px;">
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
-          <input type="checkbox" id="bioSprouted" ${bio.has_sprouted ? 'checked' : ''} 
-            style="width:16px; height:16px; cursor:pointer;">
-          🌱 Brotou
+
+      <div style="margin-bottom:12px; padding:10px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
+        <div style="font-size:13px; font-weight:600; color:#065f46; margin-bottom:6px;">
+          Estágio fenológico
+        </div>
+        <div style="display:flex; gap:12px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
+            <input type="checkbox" id="bioSprouted" ${bio.has_sprouted ? 'checked' : ''} 
+              style="width:16px; height:16px; cursor:pointer;">
+            🌱 Brotou
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
+            <input type="checkbox" id="bioExpanded" ${bio.has_expanded_leaves ? 'checked' : ''} 
+              style="width:16px; height:16px; cursor:pointer;">
+            🍃 Expandiu folhas
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label for="bioStems">Número de hastes</label>
+        <input type="number" id="bioStems" value="${bio.stem_count || ''}" 
+          oninput="updateStemFields(${position})" />
+        <div style="font-size:11px; color:#6b7280; margin-top:2px;">
+          Após informar, serão criados campos para cada haste
+        </div>
+      </div>
+
+      <div id="stemFieldsContainer" style="margin-bottom:12px;">
+        ${stemFieldsHtml}
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label for="bioSanity">Sanidade geral (1 a 5)</label>
+        <input type="number" min="1" max="5" id="bioSanity" value="${bio.sanity_score || ''}" 
+          oninput="toggleSanityObservations()" />
+        <div style="font-size:11px; color:#6b7280; margin-top:2px;">
+          5 = saúde perfeita · 1 = saúde muito comprometida
+        </div>
+      </div>
+
+      <div id="sanityObsContainer" style="margin-bottom:12px; display:none;">
+        <label for="bioSanityObs" style="color:#dc2626; font-weight:600;">
+          ⚠️ Observações sobre sanidade
         </label>
-        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
-          <input type="checkbox" id="bioExpanded" ${bio.has_expanded_leaves ? 'checked' : ''} 
-            style="width:16px; height:16px; cursor:pointer;">
-          🍃 Expandiu folhas
+        <textarea id="bioSanityObs" rows="3" 
+          style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid #fca5a5; font-size:13px; resize:vertical; background:#fef2f2;"
+          placeholder="Descreva as anomalias: formigas, lagartas, viroses, bactérias, etc.">${bio.sanity_observations || ""}</textarea>
+      </div>
+
+      <div style="margin-bottom:12px; padding:10px; background:#fef3c7; border-radius:8px; border:1px solid #fbbf24;">
+        <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#92400e; cursor:pointer;">
+          <input type="checkbox" id="bioReference" ${bio.is_reference_plant ? 'checked' : ''} 
+            style="width:18px; height:18px; cursor:pointer;">
+          ⭐ Marcar como planta de referência (validação drone)
         </label>
-      </div>
-      <div style="font-size:11px; color:#6b7280; margin-top:4px;">
-        Deixe desmarcado se ainda não ocorreu
-      </div>
-    </div>
-
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-      <div style="flex:1 1 140px;">
-        <label for="bioHeight">Altura (cm)</label>
-        <input type="number" step="0.1" id="bioHeight" value="${bio.height_cm || ""}" />
-      </div>
-      <div style="flex:1 1 120px;">
-        <label for="bioStems">Nº hastes</label>
-        <input type="number" id="bioStems" value="${bio.stem_count || ""}" />
-      </div>
-    </div>
-
-    <div style="margin-bottom:10px;">
-      <label style="font-size:13px; font-weight:600; color:#4b5563; display:block; margin-bottom:4px;">
-        Diâmetro do caule (cm) - 3 medições
-      </label>
-      <div style="display:flex; gap:8px;">
-        <div style="flex:1;">
-          <input type="number" step="0.01" id="bioDiam1" placeholder="Medida 1" value="${bio.stem_diameter_1_cm || ""}" />
-        </div>
-        <div style="flex:1;">
-          <input type="number" step="0.01" id="bioDiam2" placeholder="Medida 2" value="${bio.stem_diameter_2_cm || ""}" />
-        </div>
-        <div style="flex:1;">
-          <input type="number" step="0.01" id="bioDiam3" placeholder="Medida 3" value="${bio.stem_diameter_3_cm || ""}" />
+        <div style="font-size:11px; color:#6b7280; margin-top:4px;">
+          Selecione até 3 plantas úteis para amostragem
         </div>
       </div>
-    </div>
 
-    <div style="margin-bottom:12px;">
-      <label for="bioSanity">Sanidade (1 a 5)</label>
-      <input type="number" min="1" max="5" id="bioSanity" value="${bio.sanity_score || ""}" 
-        oninput="toggleSanityObservations()" />
-      <div style="font-size:11px; color:#6b7280; margin-top:2px;">
-        5 = saúde perfeita · 1 = saúde muito comprometida
-      </div>
-    </div>
-
-    <!-- Campo de observações (inicialmente oculto) -->
-    <div id="sanityObsContainer" style="margin-bottom:12px; display:none;">
-      <label for="bioSanityObs" style="color:#dc2626; font-weight:600;">
-        ⚠️ Observações sobre sanidade
-      </label>
-      <textarea id="bioSanityObs" rows="3" 
-        style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid #fca5a5; font-size:13px; resize:vertical; background:#fef2f2;"
-        placeholder="Descreva as anomalias: formigas, lagartas, viroses, bactérias, etc.">${bio.sanity_observations || ""}</textarea>
-      <div style="font-size:11px; color:#6b7280; margin-top:2px;">
-        Registre qualquer problema fitossanitário observado
-      </div>
-    </div>
-
-    <button class="btn-primary" style="width:100%;" onclick="savePlantBiometric(${position})">
-      Salvar dados da planta ${position}
-    </button>
-  `;
-
-  if (typeof openModal === "function") {
-    openModal(`Biometria - Planta ${position}`, bodyHtml);
-  }
-  
-  // Verificar sanidade inicial após abrir modal
-  setTimeout(() => {
-    toggleSanityObservations();
-  }, 50);
-};
-
-  window.toggleSanityObservations = function toggleSanityObservations() {
-  const sanityInput = document.getElementById("bioSanity");
-  const obsContainer = document.getElementById("sanityObsContainer");
-  
-  if (!sanityInput || !obsContainer) return;
-  
-  const sanityValue = parseFloat(sanityInput.value);
-  
-  if (!isNaN(sanityValue) && sanityValue < 5) {
-    obsContainer.style.display = "block";
-  } else {
-    obsContainer.style.display = "none";
-  }
-};
-  
-  window.savePlantBiometric = async function savePlantBiometric(position) {
-  if (!currentMonitoringId) {
-    alert("Inicie um monitoramento primeiro.");
-    return;
-  }
-
-  const height = document.getElementById("bioHeight")?.value || null;
-  const stems = document.getElementById("bioStems")?.value || null;
-  const diam1 = document.getElementById("bioDiam1")?.value || null;
-  const diam2 = document.getElementById("bioDiam2")?.value || null;
-  const diam3 = document.getElementById("bioDiam3")?.value || null;
-  const sanity = document.getElementById("bioSanity")?.value || null;
-  const sanityObs = document.getElementById("bioSanityObs")?.value || null;
-  
-  const sproutedCheckbox = document.getElementById("bioSprouted");
-  const expandedCheckbox = document.getElementById("bioExpanded");
-  
-  const sprouted = sproutedCheckbox ? sproutedCheckbox.checked : false;
-  const expanded = expandedCheckbox ? expandedCheckbox.checked : false;
-
-  const payload = {
-    monitoring_event_id: currentMonitoringId,
-    plant_position: position,
-    height_cm: height ? Number(height) : null,
-    stem_count: stems ? Number(stems) : null,
-    stem_diameter_1_cm: diam1 ? Number(diam1) : null,
-    stem_diameter_2_cm: diam2 ? Number(diam2) : null,
-    stem_diameter_3_cm: diam3 ? Number(diam3) : null,
-    sanity_score: sanity ? Number(sanity) : null,
-    sanity_observations: sanityObs,
-    has_sprouted: sprouted,
-    has_expanded_leaves: expanded,
-  };
-
-  try {
-    const { data: existing } = await s
-      .from("plant_biometrics")
-      .select("id")
-      .eq("monitoring_event_id", currentMonitoringId)
-      .eq("plant_position", position)
-      .maybeSingle();
-
-    if (existing) {
-      const { error } = await s
-        .from("plant_biometrics")
-        .update(payload)
-        .eq("id", existing.id);
-      if (error) throw error;
-    } else {
-      const { error } = await s
-        .from("plant_biometrics")
-        .insert(payload);
-      if (error) throw error;
-    }
-
-    currentBiometrics[position] = {
-      ...payload,
-      has_sprouted: sprouted,
-      has_expanded_leaves: expanded
-    };
-
-    await loadBiometricsData(currentMonitoringId);
-
-    if (typeof closeModal === "function") closeModal();
-    setTimeout(() => openBiometricCollectionDialog(), 100);
-    
-  } catch (err) {
-    console.error("Erro ao salvar biometria da planta:", err);
-    alert("Erro ao salvar dados da planta.");
-  }
-};
-
-  window.openPlantStatusDialog = function openPlantStatusDialog() {
-  if (window.currentRole === "visitor") return;
-
-  const blockInput = document.getElementById("monitorBlock");
-  const plotInput = document.getElementById("monitorPlot");
-  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-  const plotCode = plotInput?.value.trim() || "";
-
-  // Sincronizar status com dados de brotação da biometria
-  for (let pos = 1; pos <= 9; pos++) {
-    const bio = currentBiometrics[pos];
-  
-    // Se planta brotou na biometria e ainda não tem status definido, marca como 'alive'
-    if (bio && bio.has_sprouted === true && !currentPlantStatuses[pos]) {
-    currentPlantStatuses[pos] = 'alive';
-    }
-  
-    // Se EXPLICITAMENTE não brotou (false) e não tem status, marca como 'not_sprouted'
-    if (bio && bio.has_sprouted === false && !currentPlantStatuses[pos]) {
-      currentPlantStatuses[pos] = 'not_sprouted';
-    }
-  
-    // Se não tem dados ou é null, marca como 'not_sprouted'
-    if ((!bio || bio.has_sprouted === null || bio.has_sprouted === undefined) && !currentPlantStatuses[pos]) {
-      currentPlantStatuses[pos] = 'not_sprouted';
-    }
-  }
-
-  const total = 9;
-  const itemsHtml = Array.from({ length: total }).map((_, idx) => {
-    const n = idx + 1;
-    const bio = currentBiometrics[n];
-    let status = currentPlantStatuses[n] || 'not_sprouted';
-    
-    // FORÇAR cinza se não brotou (false) ou não tem dados (null/undefined)
-    if (!bio || bio.has_sprouted !== true) {
-
-      // Só permite status 'dead' ou 'not_sprouted' se não brotou
-      if (status === 'alive') {
-        status = 'not_sprouted';
-        currentPlantStatuses[n] = 'not_sprouted';
-      }
-    }
-    
-    let bg = '#e5e7eb'; // cinza - não brotou
-    let color = '#374151';
-    let borderColor = '#d1d5db';
-    
-    if (status === 'alive') {
-      bg = '#dcfce7'; // verde - viva
-      color = '#065f46';
-      borderColor = '#10b981';
-    } else if (status === 'dead') {
-      bg = '#fee2e2'; // vermelho - morta
-      color = '#7f1d1d';
-      borderColor = '#dc2626';
-    }
-
-    // Indicador se foi marcada como brotada na biometria
-    const sproutedMark = bio?.has_sprouted === true ? '<div style="font-size:9px;">🌱</div>' : '';
-
-    return `
-      <button type="button"
-        class="plant-circle"
-        data-index="${n}"
-        onclick="togglePlantStatus(${n})"
-        style="
-          width:40px; height:40px; border-radius:999px;
-          border:2px solid ${borderColor};
-          background:${bg};
-          color:${color};
-          font-size:13px;
-          font-weight:600;
-          display:flex; 
-          flex-direction:column;
-          align-items:center; 
-          justify-content:center;
-          cursor:pointer;
-          position:relative;
-        ">
-        <div>${n}</div>
-        ${sproutedMark}
+      <button class="btn-primary" style="width:100%;" onclick="savePlantBiometric(${position})">
+        Salvar dados da planta ${position}
       </button>
     `;
-  }).join("");
 
-  const bodyHtml = `
-    <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-      Marcar mortalidade – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
-    </div>
+    if (typeof openModal === "function") {
+      openModal(`Biometria - Planta ${position}`, bodyHtml);
+    }
 
-    <div style="margin-bottom:10px; padding:8px; background:#f0fdf4; border-radius:8px; font-size:12px; color:#065f46;">
-      🌱 = Planta marcada como brotada na biometria
-    </div>
-
-    <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-      Plantas <strong>brotadas</strong> (🌱) aparecem em <strong style="color:#10b981;">verde</strong>.
-      <br>Plantas <strong>sem brotação indicada</strong> ficam em <strong style="color:#9ca3af;">cinza</strong>.
-      <br>Clique para alternar: <strong style="color:#10b981;">Verde (viva)</strong> → <strong style="color:#dc2626;">Vermelho (morta)</strong> → <strong style="color:#9ca3af;">Cinza (não brotou)</strong>
-    </div>
-
-    <div style="
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:10px;
-      justify-items:center;
-      margin-bottom:12px;
-    ">
-      ${itemsHtml}
-    </div>
-
-    <button class="btn-primary" style="width:100%;" onclick="savePlantStatuses()">
-      Salvar mortalidade
-    </button>
-  `;
-
-  if (typeof openModal === "function") {
-    openModal("Plantas úteis – mortalidade", bodyHtml);
-  }
-};
-
-  window.togglePlantStatus = function togglePlantStatus(position) {
-    const current = currentPlantStatuses[position] || 'not_sprouted';
-    let next = 'not_sprouted';
-    
-    if (current === 'not_sprouted') next = 'alive';
-    else if (current === 'alive') next = 'dead';
-    else next = 'not_sprouted';
-
-    currentPlantStatuses[position] = next;
-    openPlantStatusDialog(); // re-render
+    setTimeout(() => {
+      toggleSanityObservations();
+    }, 50);
   };
 
-  window.savePlantStatuses = async function savePlantStatuses() {
+  window.updateStemFields = function updateStemFields(position) {
+    const stemsInput = document.getElementById("bioStems");
+    const container = document.getElementById("stemFieldsContainer");
+
+    if (!stemsInput || !container) return;
+
+    const stemCount = parseInt(stemsInput.value, 10) || 0;
+
+    if (stemCount <= 0) {
+      container.innerHTML = `<div style="font-size:12px; color:#6b7280; padding:10px; background:#f8fafc; border-radius:8px;">Informe o número de hastes primeiro</div>`;
+      return;
+    }
+
+    const bio = currentBiometrics[position] || {};
+
+    container.innerHTML = Array.from({ length: stemCount }, (_, i) => {
+      const stemNum = i + 1;
+      const existingStem = (bio.stems || []).find(s => s.stem_number === stemNum) || {};
+
+      return `
+        <div style="padding:10px; margin-bottom:8px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+          <div style="font-weight:600; color:#065f46; margin-bottom:6px;">
+            Haste ${stemNum}
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1;">
+              <label for="stemHeight_${stemNum}">Altura (cm)</label>
+              <input type="number" step="0.1" id="stemHeight_${stemNum}" 
+                value="${existingStem.height_cm || ''}" />
+            </div>
+            <div style="flex:1;">
+              <label for="stemDiameter_${stemNum}">Diâmetro (cm)</label>
+              <input type="number" step="0.01" id="stemDiameter_${stemNum}" 
+                value="${existingStem.diameter_cm || ''}" />
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  window.toggleSanityObservations = function toggleSanityObservations() {
+    const sanityInput = document.getElementById("bioSanity");
+    const obsContainer = document.getElementById("sanityObsContainer");
+
+    if (!sanityInput || !obsContainer) return;
+
+    const sanityValue = parseFloat(sanityInput.value);
+
+    if (!isNaN(sanityValue) && sanityValue < 5) {
+      obsContainer.style.display = "block";
+    } else {
+      obsContainer.style.display = "none";
+    }
+  };
+
+  window.savePlantBiometric = async function savePlantBiometric(position) {
     if (!currentMonitoringId) {
       alert("Inicie um monitoramento primeiro.");
       return;
     }
 
+    const sproutedCheckbox = document.getElementById("bioSprouted");
+    const expandedCheckbox = document.getElementById("bioExpanded");
+    const stemsInput = document.getElementById("bioStems");
+    const sanity = document.getElementById("bioSanity")?.value || null;
+    const sanityObs = document.getElementById("bioSanityObs")?.value || null;
+    const referenceCheckbox = document.getElementById("bioReference");
+
+    const sprouted = sproutedCheckbox ? sproutedCheckbox.checked : false;
+    const expanded = expandedCheckbox ? expandedCheckbox.checked : false;
+    const stemCount = stemsInput ? parseInt(stemsInput.value, 10) : 0;
+    const isReference = referenceCheckbox ? referenceCheckbox.checked : false;
+
+    // Validar limite de 3 plantas de referência
+    if (isReference) {
+      const { count } = await s
+        .from("plant_biometrics")
+        .select("*", { count: "exact", head: true })
+        .eq("monitoring_event_id", currentMonitoringId)
+        .eq("is_reference_plant", true);
+
+      const currentRef = currentBiometrics[position]?.is_reference_plant ? 1 : 0;
+
+      if (count - currentRef >= 3) {
+        alert("Você já selecionou 3 plantas de referência. Desmarque uma para adicionar outra.");
+        return;
+      }
+    }
+
+    // Coletar dados das hastes
+    const stems = [];
+    for (let i = 1; i <= stemCount; i++) {
+      const heightInput = document.getElementById(`stemHeight_${i}`);
+      const diameterInput = document.getElementById(`stemDiameter_${i}`);
+
+      if (heightInput || diameterInput) {
+        stems.push({
+          stem_number: i,
+          height_cm: heightInput?.value ? Number(heightInput.value) : null,
+          diameter_cm: diameterInput?.value ? Number(diameterInput.value) : null
+        });
+      }
+    }
+
+    const payload = {
+      monitoring_event_id: currentMonitoringId,
+      plant_position: position,
+      stem_count: stemCount,
+      sanity_score: sanity ? Number(sanity) : null,
+      sanity_observations: sanityObs,
+      has_sprouted: sprouted,
+      has_expanded_leaves: expanded,
+      is_reference_plant: isReference
+    };
+
     try {
-      await s.from("plant_status").delete().eq("monitoring_event_id", currentMonitoringId);
+      const { data: existing } = await s
+        .from("plant_biometrics")
+        .select("id")
+        .eq("monitoring_event_id", currentMonitoringId)
+        .eq("plant_position", position)
+        .maybeSingle();
 
-      const records = Object.entries(currentPlantStatuses).map(([pos, status]) => ({
-        monitoring_event_id: currentMonitoringId,
-        plant_position: Number(pos),
-        status: status,
-      }));
+      let biometricId;
 
-      if (records.length > 0) {
-        const { error } = await s.from("plant_status").insert(records);
+      if (existing) {
+        const { error } = await s
+          .from("plant_biometrics")
+          .update(payload)
+          .eq("id", existing.id);
         if (error) throw error;
+        biometricId = existing.id;
+
+        await s
+          .from("plant_stem_measurements")
+          .delete()
+          .eq("biometric_id", biometricId);
+      } else {
+        const { data, error } = await s
+          .from("plant_biometrics")
+          .insert(payload)
+          .select();
+        if (error) throw error;
+        biometricId = data[0].id;
       }
 
+      if (stems.length > 0) {
+        const stemRecords = stems.map(stem => ({
+          biometric_id: biometricId,
+          ...stem
+        }));
+
+        const { error: stemError } = await s
+          .from("plant_stem_measurements")
+          .insert(stemRecords);
+
+        if (stemError) throw stemError;
+      }
+
+      currentBiometrics[position] = {
+        ...payload,
+        stems: stems
+      };
+
+      await loadBiometricsData(currentMonitoringId);
+
       if (typeof closeModal === "function") closeModal();
-      alert("Status das plantas salvo com sucesso.");
+      setTimeout(() => openBiometricCollectionDialog(), 100);
+
     } catch (err) {
-      console.error("Erro ao salvar plant_status:", err);
+      console.error("Erro ao salvar biometria da planta:", err);
+      alert("Erro ao salvar dados da planta.");
+    }
+  };
+
+  window.openPlantStatusDialog = function openPlantStatusDialog() {
+    if (window.currentRole === "visitor") return;
+
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+    const plotCode = plotInput?.value.trim() || "";
+
+    for (let pos = 1; pos <= 9; pos++) {
+      const bio = currentBiometrics[pos];
+
+      if (bio && bio.has_sprouted === true && !currentPlantStatuses[pos]) {
+        currentPlantStatuses[pos] = 'alive';
+      }
+
+      if (bio && bio.has_sprouted === false && !currentPlantStatuses[pos]) {
+        currentPlantStatuses[pos] = 'not_sprouted';
+      }
+
+      if ((!bio || bio.has_sprouted === null || bio.has_sprouted === undefined) && !currentPlantStatuses[pos]) {
+        currentPlantStatuses[pos] = 'not_sprouted';
+      }
+    }
+
+    const total = 9;
+    const itemsHtml = Array.from({ length: total }).map((_, idx) => {
+      const n = idx + 1;
+      const bio = currentBiometrics[n];
+      let status = currentPlantStatuses[n] || 'not_sprouted';
+
+      if (!bio || bio.has_sprouted !== true) {
+        if (status === 'alive') {
+          status = 'not_sprouted';
+          currentPlantStatuses[n] = 'not_sprouted';
+        }
+      }
+
+      let bg = '#e5e7eb';
+      let color = '#374151';
+      let borderColor = '#d1d5db';
+
+      if (status === 'alive') {
+        bg = '#dcfce7';
+        color = '#065f46';
+        borderColor = '#10b981';
+      } else if (status === 'dead') {
+        bg = '#fee2e2';
+        color = '#991b1b';
+        borderColor = '#f87171';
+      }
+
+      const canToggle = bio && bio.has_sprouted === true;
+
+      return `
+        <button type="button"
+          class="plant-circle"
+          onclick="${canToggle ? `togglePlantStatus(${n})` : 'void(0)'}"
+          style="
+            width:42px; height:42px; border-radius:999px;
+            border:2px solid ${borderColor};
+            background:${bg};
+            color:${color};
+            font-size:14px;
+            font-weight:600;
+            display:flex; align-items:center; justify-content:center;
+            cursor:${canToggle ? 'pointer' : 'not-allowed'};
+            opacity:${canToggle ? '1' : '0.5'};
+          ">
+          ${n}
+        </button>
+      `;
+    }).join("");
+
+    const bodyHtml = `
+      <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
+        Plantas úteis – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+      </div>
+
+      <div style="margin-bottom:10px; font-size:12px; color:#6b7280;">
+        <strong>Verde</strong> = Viva · <strong>Vermelho</strong> = Morta · <strong>Cinza</strong> = Não brotou
+        <br>Clique nas plantas <strong>verdes</strong> para marcar como mortas.
+      </div>
+
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap:10px;
+        justify-items:center;
+        margin-bottom:12px;
+      ">
+        ${itemsHtml}
+      </div>
+
+      <button class="btn-primary" style="width:100%;" onclick="savePlantStatuses()">
+        Salvar mortalidade
+      </button>
+    `;
+
+    if (typeof openModal === "function") {
+      openModal("Marcar mortalidade das plantas", bodyHtml);
+    }
+  };
+
+  window.togglePlantStatus = function togglePlantStatus(position) {
+    const bio = currentBiometrics[position];
+    if (!bio || bio.has_sprouted !== true) return;
+
+    const current = currentPlantStatuses[position] || 'alive';
+    currentPlantStatuses[position] = current === 'alive' ? 'dead' : 'alive';
+
+    openPlantStatusDialog();
+  };
+
+  window.savePlantStatuses = async function savePlantStatuses() {
+    if (!currentMonitoringId) {
+      alert("Nenhum monitoramento ativo.");
+      return;
+    }
+
+    try {
+      for (const [pos, status] of Object.entries(currentPlantStatuses)) {
+        const position = parseInt(pos, 10);
+
+        const { data: existing } = await s
+          .from("plant_status")
+          .select("id")
+          .eq("monitoring_event_id", currentMonitoringId)
+          .eq("plant_position", position)
+          .maybeSingle();
+
+        const payload = {
+          monitoring_event_id: currentMonitoringId,
+          plant_position: position,
+          status: status
+        };
+
+        if (existing) {
+          await s.from("plant_status").update(payload).eq("id", existing.id);
+        } else {
+          await s.from("plant_status").insert(payload);
+        }
+      }
+
+      alert("Status das plantas salvo com sucesso.");
+      if (typeof closeModal === "function") closeModal();
+
+    } catch (err) {
+      console.error("Erro ao salvar status das plantas:", err);
       alert("Erro ao salvar status das plantas.");
     }
   };
 
   window.openPlantLodgingDialog = function openPlantLodgingDialog() {
-  if (window.currentRole === "visitor") return;
+    if (window.currentRole === "visitor") return;
 
-  const blockInput = document.getElementById("monitorBlock");
-  const plotInput = document.getElementById("monitorPlot");
-  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-  const plotCode = plotInput?.value.trim() || "";
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+    const plotCode = plotInput?.value.trim() || "";
 
-  // Sincronizar status com dados de brotação
-  for (let pos = 1; pos <= 9; pos++) {
-    const bio = currentBiometrics[pos];
-    if (bio && bio.has_sprouted === true && !currentPlantStatuses[pos]) {
-      currentPlantStatuses[pos] = 'alive';
-    }
-  }
+    const total = 9;
+    const itemsHtml = Array.from({ length: total }).map((_, idx) => {
+      const n = idx + 1;
+      const bio = currentBiometrics[n];
+      const status = currentPlantStatuses[n] || 'not_sprouted';
 
-  const total = 9;
-  const itemsHtml = Array.from({ length: total }).map((_, idx) => {
-    const n = idx + 1;
-    const bio = currentBiometrics[n];
-    const status = currentPlantStatuses[n] || 'not_sprouted';
-    const isLodged = currentLodgingStatuses[n] || false;
-    
-    // Só pode marcar tombamento se brotou E está viva
-    const canToggle = (bio?.has_sprouted === true) && (status === 'alive');
-    
-    let bg = '#e5e7eb'; // cinza - não disponível
-    let color = '#9ca3af';
-    let cursor = 'not-allowed';
-    let opacity = '0.5';
-    let borderColor = '#d1d5db';
-    
-    if (canToggle) {
-      bg = isLodged ? '#fef3c7' : '#dcfce7'; // amarelo se tombada, verde se em pé
-      color = isLodged ? '#92400e' : '#065f46';
-      borderColor = isLodged ? '#f59e0b' : '#10b981';
-      cursor = 'pointer';
-      opacity = '1';
-    }
+      const isAlive = bio && bio.has_sprouted === true && (!status || status === 'alive');
+      const isLodged = currentLodgingStatuses[n] || false;
 
-    const sproutedMark = bio?.has_sprouted === true ? '<div style="font-size:9px;">🌱</div>' : '';
-    const deadMark = status === 'dead' ? '<div style="font-size:9px;">❌</div>' : '';
+      let bg = '#e5e7eb';
+      let color = '#374151';
+      let borderColor = '#d1d5db';
 
-    return `
-      <button type="button"
-        class="plant-circle"
-        data-index="${n}"
-        onclick="${canToggle ? `toggleLodging(${n})` : 'return false;'}"
-        style="
-          width:40px; height:40px; border-radius:999px;
-          border:2px solid ${borderColor};
-          background:${bg};
-          color:${color};
-          font-size:13px;
-          font-weight:600;
-          display:flex; 
-          flex-direction:column;
-          align-items:center; 
-          justify-content:center;
-          cursor:${cursor};
-          opacity:${opacity};
-        ">
-        <div>${n}</div>
-        ${sproutedMark}${deadMark}
+      if (isAlive) {
+        if (isLodged) {
+          bg = '#fef3c7';
+          color = '#92400e';
+          borderColor = '#f59e0b';
+        } else {
+          bg = '#dcfce7';
+          color = '#065f46';
+          borderColor = '#10b981';
+        }
+      }
+
+      return `
+        <button type="button"
+          class="plant-circle"
+          onclick="${isAlive ? `togglePlantLodging(${n})` : 'void(0)'}"
+          style="
+            width:42px; height:42px; border-radius:999px;
+            border:2px solid ${borderColor};
+            background:${bg};
+            color:${color};
+            font-size:14px;
+            font-weight:600;
+            display:flex; align-items:center; justify-content:center;
+            cursor:${isAlive ? 'pointer' : 'not-allowed'};
+            opacity:${isAlive ? '1' : '0.5'};
+          ">
+          ${n}
+        </button>
+      `;
+    }).join("");
+
+    const bodyHtml = `
+      <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
+        Plantas tombadas – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
+      </div>
+
+      <div style="margin-bottom:10px; font-size:12px; color:#6b7280;">
+        <strong>Verde</strong> = Não tombada · <strong>Amarelo</strong> = Tombada · <strong>Cinza</strong> = Não aplicável
+        <br>Clique nas plantas <strong>vivas</strong> para marcar como tombadas.
+      </div>
+
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap:10px;
+        justify-items:center;
+        margin-bottom:12px;
+      ">
+        ${itemsHtml}
+      </div>
+
+      <button class="btn-primary" style="width:100%;" onclick="savePlantLodging()">
+        Salvar tombamento
       </button>
     `;
-  }).join("");
 
-  const bodyHtml = `
-    <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-      Marcar plantas tombadas – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
-    </div>
+    if (typeof openModal === "function") {
+      openModal("Marcar plantas tombadas", bodyHtml);
+    }
+  };
 
-    <div style="margin-bottom:10px; padding:8px; background:#f0fdf4; border-radius:8px; font-size:12px; color:#065f46;">
-      🌱 = Brotou · ❌ = Morta · <span style="color:#9ca3af;">Cinza</span> = Não brotou ou morta
-    </div>
+  window.togglePlantLodging = function togglePlantLodging(position) {
+    const bio = currentBiometrics[position];
+    const status = currentPlantStatuses[position] || 'not_sprouted';
 
-    <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
-      Apenas plantas <strong style="color:#10b981;">brotadas e vivas</strong> (🌱 verde) podem ser marcadas.
-      <br>Plantas <strong>sem brotação</strong> ou <strong>mortas</strong> ficam em <strong style="color:#9ca3af;">cinza</strong>.
-      <br>Clique para alternar: <strong style="color:#10b981;">Verde (em pé)</strong> ↔ <strong style="color:#f59e0b;">Amarelo (tombada)</strong>
-    </div>
+    const isAlive = bio && bio.has_sprouted === true && (!status || status === 'alive');
+    if (!isAlive) return;
 
-    <div style="
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:10px;
-      justify-items:center;
-      margin-bottom:12px;
-    ">
-      ${itemsHtml}
-    </div>
-
-    <button class="btn-primary" style="width:100%;" onclick="savePlantLodging()">
-      Salvar tombamento
-    </button>
-  `;
-
-  if (typeof openModal === "function") {
-    openModal("Plantas tombadas", bodyHtml);
-  }
-};
-
-  window.toggleLodging = function toggleLodging(position) {
     currentLodgingStatuses[position] = !currentLodgingStatuses[position];
-    openPlantLodgingDialog(); // re-render
+    openPlantLodgingDialog();
   };
 
   window.savePlantLodging = async function savePlantLodging() {
     if (!currentMonitoringId) {
-      alert("Inicie um monitoramento primeiro.");
+      alert("Nenhum monitoramento ativo.");
       return;
     }
 
     try {
-      await s.from("plant_lodging").delete().eq("monitoring_event_id", currentMonitoringId);
+      for (const [pos, isLodged] of Object.entries(currentLodgingStatuses)) {
+        const position = parseInt(pos, 10);
 
-      const records = Object.entries(currentLodgingStatuses).map(([pos, lodged]) => ({
-        monitoring_event_id: currentMonitoringId,
-        plant_position: Number(pos),
-        is_lodged: lodged,
-      }));
+        const { data: existing } = await s
+          .from("plant_lodging")
+          .select("id")
+          .eq("monitoring_event_id", currentMonitoringId)
+          .eq("plant_position", position)
+          .maybeSingle();
 
-      if (records.length > 0) {
-        const { error } = await s.from("plant_lodging").insert(records);
-        if (error) throw error;
+        const payload = {
+          monitoring_event_id: currentMonitoringId,
+          plant_position: position,
+          is_lodged: isLodged
+        };
+
+        if (existing) {
+          await s.from("plant_lodging").update(payload).eq("id", existing.id);
+        } else {
+          await s.from("plant_lodging").insert(payload);
+        }
       }
 
-      if (typeof closeModal === "function") closeModal();
       alert("Tombamento salvo com sucesso.");
+      if (typeof closeModal === "function") closeModal();
+
     } catch (err) {
-      console.error("Erro ao salvar plant_lodging:", err);
+      console.error("Erro ao salvar tombamento:", err);
       alert("Erro ao salvar tombamento.");
     }
   };
 
-  async function loadMonitoringList() {
-  if (typeof s === "undefined") return;
-
-  const experiment = window.currentExperiment;
-  if (!experiment || !experiment.id) return;
-
-  const listDiv = document.getElementById("monitoringList");
-  const counterSpan = document.getElementById("monitoringCounter");
-
-  if (!listDiv) return;
-
-  try {
-    const { data, error } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("experiment_id", experiment.id)
-      .order("monitoring_date", { ascending: false });
-
-    if (error) throw error;
-
-    // Ordenar por data, bloco e parcela numericamente
-    const sortedData = (data || []).sort((a, b) => {
-      if (a.monitoring_date !== b.monitoring_date) {
-        return b.monitoring_date.localeCompare(a.monitoring_date);
-      }
-      if (a.block_number !== b.block_number) {
-        return a.block_number - b.block_number;
-      }
-      const numA = parseInt(a.plot_code.replace(/\D/g, ''), 10) || 0;
-      const numB = parseInt(b.plot_code.replace(/\D/g, ''), 10) || 0;
-      return numA - numB;
-    });
-
-    if (counterSpan) {
-      counterSpan.textContent = `${sortedData.length} monitoramentos registrados`;
-    }
-
-    if (!sortedData || sortedData.length === 0) {
-      listDiv.innerHTML = `
-        <p style="font-size:13px; color:#6b7280;">
-          Nenhum monitoramento registrado ainda.
-        </p>
-      `;
-      // Atualizar estatísticas mesmo sem dados
-      loadMonitoringSummary(experiment.id);
-      return;
-    }
-
-    const formatDate = (iso) => {
-      if (!iso) return "";
-      const [y, m, d] = iso.split("-");
-      return `${d}/${m}/${y}`;
-    };
-
-    const isVisitor = window.currentRole === "visitor";
-
-    listDiv.innerHTML = `
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Parcela</th>
-              <th>Bloco</th>
-              <th>Plantas medidas</th>
-              <th style="width:180px;">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sortedData.map((row) => `
-              <tr>
-                <td>${formatDate(row.monitoring_date)}</td>
-                <td>${row.plot_code}</td>
-                <td>${row.block_number}</td>
-                <td id="plantCount_${row.id}">...</td>
-                <td>
-                  <div style="display:flex; gap:4px; align-items:center; justify-content:flex-start;">
-                    <button type="button" class="btn-secondary"
-                      style="font-size:11px; padding:4px 6px; white-space:nowrap;"
-                      onclick="viewPlantDetails('${row.id}')">
-                      👁️ Ver
-                    </button>
-                    ${
-                      isVisitor
-                        ? ``
-                        : `
-                          <button type="button" class="btn-secondary"
-                            style="font-size:11px; padding:4px 6px; white-space:nowrap;"
-                            onclick="editMonitoring('${row.id}')">
-                            ✏️ Editar
-                          </button>
-                          <button type="button" class="btn-danger"
-                            style="font-size:11px; padding:4px 6px; white-space:nowrap;"
-                            onclick="confirmDeleteMonitoring('${row.id}')">
-                            🗑️ Excluir
-                          </button>
-                        `
-                    }
-                  </div>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    // Carregar contagem de plantas BROTADAS para cada monitoramento
-    sortedData.forEach(async (row) => {
+  async function loadBiometricsData(monitoringId) {
+    try {
       const { data: bioData } = await s
         .from("plant_biometrics")
         .select("*")
-        .eq("monitoring_event_id", row.id);
-      
-      const sproutedCount = (bioData || []).filter(b => b.has_sprouted === true).length;
-      
-      const cell = document.getElementById(`plantCount_${row.id}`);
-      if (cell) {
-        cell.textContent = `${sproutedCount}/9`;
+        .eq("monitoring_event_id", monitoringId);
+
+      currentBiometrics = {};
+
+      for (const bio of (bioData || [])) {
+        const { data: stems } = await s
+          .from("plant_stem_measurements")
+          .select("*")
+          .eq("biometric_id", bio.id)
+          .order("stem_number");
+
+        currentBiometrics[bio.plant_position] = {
+          ...bio,
+          stems: stems || []
+        };
       }
-    });
-
-    // Atualizar estatísticas após carregar lista
-    loadMonitoringSummary(experiment.id);
-
-  } catch (err) {
-    console.error("Erro ao carregar monitoramentos:", err);
-    listDiv.innerHTML = `
-      <p style="font-size:13px; color:#b91c1c;">
-        Erro ao carregar monitoramentos.
-      </p>
-    `;
-  }
-}
-
-  async function loadLatestMonitoringForPlot(experimentId, plotCode, blockNumber) {
-  if (!plotCode || !experimentId || !blockNumber) return null;
-
-  try {
-    const { data, error } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("experiment_id", experimentId)
-      .eq("plot_code", plotCode)
-      .eq("block_number", blockNumber)  // ✅ ADICIONAR ESTA LINHA
-      .order("monitoring_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error && error.code !== 'PGRST116') throw error;
-    return data || null;
-  } catch (err) {
-    console.error("Erro ao buscar último monitoramento:", err);
-    return null;
-  }
-}
-
-  async function loadBiometricsData(monitoringId) {
-  try {
-    const { data } = await s
-      .from("plant_biometrics")
-      .select("*")
-      .eq("monitoring_event_id", monitoringId);
-
-    currentBiometrics = {};
-    (data || []).forEach((b) => {
-      currentBiometrics[b.plant_position] = b;
-    });
-  } catch (err) {
-    console.error("Erro ao carregar dados biométricos:", err);
-  }
-}
-
-  window.editMonitoring = async function editMonitoring(id) {
-  console.log("[DEBUG] editMonitoring chamado com ID:", id);
-  
-  if (window.currentRole === "visitor") return;
-
-  try {
-    const { data: row, error } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    console.log("[DEBUG] Dados buscados do banco:", row); // ✅ ADICIONAR
-    console.log("[DEBUG] Parcela:", row?.plot_code, "Bloco:", row?.block_number, "Data:", row?.monitoring_date); // ✅ ADICIONAR
-
-    if (error) throw error;
-
-    if (!row) {
-      alert("Monitoramento não encontrado.");
-      return;
+    } catch (err) {
+      console.error("Erro ao carregar dados biométricos:", err);
     }
-
-    currentMonitoringId = row.id;
-    await loadPlantDataForEdit(row.id);
-    await loadBiometricsData(row.id);
-
-    // Ativar aba "Iniciar monitoramento"
-    const tabsEl = document.getElementById("monitoringTabs");
-    if (tabsEl) {
-      tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-      tabsEl.querySelector("[data-tab='iniciar']")?.classList.add("active");
-    }
-
-    const experiment = window.currentExperiment;
-    const block = parseInt(row.block_number, 10) || 1;
-    const plotCode = row.plot_code;
-
-    renderMonitoringTabIniciar(
-      document.getElementById("monitoringTabContent"),
-      experiment,
-      { block, plotCode }
-    );
-
-    setTimeout(() => {
-      // Atualizar selects
-      const blockSelect = document.getElementById("monitorBlock");
-      const plotSelect = document.getElementById("monitorPlot");
-      if (blockSelect) blockSelect.value = String(row.block_number || 1);
-      if (plotSelect) plotSelect.value = row.plot_code;
-
-      // Preencher campos
-      const dateInput = document.getElementById("monDate");
-      if (dateInput) dateInput.value = row.monitoring_date;
-
-      const notesInput = document.getElementById("monNotes");
-      if (notesInput) notesInput.value = row.notes || "";
-
-      // ✅ NOVO: Scroll suave para o topo do formulário
-      const headerCard = document.getElementById("monitoringHeaderCard");
-      if (headerCard) {
-        headerCard.scrollIntoView({ 
-          behavior: "smooth", 
-          block: "start" 
-        });
-      }
-    }, 50);
-
-  } catch (err) {
-    console.error("Erro ao carregar monitoramento para edição:", err);
-    alert("Erro ao carregar monitoramento.");
   }
-};
 
   async function loadPlantDataForEdit(monitoringId) {
     try {
-      const { data: statuses } = await s
+      const { data: statusData } = await s
         .from("plant_status")
         .select("*")
         .eq("monitoring_event_id", monitoringId);
 
-      const { data: lodging } = await s
+      currentPlantStatuses = {};
+      (statusData || []).forEach(s => {
+        currentPlantStatuses[s.plant_position] = s.status;
+      });
+
+      const { data: lodgingData } = await s
         .from("plant_lodging")
         .select("*")
         .eq("monitoring_event_id", monitoringId);
 
-      currentPlantStatuses = {};
       currentLodgingStatuses = {};
-
-      (statuses || []).forEach((s) => {
-        currentPlantStatuses[s.plant_position] = s.status;
-      });
-
-      (lodging || []).forEach((l) => {
+      (lodgingData || []).forEach(l => {
         currentLodgingStatuses[l.plant_position] = l.is_lodged;
       });
     } catch (err) {
-      console.error("Erro ao carregar dados de plantas:", err);
+      console.error("Erro ao carregar dados das plantas:", err);
     }
   }
 
-  window.clearMonitoringForm = function clearMonitoringForm() {
-    currentMonitoringId = null;
-    currentPlantStatuses = {};
-    currentLodgingStatuses = {};
-    currentBiometrics = {};
+  async function loadLatestMonitoringForPlot(experimentId, plotCode, blockNumber) {
+    if (!plotCode) return null;
 
-    document.getElementById("monitorBlock").value = "1";
-    document.getElementById("monitorPlot").value = "";
-    document.getElementById("monDate").value = "";
-    document.getElementById("monNotes").value = "";
+    try {
+      const { data, error } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("experiment_id", experimentId)
+        .eq("plot_code", plotCode)
+        .eq("block_number", blockNumber)
+        .order("monitoring_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      console.error("Erro ao buscar último monitoramento:", err);
+      return null;
+    }
+  }
+
+  async function loadMonitoringList() {
     const experiment = window.currentExperiment;
-    renderMonitoringTabIniciar(
-      document.getElementById("monitoringTabContent"),
-      experiment,
-      { block: 1, plotCode: "" }
-    );
+    if (!experiment || typeof s === "undefined") return;
+
+    const listEl = document.getElementById("monitoringList");
+    const counterEl = document.getElementById("monitoringCounter");
+
+    if (!listEl) return;
+
+    try {
+      const { data, error } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("experiment_id", experiment.id)
+        .order("monitoring_date", { ascending: false });
+
+      if (error) throw error;
+
+      if (counterEl) {
+        counterEl.textContent = `${data.length} monitoramento${data.length !== 1 ? 's' : ''} registrado${data.length !== 1 ? 's' : ''}`;
+      }
+
+      if (!data || data.length === 0) {
+        listEl.innerHTML = `<div style="font-size:13px; color:#6b7280;">Nenhum monitoramento registrado ainda.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = data.map(m => {
+        return `
+          <div style="padding:10px; margin-bottom:8px; border-radius:8px; background:#f9fafb; border:1px solid #e5e7eb;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div style="font-size:13px; font-weight:600; color:#065f46;">
+                ${formatDateShort(m.monitoring_date)} · Parcela ${escapeHtml(m.plot_code)} · Bloco ${m.block_number}
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" 
+                  onclick="editMonitoring('${m.id}')">
+                  Editar
+                </button>
+                <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" 
+                  onclick="deleteMonitoring('${m.id}')">
+                  Excluir
+                </button>
+              </div>
+            </div>
+            ${m.notes ? `<div style="font-size:12px; color:#6b7280;">${escapeHtml(m.notes)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+    } catch (err) {
+      console.error("Erro ao carregar lista de monitoramentos:", err);
+      listEl.innerHTML = `<div style="font-size:13px; color:#b91c1c;">Erro ao carregar monitoramentos.</div>`;
+    }
+  }
+
+  window.editMonitoring = async function editMonitoring(id) {
+    if (typeof s === "undefined") return;
+
+    try {
+      const { data: monitoring, error } = await s
+        .from("monitoring_events")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+
+      currentMonitoringId = id;
+
+      const blockInput = document.getElementById("monitorBlock");
+      const plotInput = document.getElementById("monitorPlot");
+
+      if (blockInput) blockInput.value = monitoring.block_number;
+      if (plotInput) plotInput.value = monitoring.plot_code;
+
+      await loadBiometricsData(id);
+      await loadPlantDataForEdit(id);
+
+      const dateInput = document.getElementById("monDate");
+      const notesInput = document.getElementById("monNotes");
+
+      if (dateInput) dateInput.value = monitoring.monitoring_date;
+      if (notesInput) notesInput.value = monitoring.notes || '';
+
+      const tabsEl = document.getElementById("monitoringTabs");
+      if (tabsEl) {
+        tabsEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+        tabsEl.querySelector("[data-tab='iniciar']")?.classList.add("active");
+      }
+
+      const contentEl = document.getElementById("monitoringTabContent");
+      if (contentEl) {
+        const experiment = window.currentExperiment;
+        renderMonitoringTabIniciar(contentEl, experiment, {
+          block: monitoring.block_number,
+          plotCode: monitoring.plot_code
+        });
+
+        setTimeout(() => {
+          const dateInput = document.getElementById("monDate");
+          const notesInput = document.getElementById("monNotes");
+          if (dateInput) dateInput.value = monitoring.monitoring_date;
+          if (notesInput) notesInput.value = monitoring.notes || '';
+        }, 100);
+      }
+
+    } catch (err) {
+      console.error("Erro ao carregar monitoramento para edição:", err);
+      alert("Erro ao carregar monitoramento.");
+    }
   };
 
-  window.confirmDeleteMonitoring = async function confirmDeleteMonitoring(id) {
-    if (window.currentRole === "visitor") {
-      alert("Visitantes não podem excluir monitoramentos.");
-      return;
-    }
-
-    if (!id) return;
-    if (!confirm("Deseja excluir este monitoramento e todos os dados biométricos associados?")) return;
-
-    if (typeof s === "undefined") {
-      alert("Cliente Supabase não disponível.");
+  window.deleteMonitoring = async function deleteMonitoring(id) {
+    if (!confirm("Tem certeza que deseja excluir este monitoramento? Esta ação não pode ser desfeita.")) {
       return;
     }
 
     try {
-      const { error } = await s.from("monitoring_events").delete().eq("id", id);
+      const { error } = await s
+        .from("monitoring_events")
+        .delete()
+        .eq("id", id);
+
       if (error) throw error;
 
+      alert("Monitoramento excluído com sucesso.");
       loadMonitoringList();
+
+      if (currentMonitoringId === id) {
+        resetMonitoringForm();
+      }
+
     } catch (err) {
       console.error("Erro ao excluir monitoramento:", err);
       alert("Erro ao excluir monitoramento.");
     }
   };
 
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "'")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
+  window.clearMonitoringForm = function clearMonitoringForm() {
+    resetMonitoringForm();
 
-  function formatDateShort(iso) {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    return `${d}/${m}/${y}`;
-  }
-  window.viewPlantDetails = async function viewPlantDetails(monitoringId) {
-  try {
-    // Buscar dados do evento
-    const { data: event, error: eventError } = await s
-      .from("monitoring_events")
-      .select("*")
-      .eq("id", monitoringId)
-      .single();
+    const dateInput = document.getElementById("monDate");
+    const notesInput = document.getElementById("monNotes");
 
-    if (eventError) throw eventError;
+    if (dateInput) dateInput.value = '';
+    if (notesInput) notesInput.value = '';
+  };
 
-    // Buscar biometria individual
-    const { data: biometrics } = await s
-      .from("plant_biometrics")
-      .select("*")
-      .eq("monitoring_event_id", monitoringId)
-      .order("plant_position");
-
-    // Buscar status
-    const { data: statuses } = await s
-      .from("plant_status")
-      .select("*")
-      .eq("monitoring_event_id", monitoringId);
-
-    // Buscar acamamento
-    const { data: lodging } = await s
-      .from("plant_lodging")
-      .select("*")
-      .eq("monitoring_event_id", monitoringId);
-
-    // Criar mapas para acesso rápido
-    const bioMap = {};
-    const statusMap = {};
-    const lodgingMap = {};
-
-    (biometrics || []).forEach(b => bioMap[b.plant_position] = b);
-    (statuses || []).forEach(s => statusMap[s.plant_position] = s.status);
-    (lodging || []).forEach(l => lodgingMap[l.plant_position] = l.is_lodged);
-
-    // Gerar linhas da tabela (9 plantas)
-    const rows = Array.from({ length: 9 }, (_, i) => {
-    const pos = i + 1;
-    const bio = bioMap[pos];
-    const status = statusMap[pos] || '-';
-    const isLodged = lodgingMap[pos] || false;
-
-    // Labels de status
-    let statusLabel = '-';
-    if (status === 'not_sprouted') statusLabel = '🌱 Não brotou';
-    else if (status === 'alive') statusLabel = '✅ Viva';
-    else if (status === 'dead') statusLabel = '❌ Morta';
-
-    const lodgingLabel = isLodged ? '⚠️ Sim' : '-';
-  
-    // Labels fenológicos
-    const sproutedLabel = bio?.has_sprouted === true ? '✅' : '-';
-    const expandedLabel = bio?.has_expanded_leaves === true ? '✅' : '-';
-
-      // ✅ NOVO: Formatar observações de sanidade
-  const sanityObs = bio?.sanity_observations 
-    ? `<span style="color:#dc2626; font-size:11px;">⚠️ ${escapeHtml(bio.sanity_observations)}</span>`
-    : '-';
-
-    return `
-    <tr>
-      <td style="text-align:center; font-weight:600;">${pos}</td>
-      <td style="text-align:center;">${sproutedLabel}</td>
-      <td style="text-align:center;">${expandedLabel}</td>
-      <td style="text-align:center;">${bio?.height_cm || '-'}</td>
-      <td style="text-align:center;">${bio?.stem_count || '-'}</td>
-      <td style="text-align:center;">${bio?.stem_diameter_1_cm || '-'}</td>
-      <td style="text-align:center;">${bio?.stem_diameter_2_cm || '-'}</td>
-      <td style="text-align:center;">${bio?.stem_diameter_3_cm || '-'}</td>
-      <td style="text-align:center;">${bio?.sanity_score || '-'}</td>
-      <td style="text-align:center;">${statusLabel}</td>
-      <td style="text-align:center;">${lodgingLabel}</td>
-      <td style="text-align:left; max-width:200px; font-size:11px;">${sanityObs}</td>
-    </tr>
-  `;
-}).join("");
-
-    const bodyHtml = `
-      <div style="margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:8px;">
-        <div style="font-size:13px; color:#374151;">
-          <strong>Parcela:</strong> ${escapeHtml(event.plot_code)} · 
-          <strong>Bloco:</strong> ${event.block_number} · 
-          <strong>Data:</strong> ${formatDateShort(event.monitoring_date)}
-        </div>
-        ${event.notes ? `
-          <div style="margin-top:6px; font-size:12px; color:#6b7280;">
-            <strong>Observações:</strong> ${escapeHtml(event.notes)}
-          </div>
-        ` : ''}
-      </div>
-
-      <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
-        <table style="font-size:12px;">
-          <thead style="position:sticky; top:0; background:#fff;">
-            <tr>
-              <th style="text-align:center;">Pos.</th>
-              <th style="text-align:center;">Brotou</th>
-              <th style="text-align:center;">Expandiu</th>
-              <th style="text-align:center;">Altura<br>(cm)</th>
-              <th style="text-align:center;">Hastes</th>
-              <th style="text-align:center;">Diâm. 1<br>(cm)</th>
-              <th style="text-align:center;">Diâm. 2<br>(cm)</th>
-              <th style="text-align:center;">Diâm. 3<br>(cm)</th>
-              <th style="text-align:center;">Sanidade<br>(1-5)</th>
-              <th style="text-align:center;">Status</th>
-              <th style="text-align:center;">Tombada</th>
-              <th style="text-align:left;">Obs. Sanidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      </div>
-
-      <button class="btn-secondary" style="width:100%; margin-top:12px;" onclick="closeModal()">
-        Fechar
-      </button>
-    `;
-
-    if (typeof openModal === "function") {
-      openModal(`Dados individuais das plantas · ${event.plot_code}`, bodyHtml);
-    }
-
-  } catch (err) {
-    console.error("Erro ao carregar detalhes das plantas:", err);
-    alert("Erro ao carregar dados das plantas.");
-  }
-};
 })();
