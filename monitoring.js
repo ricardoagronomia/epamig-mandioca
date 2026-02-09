@@ -1299,7 +1299,7 @@
   const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
   const plotCode = plotInput?.value.trim() || "";
 
-  // ✅ CORREÇÃO: Carregar dados de status e tombamento ANTES de renderizar
+  // Carregar dados de status e tombamento do banco
   if (currentMonitoringId) {
     await loadPlantDataForEdit(currentMonitoringId);
   }
@@ -1307,7 +1307,6 @@
   // Sincronizar status com dados de brotação
   for (let pos = 1; pos <= 9; pos++) {
     const bio = currentBiometrics[pos];
-
     if (bio && bio.has_sprouted === true && !currentPlantStatuses[pos]) {
       currentPlantStatuses[pos] = 'alive';
     }
@@ -1320,23 +1319,22 @@
     const status = currentPlantStatuses[n] || 'not_sprouted';
     const isLodged = currentLodgingStatuses[n] || false;
 
-    // ✅ CORREÇÃO: Só pode marcar tombamento se brotou E está viva
+    // Só pode marcar tombamento se brotou E está viva
     const canToggle = bio && bio.has_sprouted === true && (!status || status === 'alive');
 
-    let bg = '#e5e7eb'; // cinza - não disponível
+    let bg = '#e5e7eb';
     let color = '#9ca3af';
     let cursor = 'not-allowed';
     let opacity = 0.5;
     let borderColor = '#d1d5db';
 
     if (canToggle) {
-      // ✅ CORREÇÃO: Aplicar cores corretas
       if (isLodged) {
-        bg = '#fef3c7';      // amarelo - tombada
+        bg = '#fef3c7';
         color = '#92400e';
         borderColor = '#f59e0b';
       } else {
-        bg = '#dcfce7';      // verde - em pé
+        bg = '#dcfce7';
         color = '#065f46';
         borderColor = '#10b981';
       }
@@ -1344,29 +1342,31 @@
       opacity = 1;
     }
 
-    return \`
+    const onclick = canToggle ? `togglePlantLodging(${n})` : 'void(0)';
+
+    return `
       <button type="button"
         class="plant-circle"
-        onclick="\${canToggle ? \`togglePlantLodging(\${n})\` : 'void(0)'}"
+        onclick="${onclick}"
         style="
           width:42px; height:42px; border-radius:999px;
-          border:2px solid \${borderColor};
-          background:\${bg};
-          color:\${color};
+          border:2px solid ${borderColor};
+          background:${bg};
+          color:${color};
           font-size:14px;
           font-weight:600;
           display:flex; align-items:center; justify-content:center;
-          cursor:\${cursor};
-          opacity:\${opacity};
+          cursor:${cursor};
+          opacity:${opacity};
         ">
-        \${n}
+        ${n}
       </button>
-    \`;
+    `;
   }).join("");
 
-  const bodyHtml = \`
+  const bodyHtml = `
     <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
-      Plantas tombadas – Parcela \${escapeHtml(plotCode)}, bloco \${block}.
+      Plantas tombadas – Parcela ${escapeHtml(plotCode)}, bloco ${block}.
     </div>
 
     <div style="margin-bottom:10px; font-size:12px; color:#6b7280;">
@@ -1381,13 +1381,13 @@
       justify-items:center;
       margin-bottom:12px;
     ">
-      \${itemsHtml}
+      ${itemsHtml}
     </div>
 
     <button class="btn-primary" style="width:100%;" onclick="savePlantLodging()">
       Salvar tombamento
     </button>
-  \`;
+  `;
 
   if (typeof openModal === "function") {
     openModal("Marcar plantas tombadas", bodyHtml);
@@ -1401,13 +1401,13 @@
   const isAlive = bio && bio.has_sprouted === true && (!status || status === 'alive');
   if (!isAlive) return;
 
-  // ✅ CORREÇÃO: Alternar estado de tombamento
+  // Alternar estado de tombamento
   currentLodgingStatuses[position] = !currentLodgingStatuses[position];
 
   // Re-renderizar para mostrar a mudança de cor
   openPlantLodgingDialog();
 };
-
+  
   window.savePlantLodging = async function savePlantLodging() {
     if (!currentMonitoringId) {
       alert("Nenhum monitoramento ativo.");
