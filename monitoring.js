@@ -3,6 +3,24 @@
 // Versão atualizada: suporte a múltiplas hastes com medições individuais e plantas de referência
 
 (function () {
+  // Funções auxiliares
+  function formatDateShort(isoDate) {
+    if (!isoDate) return '–';
+    const [year, month, day] = isoDate.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+  }
   let currentMonitoringId = null;
   let currentPlantStatuses = {}; // { position: 'not_sprouted' | 'alive' | 'dead' }
   let currentLodgingStatuses = {}; // { position: true/false }
@@ -1407,30 +1425,34 @@
   };
 
   async function loadBiometricsData(monitoringId) {
-    try {
-      const { data: bioData } = await s
-        .from("plant_biometrics")
-        .select("*")
-        .eq("monitoring_event_id", monitoringId);
+  try {
+    const { data: bioData } = await s
+      .from("plant_biometrics")
+      .select("*")
+      .eq("monitoring_event_id", monitoringId);
 
-      currentBiometrics = {};
-
-      for (const bio of (bioData || [])) {
-        const { data: stems } = await s
-          .from("plant_stem_measurements")
-          .select("*")
-          .eq("biometric_id", bio.id)
-          .order("stem_number");
-
-        currentBiometrics[bio.plant_position] = {
-          ...bio,
-          stems: stems || []
-        };
-      }
-    } catch (err) {
-      console.error("Erro ao carregar dados biométricos:", err);
+    currentBiometrics = {};
+    
+    if (!bioData || bioData.length === 0) {
+      return;
     }
+    
+    for (const bio of bioData) {
+      const { data: stems } = await s
+        .from("plant_stem_measurements")
+        .select("*")
+        .eq("biometric_id", bio.id)
+        .order("stem_number");
+      
+      currentBiometrics[bio.plant_position] = {
+        ...bio,
+        stems: stems || []
+      };
+    }
+  } catch (err) {
+    console.error("Erro ao carregar biométricos:", err);
   }
+}
 
   async function loadPlantDataForEdit(monitoringId) {
     try {
