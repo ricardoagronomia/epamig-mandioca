@@ -1325,13 +1325,13 @@
   const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
   const plotCode = plotInput?.value.trim() || "";
 
-  // Carregar dados de status e tombamento do banco
+  // ✅ CORREÇÃO: Só carregar do banco na primeira vez
   if (currentMonitoringId && !skipReload) {
-  console.log("[DEBUG] Carregando dados do banco...");
-  await loadPlantDataForEdit(currentMonitoringId);
-} else {
-  console.log("[DEBUG] Pulando recarga (re-renderização)");
-}
+    console.log("[DEBUG] Carregando dados do banco...");
+    await loadPlantDataForEdit(currentMonitoringId);
+  } else {
+    console.log("[DEBUG] Pulando recarga (re-renderização)");
+  }
 
   // Sincronizar status com dados de brotação
   for (let pos = 1; pos <= 9; pos++) {
@@ -1348,6 +1348,8 @@
     const status = currentPlantStatuses[n] || 'not_sprouted';
     const isLodged = currentLodgingStatuses[n] || false;
 
+    console.log(`[DEBUG] Planta ${n}: status=${status}, isLodged=${isLodged}, has_sprouted=${bio?.has_sprouted}`);
+
     // Só pode marcar tombamento se brotou E está viva
     const canToggle = bio && bio.has_sprouted === true && (!status || status === 'alive');
 
@@ -1359,11 +1361,11 @@
 
     if (canToggle) {
       if (isLodged) {
-        bg = '#fef3c7';
+        bg = '#fef3c7';        // 🟡 amarelo
         color = '#92400e';
         borderColor = '#f59e0b';
       } else {
-        bg = '#dcfce7';
+        bg = '#dcfce7';        // 🟢 verde
         color = '#065f46';
         borderColor = '#10b981';
       }
@@ -1371,7 +1373,6 @@
       opacity = 1;
     }
 
-    // ✅ CORREÇÃO AQUI: criar variável clickHandler
     const clickHandler = canToggle ? `togglePlantLodging(${n})` : 'void(0)';
 
     return `
@@ -1424,8 +1425,13 @@
   }
 };
 
-  window.togglePlantLodging = function togglePlantLodging(position) {
+// -----------------------------------------------
+// FUNÇÃO CORRIGIDA: togglePlantLodging
+// -----------------------------------------------
+
+window.togglePlantLodging = function togglePlantLodging(position) {
   console.log("[DEBUG] togglePlantLodging chamado para planta:", position);
+  console.log("[DEBUG] Estado atual antes do toggle:", currentLodgingStatuses[position]);
 
   const bio = currentBiometrics[position];
   const status = currentPlantStatuses[position] || 'not_sprouted';
@@ -1436,13 +1442,13 @@
     return;
   }
 
-  // Alternar estado de tombamento
+  // ✅ Alternar estado de tombamento
   currentLodgingStatuses[position] = !currentLodgingStatuses[position];
 
-  console.log("[DEBUG] Novo estado de tombamento:", currentLodgingStatuses[position]);
+  console.log("[DEBUG] Novo estado após toggle:", currentLodgingStatuses[position]);
 
-  // Re-renderizar para mostrar a mudança de cor
-  openPlantLodgingDialog(true);  // true = não recarregar
+  // ✅ CORREÇÃO: Re-renderizar SEM recarregar do banco
+  openPlantLodgingDialog(true);  // true = skipReload
 };
   
   window.savePlantLodging = async function savePlantLodging() {
