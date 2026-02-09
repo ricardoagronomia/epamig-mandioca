@@ -517,8 +517,11 @@
   const isVisitor = window.currentRole === "visitor";
 
   let monitoringToUse;
+
+  // Tentar buscar o monitoramento atual se existir
   if (currentMonitoringId) {
-    // ✅ CORREÇÃO: adicionar `error` no destructuring
+    console.log('[DEBUG] Tentando buscar monitoramento:', currentMonitoringId);
+
     const { data, error } = await s
       .from('monitoringevents')
       .select('*')
@@ -526,15 +529,24 @@
       .single();
 
     if (error) {
-      console.error('Erro ao buscar monitoramento:', error);
-      return;
+      console.warn('[AVISO] Monitoramento não encontrado, buscando último:', error);
+      // ✅ Se não encontrar, buscar o último
+      currentMonitoringId = null;
+    } else {
+      monitoringToUse = data;
+      console.log('[DEBUG] Monitoramento encontrado:', monitoringToUse.id, monitoringToUse.monitoringdate);
     }
+  }
 
-    monitoringToUse = data;
-    console.log('[DEBUG] Usando monitoramento em edição:', monitoringToUse?.id, monitoringToUse?.monitoringdate);
-  } else {
+  // Se não tem monitoramento atual, buscar o último
+  if (!monitoringToUse) {
+    console.log('[DEBUG] Buscando último monitoramento para:', selection.plotCode, selection.block);
     monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
-    console.log('[DEBUG] Usando último monitoramento:', monitoringToUse?.id, monitoringToUse?.monitoringdate);
+
+    if (monitoringToUse) {
+      console.log('[DEBUG] Último monitoramento encontrado:', monitoringToUse.id);
+      currentMonitoringId = monitoringToUse.id;
+    }
   }
 
   if (!monitoringToUse) {
@@ -590,8 +602,8 @@
   const isVisitor = window.currentRole === "visitor";
 
   let monitoringToUse;
+
   if (currentMonitoringId) {
-    // ✅ CORREÇÃO: adicionar `error` no destructuring
     const { data, error } = await s
       .from('monitoringevents')
       .select('*')
@@ -599,13 +611,18 @@
       .single();
 
     if (error) {
-      console.error('Erro ao buscar monitoramento:', error);
-      return;
+      console.warn('[AVISO] Monitoramento não encontrado, buscando último:', error);
+      currentMonitoringId = null;
+    } else {
+      monitoringToUse = data;
     }
+  }
 
-    monitoringToUse = data;
-  } else {
+  if (!monitoringToUse) {
     monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    if (monitoringToUse) {
+      currentMonitoringId = monitoringToUse.id;
+    }
   }
 
   if (!monitoringToUse) {
@@ -644,12 +661,12 @@
   `;
 }
 
-  async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
+async function renderMonitoringTabPlantasTombadas(container, experiment, selection) {
   const isVisitor = window.currentRole === "visitor";
 
   let monitoringToUse;
+
   if (currentMonitoringId) {
-    // ✅ CORREÇÃO: adicionar `error` no destructuring
     const { data, error } = await s
       .from('monitoringevents')
       .select('*')
@@ -657,13 +674,18 @@
       .single();
 
     if (error) {
-      console.error('Erro ao buscar monitoramento:', error);
-      return;
+      console.warn('[AVISO] Monitoramento não encontrado, buscando último:', error);
+      currentMonitoringId = null;
+    } else {
+      monitoringToUse = data;
     }
+  }
 
-    monitoringToUse = data;
-  } else {
+  if (!monitoringToUse) {
     monitoringToUse = await loadLatestMonitoringForPlot(experiment.id, selection.plotCode, selection.block);
+    if (monitoringToUse) {
+      currentMonitoringId = monitoringToUse.id;
+    }
   }
 
   if (!monitoringToUse) {
@@ -702,152 +724,100 @@
   `;
 }
 
-  window.saveMonitoringInit = async function saveMonitoringInit() {
-    if (window.currentRole === "visitor") {
-      alert("Visitantes têm acesso somente leitura.");
-      return;
-    }
+window.saveMonitoringInit = async function saveMonitoringInit() {
+  if (window.currentRole === "visitor") {
+    alert('Visitantes têm acesso somente leitura.');
+    return;
+  }
 
-    if (typeof s === "undefined") {
-      alert("Cliente Supabase não disponível.");
-      return;
-    }
+  if (typeof s === "undefined") {
+    alert('Cliente Supabase não disponível.');
+    return;
+  }
 
-    const experiment = window.currentExperiment;
-    if (!experiment || !experiment.id) {
-      alert("Nenhum experimento selecionado.");
-      return;
-    }
+  const experiment = window.currentExperiment;
+  if (!experiment || !experiment.id) {
+    alert('Nenhum experimento selecionado.');
+    return;
+  }
 
-    const blockInput = document.getElementById("monitorBlock");
-    const plotInput = document.getElementById("monitorPlot");
-    const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-    const plotCode = plotInput?.value.trim();
+  const blockInput = document.getElementById('monitorBlock');
+  const plotInput = document.getElementById('monitorPlot');
+  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+  const plotCode = plotInput?.value.trim();
 
-    if (!plotCode) {
-      alert("Selecione uma parcela.");
-      return;
-    }
+  if (!plotCode) {
+    alert('Selecione uma parcela.');
+    return;
+  }
 
-    const date = document.getElementById("monDate")?.value || null;
-    const notes = document.getElementById("monNotes")?.value || null;
+  const date = document.getElementById('monDate')?.value || null;
+  const notes = document.getElementById('monNotes')?.value || null;
 
-    if (!date) {
-      alert("Informe a data do monitoramento.");
-      return;
-    }
+  if (!date) {
+    alert('Informe a data do monitoramento.');
+    return;
+  }
 
-    const payload = {
-      experiment_id: experiment.id,
-      plot_code: plotCode,
-      block_number: block,
-      monitoring_date: date,
-      notes: notes || null,
-    };
-
-    try {
-      const isEditing = !!currentMonitoringId;
-
-      if (currentMonitoringId) {
-        const { error } = await s
-          .from("monitoring_events")
-          .update(payload)
-          .eq("id", currentMonitoringId);
-        if (error) throw error;
-      } else {
-        const { data, error } = await s.from("monitoring_events").insert(payload).select();
-        if (error) throw error;
-        currentMonitoringId = data[0]?.id;
-      }
-
-      loadMonitoringList();
-
-      if (isEditing) {
-        alert("Monitoramento atualizado com sucesso.");
-        resetMonitoringForm();
-
-        const contentEl = document.getElementById("monitoringTabContent");
-        if (contentEl) {
-          renderMonitoringTabIniciar(contentEl, experiment, { block: 1, plotCode: "" });
-        }
-
-        if (blockInput) blockInput.value = "1";
-        if (plotInput) plotInput.value = "";
-      } else {
-        alert("Monitoramento iniciado com sucesso. Agora você pode coletar os dados biométricos na aba 'Biometria individual'.");
-      }
-
-    } catch (err) {
-      console.error("Erro ao salvar monitoramento:", err);
-      alert("Erro ao salvar monitoramento.");
-    }
+  const payload = {
+    experimentid: experiment.id,
+    plotcode: plotCode,
+    blocknumber: block,
+    monitoringdate: date,
+    notes: notes || null,
   };
-  window.cancelMonitoringEdit = function cancelMonitoringEdit() {
-  if (!confirm('Deseja cancelar a edição? As alterações não salvas serão perdidas.')) {
-    return;
+
+  try {
+    const isEditing = !!currentMonitoringId;
+
+    console.log('[INFO] Salvando monitoramento...', {
+      isEditing,
+      currentMonitoringId,
+      payload
+    });
+
+    if (currentMonitoringId) {
+      // Modo de edição
+      const { error } = await s
+        .from('monitoringevents')
+        .update(payload)
+        .eq('id', currentMonitoringId);
+
+      if (error) {
+        console.error('[ERRO] Ao atualizar:', error);
+        throw error;
+      }
+
+      console.log('[INFO] Monitoramento atualizado:', currentMonitoringId);
+      alert('Monitoramento atualizado com sucesso.');
+
+    } else {
+      // Modo de criação
+      const { data, error } = await s
+        .from('monitoringevents')
+        .insert(payload)
+        .select();
+
+      if (error) {
+        console.error('[ERRO] Ao inserir:', error);
+        throw error;
+      }
+
+      // ✅ IMPORTANTE: Setar o currentMonitoringId com o novo registro
+      currentMonitoringId = data[0]?.id;
+
+      console.log('[INFO] Monitoramento criado:', currentMonitoringId);
+      alert('Monitoramento iniciado com sucesso.\n\nAgora você pode coletar os dados biométricos na aba Biometria individual.');
+    }
+
+    // Recarregar lista
+    loadMonitoringList();
+    loadMonitoringSummary(experiment.id);
+
+  } catch (err) {
+    console.error('[ERRO] Ao salvar monitoramento:', err);
+    alert('Erro ao salvar monitoramento.');
   }
-
-  console.log('[INFO] Cancelando edição do monitoramento:', currentMonitoringId);
-
-  // Resetar formulário
-  resetMonitoringForm();
-
-  // Buscar valores atuais dos selects
-  const blockInput = document.getElementById('monitorBlock');
-  const plotInput = document.getElementById('monitorPlot');
-  
-  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-  const plotCode = plotInput?.value?.trim() || '';
-
-  // Re-renderizar aba Iniciar
-  const experiment = window.currentExperiment;
-  const contentEl = document.getElementById('monitoringTabContent');
-  
-  if (contentEl) {
-    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
-  }
-
-  // Ativar aba Iniciar
-  const tabsEl = document.getElementById('monitoringTabs');
-  if (tabsEl) {
-    tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-    tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add('active');
-  }
-  
-  console.log('[INFO] Edição cancelada. Formulário resetado.');
-};
-
-  window.finishMonitoringAndStartNew = function finishMonitoringAndStartNew() {
-  if (!confirm('Deseja finalizar este monitoramento e iniciar um novo?\n\nTodos os dados já foram salvos automaticamente.')) {
-    return;
-  }
-
-  console.log("[INFO] Finalizando monitoramento:", currentMonitoringId);
-
-  // Resetar estado (limpa currentMonitoringId e dados em memória)
-  resetMonitoringForm();
-
-  // Re-renderizar a aba Iniciar
-  const experiment = window.currentExperiment;
-  const contentEl = document.getElementById('monitoringTabContent');
-  const blockInput = document.getElementById('monitorBlock');
-  const plotInput = document.getElementById('monitorPlot');
-
-  const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
-  const plotCode = plotInput?.value.trim() || '';
-
-  if (contentEl) {
-    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
-  }
-
-  // Ativar a aba Iniciar
-  const tabsEl = document.getElementById('monitoringTabs');
-  if (tabsEl) {
-    tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-    tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add('active');
-  }
-
-  alert('✅ Monitoramento finalizado com sucesso!\n\nVocê pode iniciar um novo monitoramento agora.');
 };
 
   window.openBiometricCollectionDialog = async function openBiometricCollectionDialog() {
