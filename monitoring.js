@@ -377,7 +377,7 @@
       </div>
 
       <div class="tabs" id="monitoringTabs">
-        <button data-tab="iniciar" class="active">Iniciar monitoramento</button>
+        <button data-tab="iniciar" class="active">${currentMonitoringId ? 'Finalizar monitoramento' : 'Iniciar monitoramento'}</button>
         <button data-tab="biometria">Biometria individual</button>
         <button data-tab="uteis">Plantas úteis</button>
         <button data-tab="tombadas">Plantas tombadas</button>
