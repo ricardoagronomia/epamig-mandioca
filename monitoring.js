@@ -1021,6 +1021,15 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
   } catch (err) {
     console.error('[ERRO] Ao salvar monitoramento:', err);
     alert('Erro ao salvar monitoramento.');
+
+    // ✅ Reabilitar botão em caso de erro
+    if (btn) {
+      btn.disabled = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.cursor = 'pointer';
+      btn.innerHTML = 'Iniciar monitoramento';
+    }
   }
 };
   // ============================================
