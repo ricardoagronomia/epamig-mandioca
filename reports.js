@@ -273,23 +273,23 @@
       if (statusError) throw statusError;
 
       const exportData = [];
-      // ✅ BUSCAR HASTES (CORRETO)
-const biometricIds = biometrics.map(b => b.id);
-const { data: stemMeasurements, error: stemError } = await s
-  .from('plant_stem_measurements')  // ← COM underscore
-  .select('*')
-  .in('biometric_id', biometricIds);  // ← COM underscore
+      
+     // Buscar hastes usando monitoring_event_id (menos IDs)
+      const { data: stemMeasurements } = await s
+        .from('plant_stem_measurements')
+        .select(\`
+          *,
+          plant_biometrics!inner(monitoring_event_id)
+        \`)
+        .in('plant_biometrics.monitoring_event_id', monitoringIds);
 
-if (stemError) throw stemError;
-
-// Criar mapa
-const stemsByBiometric = {};
-stemMeasurements.forEach(stem => {
-  if (!stemsByBiometric[stem.biometric_id]) {  // ← COM underscore
-    stemsByBiometric[stem.biometric_id] = [];
-  }
-  stemsByBiometric[stem.biometric_id].push(stem);
-});
+      const stemsByBiometric = {};
+      (stemMeasurements || []).forEach(stem => {
+        if (!stemsByBiometric[stem.biometric_id]) {
+          stemsByBiometric[stem.biometric_id] = [];
+        }
+        stemsByBiometric[stem.biometric_id].push(stem);
+      });
 
       monitorings.forEach(mon => {
         const monBiometrics = biometrics.filter(b => b.monitoring_event_id === mon.id);
