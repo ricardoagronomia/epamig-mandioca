@@ -1,4 +1,4 @@
-/ monitoring.js
+// monitoring.js
 // Página de Monitoramento Manual (biometria individual, plantas úteis, plantas tombadas)
 // Versão atualizada: suporte a múltiplas hastes com medições individuais e plantas de referência
 
@@ -377,7 +377,7 @@
       </div>
 
       <div class="tabs" id="monitoringTabs">
-        <button data-tab="iniciar" class="active">${currentMonitoringId ? 'Finalizar monitoramento' : 'Iniciar monitoramento'}</button>
+        <button data-tab="iniciar" class="active">Iniciar monitoramento</button>
         <button data-tab="biometria">Biometria individual</button>
         <button data-tab="uteis">Plantas úteis</button>
         <button data-tab="tombadas">Plantas tombadas</button>
@@ -483,7 +483,7 @@
       Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
     </div>
 
-    <button id="btnIniciarMonitoramento" class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
+    <button class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
       Iniciar monitoramento
     </button>
   `;
@@ -915,18 +915,9 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
   const date = document.getElementById('monDate')?.value || null;
   const notes = document.getElementById('monNotes')?.value || null;
 
-if (!date) {
+  if (!date) {
     alert('Informe a data do monitoramento.');
     return;
-  }
-
-  const btn = document.getElementById('btnIniciarMonitoramento');
-  if (btn) {
-    btn.disabled = true;
-    btn.style.background = '#9ca3af';
-    btn.style.borderColor = '#9ca3af';
-    btn.style.cursor = 'wait';
-    btn.innerHTML = '⏳ Iniciando...';
   }
 
   const payload = {
@@ -962,13 +953,7 @@ if (!date) {
       console.log('[INFO] Monitoramento atualizado:', currentMonitoringId);
       alert('Monitoramento atualizado com sucesso.');
 
-   } else {
-      const previousState = await loadPreviousStateForNewMonitoring(
-        experiment.id,
-        plot_code,
-        block
-      );
-
+    } else {
       // Modo de criação
       const { data, error } = await s
         .from('monitoring_events')
@@ -980,35 +965,11 @@ if (!date) {
         throw error;
       }
 
+      // ✅ IMPORTANTE: Setar o currentMonitoringId com o novo registro
       currentMonitoringId = data[0]?.id;
 
-      if (currentMonitoringId && previousState && Object.keys(previousState.biometrics).length > 0) {
-        await copyPreviousStateToNewMonitoring(
-          currentMonitoringId,
-          previousState
-        );
-
-        await loadBiometricsData(currentMonitoringId);
-        await loadPlantDataForEdit(currentMonitoringId);
-
-        const referencePlants = Object.values(currentBiometrics).filter(b => b.is_reference_plant);
-        console.log('[INFO] Plantas de referência mantidas:', referencePlants.length);
-      }
-
       console.log('[INFO] Monitoramento criado:', currentMonitoringId);
-
-      const msg = previousState && previousState.previousDate && Object.keys(previousState.biometrics).length > 0
-        ? `Monitoramento iniciado com dados da coleta anterior (${formatDateShort(previousState.previousDate)}).\n\nOs dados foram pré-carregados.\n\n⭐ ${Object.values(currentBiometrics).filter(b => b.is_reference_plant).length} planta(s) de referência mantida(s).`
-        : 'Monitoramento iniciado com sucesso.\n\nAgora você pode coletar os dados nas abas.';
-
-      alert(msg);
-    }
-
-    updateMonitoringTabLabels();
-
-    const contentEl = document.getElementById('monitoringTabContent');
-    if (contentEl && currentMonitoringId) {
-      await renderMonitoringActiveState(contentEl, experiment, { block, plot_code });
+      alert('Monitoramento iniciado com sucesso.\n\nAgora você pode coletar os dados biométricos na aba Biometria individual.');
     }
 
     // Recarregar lista
@@ -1018,14 +979,6 @@ if (!date) {
   } catch (err) {
     console.error('[ERRO] Ao salvar monitoramento:', err);
     alert('Erro ao salvar monitoramento.');
-
-    if (btn) {
-      btn.disabled = false;
-      btn.style.background = '';
-      btn.style.borderColor = '';
-      btn.style.cursor = 'pointer';
-      btn.innerHTML = 'Iniciar monitoramento';
-    }
   }
 };
   // ============================================
@@ -1095,10 +1048,8 @@ window.cancelMonitoringEdit = function cancelMonitoringEdit() {
   const contentEl = document.getElementById('monitoringTabContent');
   
   if (contentEl) {
-    renderMonitoringTabIniciar(contentEl, experiment, { block, plot_code: plotCode });
+    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
   }
-
-  updateMonitoringTabLabels();
 
   // Ativar aba Iniciar
   const tabsEl = document.getElementById('monitoringTabs');
@@ -1179,25 +1130,10 @@ window.cancelMonitoringEdit = function cancelMonitoringEdit() {
       `;
     }).join("");
 
-    // ✅ NOVO: Verificar se tem plantas de referência
-    const referenceCount = Object.values(currentBiometrics).filter(b => b.is_reference_plant).length;
-    const hasLoadedData = Object.keys(currentBiometrics).length > 0;
-
     const bodyHtml = `
       <div style="font-size:13px; color:#4b5563; margin-bottom:8px;">
         Biometria individual – Parcela ${escapeHtml(plot_code)}, bloco ${block}.
       </div>
-
-      ${hasLoadedData && referenceCount > 0 ? `
-        <div style="margin-bottom:8px; padding:8px; background:#fef3c7; border-radius:8px; border:1px solid #f59e0b;">
-          <div style="font-size:12px; color:#92400e; font-weight:600;">
-            ⭐ ${referenceCount} planta(s) de referência mantida(s) da coleta anterior
-          </div>
-          <div style="font-size:11px; color:#6b7280; margin-top:2px;">
-            As plantas marcadas com ⭐ são as plantas de referência para validação com dados do drone.
-          </div>
-        </div>
-      ` : ''}
 
       <div style="margin-bottom:8px; font-size:12px; color:#6b7280;">
         <strong>🟢 Verde</strong> = Viva · <strong>🔴 Vermelho</strong> = Morta · <strong>🟡 Amarelo</strong> = Tombada · <strong>⚪ Cinza</strong> = Sem dados
@@ -1913,195 +1849,27 @@ window.togglePlantLodging = function togglePlantLodging(position) {
     }
   }
 
+  function updateMonitoringTabLabels() {
+    const tabsEl = document.getElementById("monitoringTabs");
+    if (!tabsEl) return;
 
-  // ============================================
-  // NOVAS FUNÇÕES: Carregar estado anterior
-  // ============================================
+    const iniciarBtn = tabsEl.querySelector('[data-tab="iniciar"]');
+    if (!iniciarBtn) return;
 
-  async function loadPreviousStateForNewMonitoring(experiment_id, plot_code, blockNumber) {
-    if (!plot_code) return { biometrics: {}, statuses: {}, lodging: {} };
-
-    try {
-      // Buscar o último monitoramento FINALIZADO (não o atual)
-      const { data: previousMonitoring, error } = await s
-        .from("monitoring_events")
-        .select("*")
-        .eq("experiment_id", experiment_id)
-        .eq("plot_code", plot_code)
-        .eq("block_number", blockNumber)
-        .order("monitoring_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error || !previousMonitoring) {
-        console.log('[INFO] Nenhum monitoramento anterior encontrado');
-        return { biometrics: {}, statuses: {}, lodging: {} };
-      }
-
-      console.log('[INFO] Carregando estado anterior do monitoramento:', previousMonitoring.id);
-
-      // Carregar biometrias do monitoramento anterior
-      const { data: bioData } = await s
-        .from("plant_biometrics")
-        .select("*")
-        .eq("monitoring_event_id", previousMonitoring.id);
-
-      const previousBiometrics = {};
-
-      if (bioData && bioData.length > 0) {
-        for (const bio of bioData) {
-          const { data: stems } = await s
-            .from("plant_stem_measurements")
-            .select("*")
-            .eq("biometric_id", bio.id)
-            .order("stem_number");
-
-          previousBiometrics[bio.plant_position] = {
-            has_sprouted: bio.has_sprouted,
-            has_expanded_leaves: bio.has_expanded_leaves,
-            stem_count: bio.stem_count,
-            sanity_score: bio.sanity_score,
-            sanity_observations: bio.sanity_observations,
-            is_reference_plant: bio.is_reference_plant || false, // ✅ Manter plantas de referência
-            stems: stems || []
-          };
-        }
-      }
-
-      // Carregar status do monitoramento anterior
-      const { data: statusData } = await s
-        .from("plant_status")
-        .select("*")
-        .eq("monitoring_event_id", previousMonitoring.id);
-
-      const previousStatuses = {};
-      (statusData || []).forEach(s => {
-        previousStatuses[s.plant_position] = s.status;
-      });
-
-      // Carregar tombamento do monitoramento anterior (NÃO será copiado, apenas para referência)
-      const { data: lodgingData } = await s
-        .from("plant_lodging")
-        .select("*")
-        .eq("monitoring_event_id", previousMonitoring.id);
-
-      const previousLodging = {};
-      (lodgingData || []).forEach(l => {
-        previousLodging[l.plant_position] = false; // ✅ Zerar tombamento no novo monitoramento
-      });
-
-      console.log('[INFO] Estado anterior carregado:', {
-        biometrics: Object.keys(previousBiometrics).length,
-        statuses: Object.keys(previousStatuses).length
-      });
-
-      return {
-        biometrics: previousBiometrics,
-        statuses: previousStatuses,
-        lodging: previousLodging,
-        previousDate: previousMonitoring.monitoring_date
-      };
-
-    } catch (err) {
-      console.error("Erro ao carregar estado anterior:", err);
-      return { biometrics: {}, statuses: {}, lodging: {} };
+    if (currentMonitoringId) {
+      iniciarBtn.textContent = 'Finalizar monitoramento';
+      iniciarBtn.style.background = '#10b981';
+      iniciarBtn.style.borderColor = '#10b981';
+      iniciarBtn.style.color = '#fff';
+    } else {
+      iniciarBtn.textContent = 'Iniciar monitoramento';
+      iniciarBtn.style.background = '';
+      iniciarBtn.style.borderColor = '';
+      iniciarBtn.style.color = '';
     }
   }
 
-  async function copyPreviousStateToNewMonitoring(newMonitoringId, previousState) {
-    if (!newMonitoringId || !previousState) return;
-
-    try {
-      console.log('[INFO] Copiando estado anterior para novo monitoramento:', newMonitoringId);
-
-      // Copiar biometrias
-      const biometricsToInsert = [];
-      for (const [position, bioData] of Object.entries(previousState.biometrics)) {
-        // Só copiar plantas que NÃO estavam mortas
-        const status = previousState.statuses[position];
-        if (status === 'dead') {
-          console.log(`[INFO] Planta ${position} morta no monitoramento anterior - NÃO será copiada`);
-          continue;
-        }
-
-        const payload = {
-          monitoring_event_id: newMonitoringId,
-          plant_position: parseInt(position),
-          stem_count: bioData.stem_count || 0,
-          sanity_score: bioData.sanity_score,
-          sanity_observations: bioData.sanity_observations,
-          has_sprouted: bioData.has_sprouted,
-          has_expanded_leaves: bioData.has_expanded_leaves,
-          is_reference_plant: bioData.is_reference_plant || false // ✅ Manter plantas de referência
-        };
-        biometricsToInsert.push(payload);
-      }
-
-      if (biometricsToInsert.length > 0) {
-        const { data: insertedBio, error: bioError } = await s
-          .from("plant_biometrics")
-          .insert(biometricsToInsert)
-          .select('*');
-
-        if (bioError) {
-          console.error('[ERRO] Ao copiar biometrias:', bioError);
-        } else {
-          // Copiar medições de hastes
-          for (const bio of insertedBio) {
-            const oldBioData = previousState.biometrics[bio.plant_position];
-            if (oldBioData && oldBioData.stems && oldBioData.stems.length > 0) {
-              const stemsToInsert = oldBioData.stems.map(stem => ({
-                biometric_id: bio.id,
-                stem_number: stem.stem_number,
-                height_cm: stem.height_cm,
-                diameter_cm: stem.diameter_cm
-              }));
-
-              const { error: stemError } = await s
-                .from("plant_stem_measurements")
-                .insert(stemsToInsert);
-
-              if (stemError) {
-                console.error('[ERRO] Ao copiar hastes:', stemError);
-              }
-            }
-          }
-        }
-      }
-
-      // Copiar status (só plantas vivas)
-      const statusToInsert = [];
-      for (const [position, status] of Object.entries(previousState.statuses)) {
-        if (status === 'alive' || status === 'not_sprouted') {
-          statusToInsert.push({
-            monitoring_event_id: newMonitoringId,
-            plant_position: parseInt(position),
-            status: status
-          });
-        }
-      }
-
-      if (statusToInsert.length > 0) {
-        const { error: statusError } = await s
-          .from("plant_status")
-          .insert(statusToInsert);
-
-        if (statusError) {
-          console.error('[ERRO] Ao copiar status:', statusError);
-        }
-      }
-
-      // NÃO copiar tombamento - usuário marca novamente se necessário
-
-      console.log('[INFO] Estado anterior copiado com sucesso');
-
-    } catch (err) {
-      console.error('[ERRO] Ao copiar estado anterior:', err);
-    }
-  }
-
-
-  async function loadMonitoringList() {
+    async function loadMonitoringList() {
     const experiment = window.currentExperiment;
     if (!experiment || typeof s === "undefined") return;
 
