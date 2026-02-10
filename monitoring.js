@@ -1,4 +1,4 @@
-// monitoring.js
+/ monitoring.js
 // Página de Monitoramento Manual (biometria individual, plantas úteis, plantas tombadas)
 // Versão atualizada: suporte a múltiplas hastes com medições individuais e plantas de referência
 
@@ -553,19 +553,19 @@ async function renderMonitoringActiveState(container, experiment, selection) {
     </div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981; font-weight:600;" 
+      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;" 
         onclick="finishMonitoringAndStartNew()" ${isVisitor ? 'disabled' : ''}>
-        ✅ Finalizar e Iniciar Novo
+        ✅ Finalizar e Novo Monitoramento
       </button>
 
-      <button class="btn-secondary" style="flex:0 0 auto; min-width:140px;" 
+      <button class="btn-secondary" style="flex:1; min-width:200px;" 
         onclick="editCurrentMonitoring()" ${isVisitor ? 'disabled' : ''}>
-        ✏️ Editar Informações
+        ✏️ Editar Informações (data/notas)
       </button>
     </div>
 
     <div style="margin-top:16px; padding:12px; background:#fef3c7; border-radius:8px; font-size:12px; color:#92400e;">
-      <strong>💡 Dica:</strong> Você pode alternar entre as abas livremente. Os dados são salvos automaticamente.
+      <strong>💡 Dica:</strong> Você pode alternar entre as abas livremente. Seus dados estão sendo salvos automaticamente.
     </div>
   `;
 }
@@ -915,9 +915,18 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
   const date = document.getElementById('monDate')?.value || null;
   const notes = document.getElementById('monNotes')?.value || null;
 
-  if (!date) {
+if (!date) {
     alert('Informe a data do monitoramento.');
     return;
+  }
+
+  const btn = document.getElementById('btnIniciarMonitoramento');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.background = '#9ca3af';
+    btn.style.borderColor = '#9ca3af';
+    btn.style.cursor = 'wait';
+    btn.innerHTML = '⏳ Iniciando...';
   }
 
   const payload = {
@@ -953,7 +962,13 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
       console.log('[INFO] Monitoramento atualizado:', currentMonitoringId);
       alert('Monitoramento atualizado com sucesso.');
 
-    } else {
+   } else {
+      const previousState = await loadPreviousStateForNewMonitoring(
+        experiment.id,
+        plot_code,
+        block
+      );
+
       // Modo de criação
       const { data, error } = await s
         .from('monitoring_events')
@@ -965,11 +980,35 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
         throw error;
       }
 
-      // ✅ IMPORTANTE: Setar o currentMonitoringId com o novo registro
       currentMonitoringId = data[0]?.id;
 
+      if (currentMonitoringId && previousState && Object.keys(previousState.biometrics).length > 0) {
+        await copyPreviousStateToNewMonitoring(
+          currentMonitoringId,
+          previousState
+        );
+
+        await loadBiometricsData(currentMonitoringId);
+        await loadPlantDataForEdit(currentMonitoringId);
+
+        const referencePlants = Object.values(currentBiometrics).filter(b => b.is_reference_plant);
+        console.log('[INFO] Plantas de referência mantidas:', referencePlants.length);
+      }
+
       console.log('[INFO] Monitoramento criado:', currentMonitoringId);
-      alert('Monitoramento iniciado com sucesso.\n\nAgora você pode coletar os dados biométricos na aba Biometria individual.');
+
+      const msg = previousState && previousState.previousDate && Object.keys(previousState.biometrics).length > 0
+        ? `Monitoramento iniciado com dados da coleta anterior (${formatDateShort(previousState.previousDate)}).\n\nOs dados foram pré-carregados.\n\n⭐ ${Object.values(currentBiometrics).filter(b => b.is_reference_plant).length} planta(s) de referência mantida(s).`
+        : 'Monitoramento iniciado com sucesso.\n\nAgora você pode coletar os dados nas abas.';
+
+      alert(msg);
+    }
+
+    updateMonitoringTabLabels();
+
+    const contentEl = document.getElementById('monitoringTabContent');
+    if (contentEl && currentMonitoringId) {
+      await renderMonitoringActiveState(contentEl, experiment, { block, plot_code });
     }
 
     // Recarregar lista
@@ -979,6 +1018,14 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
   } catch (err) {
     console.error('[ERRO] Ao salvar monitoramento:', err);
     alert('Erro ao salvar monitoramento.');
+
+    if (btn) {
+      btn.disabled = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.cursor = 'pointer';
+      btn.innerHTML = 'Iniciar monitoramento';
+    }
   }
 };
   // ============================================
@@ -1048,8 +1095,10 @@ window.cancelMonitoringEdit = function cancelMonitoringEdit() {
   const contentEl = document.getElementById('monitoringTabContent');
   
   if (contentEl) {
-    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+    renderMonitoringTabIniciar(contentEl, experiment, { block, plot_code: plotCode });
   }
+
+  updateMonitoringTabLabels();
 
   // Ativar aba Iniciar
   const tabsEl = document.getElementById('monitoringTabs');
@@ -1930,7 +1979,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         previousStatuses[s.plant_position] = s.status;
       });
 
-      // Carregar tombamento do monitoramento anterior (NÃO será copiado)
+      // Carregar tombamento do monitoramento anterior (NÃO será copiado, apenas para referência)
       const { data: lodgingData } = await s
         .from("plant_lodging")
         .select("*")
@@ -1938,7 +1987,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
 
       const previousLodging = {};
       (lodgingData || []).forEach(l => {
-        previousLodging[l.plant_position] = false; // ✅ Zerar tombamento
+        previousLodging[l.plant_position] = false; // ✅ Zerar tombamento no novo monitoramento
       });
 
       console.log('[INFO] Estado anterior carregado:', {
@@ -1971,7 +2020,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         // Só copiar plantas que NÃO estavam mortas
         const status = previousState.statuses[position];
         if (status === 'dead') {
-          console.log(`[INFO] Planta ${position} morta - NÃO será copiada`);
+          console.log(`[INFO] Planta ${position} morta no monitoramento anterior - NÃO será copiada`);
           continue;
         }
 
@@ -2042,34 +2091,12 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         }
       }
 
+      // NÃO copiar tombamento - usuário marca novamente se necessário
+
       console.log('[INFO] Estado anterior copiado com sucesso');
 
     } catch (err) {
       console.error('[ERRO] Ao copiar estado anterior:', err);
-    }
-  }
-
-  // ============================================
-  // NOVA FUNÇÃO: Atualizar texto das abas dinamicamente
-  // ============================================
-  function updateMonitoringTabLabels() {
-    const tabsEl = document.getElementById("monitoringTabs");
-    if (!tabsEl) return;
-
-    const iniciarBtn = tabsEl.querySelector('[data-tab="iniciar"]');
-    if (!iniciarBtn) return;
-
-    // ✅ Atualizar texto da aba baseado no estado
-    if (currentMonitoringId) {
-      iniciarBtn.textContent = 'Finalizar monitoramento';
-      iniciarBtn.style.background = '#10b981'; // Verde
-      iniciarBtn.style.borderColor = '#10b981';
-      iniciarBtn.style.color = '#fff';
-    } else {
-      iniciarBtn.textContent = 'Iniciar monitoramento';
-      iniciarBtn.style.background = ''; // Padrão
-      iniciarBtn.style.borderColor = '';
-      iniciarBtn.style.color = '';
     }
   }
 
