@@ -920,6 +920,16 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
     return;
   }
 
+  // ✅ Desabilitar botão e mostrar loading
+  const btn = document.getElementById('btnIniciarMonitoramento');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.background = '#9ca3af';
+    btn.style.borderColor = '#9ca3af';
+    btn.style.cursor = 'wait';
+    btn.innerHTML = '⏳ Iniciando...';
+  }
+
   const payload = {
   experiment_id: experiment.id,
   plot_code: plot_code,
