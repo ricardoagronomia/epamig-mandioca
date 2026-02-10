@@ -2080,6 +2080,25 @@ window.togglePlantLodging = function togglePlantLodging(position) {
     }
   }
 
+  function updateMonitoringTabLabels() {
+    const tabsEl = document.getElementById("monitoringTabs");
+    if (!tabsEl) return;
+
+    const iniciarBtn = tabsEl.querySelector('[data-tab="iniciar"]');
+    if (!iniciarBtn) return;
+
+    if (currentMonitoringId) {
+      iniciarBtn.textContent = 'Finalizar monitoramento';
+      iniciarBtn.style.background = '#10b981';
+      iniciarBtn.style.borderColor = '#10b981';
+      iniciarBtn.style.color = '#fff';
+    } else {
+      iniciarBtn.textContent = 'Iniciar monitoramento';
+      iniciarBtn.style.background = '';
+      iniciarBtn.style.borderColor = '';
+      iniciarBtn.style.color = '';
+    }
+  }
 
   async function loadMonitoringList() {
     const experiment = window.currentExperiment;
