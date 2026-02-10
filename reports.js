@@ -277,10 +277,7 @@
      // Buscar hastes usando monitoring_event_id (menos IDs)
       const { data: stemMeasurements } = await s
         .from('plant_stem_measurements')
-        .select(\`
-          *,
-          plant_biometrics!inner(monitoring_event_id)
-        \`)
+        .select('*, plant_biometrics!inner(monitoring_event_id)')
         .in('plant_biometrics.monitoring_event_id', monitoringIds);
 
       const stemsByBiometric = {};
