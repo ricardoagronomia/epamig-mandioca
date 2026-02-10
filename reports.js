@@ -292,44 +292,40 @@
         const monBiometrics = biometrics.filter(b => b.monitoring_event_id === mon.id);
         const monStatuses = statuses.filter(st => st.monitoring_event_id === mon.id);
 
-        monitorings.forEach(mon => {
-  const monBiometrics = biometrics.filter(b => b.monitoring_event_id === mon.id);
-  const monStatuses = statuses.filter(st => st.monitoring_event_id === mon.id);
+        monBiometrics.forEach(bio => {
+          const status = monStatuses.find(st => st.plant_position === bio.plant_position);
 
-  monBiometrics.forEach(bio => {
-    const status = monStatuses.find(st => st.plant_position === bio.plant_position);
+          // ✅ ORDEM CORRETA:
+          // 1º - Buscar hastes
+          const stems = stemsByBiometric[bio.id] || [];
 
-    // ✅ ORDEM CORRETA:
-    // 1º - Buscar hastes
-    const stems = stemsByBiometric[bio.id] || [];
+          // 2º - Calcular médias
+          const avgHeight = stems.length > 0 
+            ? (stems.reduce((sum, s) => sum + (s.height_cm || 0), 0) / stems.length).toFixed(2)
+            : '';
 
-    // 2º - Calcular médias
-    const avgHeight = stems.length > 0 
-      ? (stems.reduce((sum, s) => sum + (s.height_cm || 0), 0) / stems.length).toFixed(2)
-      : '';
+          const avgDiameter = stems.length > 0
+            ? (stems.reduce((sum, s) => sum + (s.diameter_cm || 0), 0) / stems.length).toFixed(2)
+            : '';
 
-    const avgDiameter = stems.length > 0
-      ? (stems.reduce((sum, s) => sum + (s.diameter_cm || 0), 0) / stems.length).toFixed(2)
-      : '';
-
-    // 3º - Adicionar aos dados
-    exportData.push({
-      'Data': mon.monitoring_date,
-      'Bloco': mon.block_number,
-      'Tratamento': mon.plot_code,
-      'Posição': bio.plant_position,
-      'Brotou': bio.has_sprouted ? 'Sim' : 'Não',
-      'Folhas expandidas': bio.has_expanded_leaves ? 'Sim' : 'Não',
-      'N° Hastes': bio.stem_count || '',
-      'Altura Média (cm)': avgHeight,
-      'Diâmetro Médio (cm)': avgDiameter,
-      'Sanidade (1-5)': bio.sanity_score || '',
-      'Obs. sanidade': bio.sanity_observations || '',
-      'Status': status ? status.status : 'alive',
-      'Observações gerais': mon.notes || ''
-    });
-  });
-});
+          // 3º - Adicionar aos dados
+          exportData.push({
+            'Data': mon.monitoring_date,
+            'Bloco': mon.block_number,
+            'Tratamento': mon.plot_code,
+            'Posição': bio.plant_position,
+            'Brotou': bio.has_sprouted ? 'Sim' : 'Não',
+            'Folhas expandidas': bio.has_expanded_leaves ? 'Sim' : 'Não',
+            'N° Hastes': bio.stem_count || '',
+            'Altura Média (cm)': avgHeight,
+            'Diâmetro Médio (cm)': avgDiameter,
+            'Sanidade (1-5)': bio.sanity_score || '',
+            'Obs. sanidade': bio.sanity_observations || '',
+            'Status': status ? status.status : 'alive',
+            'Observações gerais': mon.notes || ''
+          });
+        });
+      });
 
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
