@@ -483,7 +483,7 @@
       Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
     </div>
 
-    <button class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
+    <button id="btnIniciarMonitoramento" class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
       Iniciar monitoramento
     </button>
   `;
