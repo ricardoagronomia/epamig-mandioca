@@ -2019,15 +2019,21 @@ window.togglePlantLodging = function togglePlantLodging(position) {
     try {
       console.log('[INFO] Copiando estado anterior para novo monitoramento:', newMonitoringId);
 
-      // Copiar biometrias
+      // Copiar biometrias (incluindo plantas mortas)
       const biometricsToInsert = [];
       for (const [position, bioData] of Object.entries(previousState.biometrics)) {
-        // Só copiar plantas que NÃO estavam mortas
-        const status = previousState.statuses[position];
-        if (status === 'dead') {
-          console.log(`[INFO] Planta ${position} morta no monitoramento anterior - NÃO será copiada`);
-          continue;
-        }
+        const payload = {
+          monitoring_event_id: newMonitoringId,
+          plant_position: parseInt(position),
+          stem_count: bioData.stem_count || 0,
+          sanity_score: bioData.sanity_score,
+          sanity_observations: bioData.sanity_observations,
+          has_sprouted: bioData.has_sprouted,
+          has_expanded_leaves: bioData.has_expanded_leaves,
+          is_reference_plant: bioData.is_reference_plant || false
+        };
+        biometricsToInsert.push(payload);
+      }
 
         const payload = {
           monitoring_event_id: newMonitoringId,
@@ -2074,16 +2080,14 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         }
       }
 
-      // Copiar status (só plantas vivas)
+      // ✅ Copiar TODOS os status (incluindo plantas mortas)
       const statusToInsert = [];
       for (const [position, status] of Object.entries(previousState.statuses)) {
-        if (status === 'alive' || status === 'not_sprouted') {
-          statusToInsert.push({
-            monitoring_event_id: newMonitoringId,
-            plant_position: parseInt(position),
-            status: status
-          });
-        }
+        statusToInsert.push({
+          monitoring_event_id: newMonitoringId,
+          plant_position: parseInt(position),
+          status: status  // Copia 'alive', 'dead' ou 'not_sprouted'
+        });
       }
 
       if (statusToInsert.length > 0) {
