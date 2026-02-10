@@ -1057,8 +1057,11 @@ window.finishMonitoringAndStartNew = function finishMonitoringAndStartNew() {
   const contentEl = document.getElementById('monitoringTabContent');
   
   if (contentEl) {
-    renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+    renderMonitoringTabIniciar(contentEl, experiment, { block, plot_code: plotCode });
   }
+
+  // ✅ Atualizar labels da aba
+  updateMonitoringTabLabels();
 
   // Ativar aba Iniciar
   const tabsEl = document.getElementById('monitoringTabs');
