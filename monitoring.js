@@ -2223,6 +2223,17 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         }, 100);
       }
 
+      // ✅ NOVO: Scroll suave até o formulário de edição
+      setTimeout(() => {
+        const tabsCard = document.getElementById('monitoringTabsCard');
+        if (tabsCard) {
+          tabsCard.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+      }, 200);
+
     } catch (err) {
       console.error("Erro ao carregar monitoramento para edição:", err);
       alert("Erro ao carregar monitoramento.");
