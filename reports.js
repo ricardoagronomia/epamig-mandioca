@@ -273,6 +273,23 @@
       if (statusError) throw statusError;
 
       const exportData = [];
+      // ✅ BUSCAR HASTES (CORRETO)
+const biometricIds = biometrics.map(b => b.id);
+const { data: stemMeasurements, error: stemError } = await s
+  .from('plant_stem_measurements')  // ← COM underscore
+  .select('*')
+  .in('biometric_id', biometricIds);  // ← COM underscore
+
+if (stemError) throw stemError;
+
+// Criar mapa
+const stemsByBiometric = {};
+stemMeasurements.forEach(stem => {
+  if (!stemsByBiometric[stem.biometric_id]) {  // ← COM underscore
+    stemsByBiometric[stem.biometric_id] = [];
+  }
+  stemsByBiometric[stem.biometric_id].push(stem);
+});
 
       monitorings.forEach(mon => {
         const monBiometrics = biometrics.filter(b => b.monitoring_event_id === mon.id);
@@ -280,6 +297,13 @@
 
         monBiometrics.forEach(bio => {
           const status = monStatuses.find(st => st.plant_position === bio.plant_position);
+          const avgHeight = stems.length > 0 
+            ? (stems.reduce((sum, s) => sum + (s.height_cm || 0), 0) / stems.length).toFixed(2)  // ← COM underscore
+              : '';
+
+          const avgDiameter = stems.length > 0
+            ? (stems.reduce((sum, s) => sum + (s.diameter_cm || 0), 0) / stems.length).toFixed(2)  // ← COM underscore
+              : '';
 
           exportData.push({
             'Data': mon.monitoring_date,
