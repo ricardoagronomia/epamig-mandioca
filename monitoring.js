@@ -1011,6 +1011,9 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
       alert(msg);
     }
 
+    // ✅ Atualizar labels da aba
+    updateMonitoringTabLabels();
+
     // Recarregar lista
     loadMonitoringList();
     loadMonitoringSummary(experiment.id);
