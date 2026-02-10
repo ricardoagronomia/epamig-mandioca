@@ -2019,7 +2019,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
     try {
       console.log('[INFO] Copiando estado anterior para novo monitoramento:', newMonitoringId);
 
-      // Copiar biometrias (incluindo plantas mortas)
+      // ✅ Copiar biometrias (INCLUINDO plantas mortas)
       const biometricsToInsert = [];
       for (const [position, bioData] of Object.entries(previousState.biometrics)) {
         const payload = {
@@ -2031,19 +2031,6 @@ window.togglePlantLodging = function togglePlantLodging(position) {
           has_sprouted: bioData.has_sprouted,
           has_expanded_leaves: bioData.has_expanded_leaves,
           is_reference_plant: bioData.is_reference_plant || false
-        };
-        biometricsToInsert.push(payload);
-      }
-
-        const payload = {
-          monitoring_event_id: newMonitoringId,
-          plant_position: parseInt(position),
-          stem_count: bioData.stem_count || 0,
-          sanity_score: bioData.sanity_score,
-          sanity_observations: bioData.sanity_observations,
-          has_sprouted: bioData.has_sprouted,
-          has_expanded_leaves: bioData.has_expanded_leaves,
-          is_reference_plant: bioData.is_reference_plant || false // ✅ Manter plantas de referência
         };
         biometricsToInsert.push(payload);
       }
@@ -2100,7 +2087,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         }
       }
 
-      // NÃO copiar tombamento - usuário marca novamente se necessário
+      // ❌ NÃO copiar tombamento - usuário marca novamente se necessário
 
       console.log('[INFO] Estado anterior copiado com sucesso');
 
