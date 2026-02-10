@@ -809,13 +809,15 @@
       totalSheets++;
     }
 
-    // ─────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────
     // 9. GERAR ARQUIVO
     // ─────────────────────────────────────────────────────────────
-    const filename = `${experiment.code}_COMPLETO_${new Date().toISOString().slice(0,10)}.xlsx`;
+    var today = new Date().toISOString().slice(0, 10);
+    var filename = experiment.code + '_COMPLETO_' + today + '.xlsx';
     XLSX.writeFile(workbook, filename);
-
-    alert(`Exportação completa! ${totalSheets} abas geradas com todos os dados do experimento.`);
+    
+    var msg = 'Exportação completa! ' + totalSheets + ' abas geradas com todos os dados do experimento.';
+    alert(msg);
 
   } catch(err) {
     console.error('Erro ao exportar dados consolidados:', err);
