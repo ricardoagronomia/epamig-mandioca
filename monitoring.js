@@ -377,7 +377,7 @@
       </div>
 
       <div class="tabs" id="monitoringTabs">
-        <button data-tab="iniciar" class="active">Iniciar monitoramento</button>
+        <button data-tab="iniciar" class="active">${currentMonitoringId ? 'Finalizar monitoramento' : 'Iniciar monitoramento'}</button>
         <button data-tab="biometria">Biometria individual</button>
         <button data-tab="uteis">Plantas úteis</button>
         <button data-tab="tombadas">Plantas tombadas</button>
@@ -483,7 +483,7 @@
       Após iniciar o monitoramento, você poderá registrar os dados biométricos individuais de cada planta na aba <strong>Biometria individual</strong>.
     </div>
 
-    <button class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
+    <button id="btnIniciarMonitoramento" class="btn-primary" style="width:auto; padding-inline:18px;" onclick="saveMonitoringInit()" ${isVisitor ? 'disabled' : ''}>
       Iniciar monitoramento
     </button>
   `;
@@ -553,19 +553,19 @@ async function renderMonitoringActiveState(container, experiment, selection) {
     </div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981;" 
+      <button class="btn-primary" style="flex:1; min-width:200px; background:#10b981; border-color:#10b981; font-weight:600;" 
         onclick="finishMonitoringAndStartNew()" ${isVisitor ? 'disabled' : ''}>
-        ✅ Finalizar e Novo Monitoramento
+        ✅ Finalizar e Iniciar Novo
       </button>
 
-      <button class="btn-secondary" style="flex:1; min-width:200px;" 
+      <button class="btn-secondary" style="flex:0 0 auto; min-width:140px;" 
         onclick="editCurrentMonitoring()" ${isVisitor ? 'disabled' : ''}>
-        ✏️ Editar Informações (data/notas)
+        ✏️ Editar Informações
       </button>
     </div>
 
     <div style="margin-top:16px; padding:12px; background:#fef3c7; border-radius:8px; font-size:12px; color:#92400e;">
-      <strong>💡 Dica:</strong> Você pode alternar entre as abas livremente. Seus dados estão sendo salvos automaticamente.
+      <strong>💡 Dica:</strong> Você pode alternar entre as abas livremente. Os dados são salvos automaticamente.
     </div>
   `;
 }
@@ -954,13 +954,6 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
       alert('Monitoramento atualizado com sucesso.');
 
     } else {
-      // ✅ NOVO: Carregar estado anterior ANTES de criar o novo monitoramento
-      const previousState = await loadPreviousStateForNewMonitoring(
-        experiment.id,
-        plot_code,
-        block
-      );
-
       // Modo de criação
       const { data, error } = await s
         .from('monitoring_events')
@@ -972,33 +965,11 @@ window.saveMonitoringInit = async function saveMonitoringInit() {
         throw error;
       }
 
-      // ✅ Setar o currentMonitoringId com o novo registro
+      // ✅ IMPORTANTE: Setar o currentMonitoringId com o novo registro
       currentMonitoringId = data[0]?.id;
 
-      // ✅ NOVO: Copiar dados do estado anterior para o novo monitoramento
-      if (currentMonitoringId && previousState && Object.keys(previousState.biometrics).length > 0) {
-        await copyPreviousStateToNewMonitoring(
-          currentMonitoringId,
-          previousState
-        );
-
-        // Carregar os dados copiados na memória
-        await loadBiometricsData(currentMonitoringId);
-        await loadPlantDataForEdit(currentMonitoringId);
-
-        // Contar plantas de referência
-        const referencePlants = Object.values(currentBiometrics).filter(b => b.is_reference_plant);
-
-        console.log('[INFO] Plantas de referência mantidas:', referencePlants.length);
-      }
-
-      console.log('[INFO] Monitoramento criado com estado anterior:', currentMonitoringId);
-
-      const msg = previousState && previousState.previousDate && Object.keys(previousState.biometrics).length > 0
-        ? `Monitoramento iniciado com dados da coleta anterior (${formatDateShort(previousState.previousDate)}).\n\nOs dados foram pré-carregados. Você pode editá-los na aba Biometria individual.\n\n⭐ ${Object.values(currentBiometrics).filter(b => b.is_reference_plant).length} planta(s) de referência mantida(s).`
-        : 'Monitoramento iniciado com sucesso.\n\nAgora você pode coletar os dados biométricos na aba Biometria individual.';
-
-      alert(msg);
+      console.log('[INFO] Monitoramento criado:', currentMonitoringId);
+      alert('Monitoramento iniciado com sucesso.\n\nAgora você pode coletar os dados biométricos na aba Biometria individual.');
     }
 
     // Recarregar lista
@@ -1959,7 +1930,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         previousStatuses[s.plant_position] = s.status;
       });
 
-      // Carregar tombamento do monitoramento anterior (NÃO será copiado, apenas para referência)
+      // Carregar tombamento do monitoramento anterior (NÃO será copiado)
       const { data: lodgingData } = await s
         .from("plant_lodging")
         .select("*")
@@ -1967,7 +1938,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
 
       const previousLodging = {};
       (lodgingData || []).forEach(l => {
-        previousLodging[l.plant_position] = false; // ✅ Zerar tombamento no novo monitoramento
+        previousLodging[l.plant_position] = false; // ✅ Zerar tombamento
       });
 
       console.log('[INFO] Estado anterior carregado:', {
@@ -2000,7 +1971,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         // Só copiar plantas que NÃO estavam mortas
         const status = previousState.statuses[position];
         if (status === 'dead') {
-          console.log(`[INFO] Planta ${position} morta no monitoramento anterior - NÃO será copiada`);
+          console.log(`[INFO] Planta ${position} morta - NÃO será copiada`);
           continue;
         }
 
@@ -2071,12 +2042,34 @@ window.togglePlantLodging = function togglePlantLodging(position) {
         }
       }
 
-      // NÃO copiar tombamento - usuário marca novamente se necessário
-
       console.log('[INFO] Estado anterior copiado com sucesso');
 
     } catch (err) {
       console.error('[ERRO] Ao copiar estado anterior:', err);
+    }
+  }
+
+  // ============================================
+  // NOVA FUNÇÃO: Atualizar texto das abas dinamicamente
+  // ============================================
+  function updateMonitoringTabLabels() {
+    const tabsEl = document.getElementById("monitoringTabs");
+    if (!tabsEl) return;
+
+    const iniciarBtn = tabsEl.querySelector('[data-tab="iniciar"]');
+    if (!iniciarBtn) return;
+
+    // ✅ Atualizar texto da aba baseado no estado
+    if (currentMonitoringId) {
+      iniciarBtn.textContent = 'Finalizar monitoramento';
+      iniciarBtn.style.background = '#10b981'; // Verde
+      iniciarBtn.style.borderColor = '#10b981';
+      iniciarBtn.style.color = '#fff';
+    } else {
+      iniciarBtn.textContent = 'Iniciar monitoramento';
+      iniciarBtn.style.background = ''; // Padrão
+      iniciarBtn.style.borderColor = '';
+      iniciarBtn.style.color = '';
     }
   }
 
