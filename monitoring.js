@@ -2159,6 +2159,7 @@ window.togglePlantLodging = function togglePlantLodging(position) {
       return;
     }
 
+    // ✅ ATENÇÃO: Use CRASES (`) não aspas (") na template string!
     listEl.innerHTML = sortedData.map((m) => {
       return `
         <div style="padding:10px; margin-bottom:8px; border-radius:8px; background:#f9fafb; border:1px solid #e5e7eb;">
