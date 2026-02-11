@@ -2235,8 +2235,14 @@ window.editMonitoring = async function editMonitoring(monitoringId) {
       });
     }
 
-    // Rolar para o topo
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Rolar para o topo após renderizar
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+    // OU tente rolar o container pai
+    const container = document.querySelector('.main-content') || document.body;
+    container.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 100);
 
   } catch (err) {
     console.error("Erro ao editar monitoramento:", err);
