@@ -417,6 +417,155 @@
       }
     });
   }
+  async function generateLodgingChart(latestByPlot, biometrics, statuses, experimentId) {
+  const ctx = document.getElementById('chartLodging');
+  if (!ctx) return;
+
+  // Buscar dados de tombamento
+  const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
+  
+  const { data: lodgingData, error: lodgingError } = await s
+    .from('plant_lodging')
+    .select('*')
+    .in('monitoring_event_id', latestMonitoringIds);
+
+  if (lodgingError) {
+    console.error('Erro ao buscar tombamento:', lodgingError);
+    return;
+  }
+
+  // Criar mapa de status
+  const statusMap = {};
+  statuses.forEach(s => {
+    const key = `${s.monitoring_event_id}_${s.plant_position}`;
+    statusMap[key] = s.status;
+  });
+
+  // Criar mapa de tombamento
+  const lodgingMap = {};
+  (lodgingData || []).forEach(l => {
+    const key = `${l.monitoring_event_id}_${l.plant_position}`;
+    lodgingMap[key] = l.is_lodged;
+  });
+
+  const dataByTreatment = {};
+
+  Object.values(latestByPlot).forEach(mon => {
+    const treatment = mon.plot_code;
+    
+    if (!dataByTreatment[treatment]) {
+      dataByTreatment[treatment] = { 
+        lodged: 0,    // Tombadas
+        notLodged: 0  // Eretas
+      };
+    }
+
+    const plantsBio = biometrics.filter(b => b.monitoring_event_id === mon.id);
+
+    // Para cada posição de planta (1-9)
+    for (let position = 1; position <= 9; position++) {
+      const bio = plantsBio.find(b => b.plant_position === position);
+      const key = `${mon.id}_${position}`;
+      const status = statusMap[key];
+      const isLodged = lodgingMap[key];
+
+      // Considerar apenas plantas vivas (brotadas e não mortas)
+      const isAlive = bio && bio.has_sprouted === true && (!status || status === 'alive');
+
+      if (isAlive) {
+        if (isLodged === true) {
+          dataByTreatment[treatment].lodged++;
+        } else {
+          dataByTreatment[treatment].notLodged++;
+        }
+      }
+    }
+  });
+
+  // Ordenar tratamentos
+  const treatments = Object.keys(dataByTreatment).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, '')) || 0;
+    const numB = parseInt(b.replace(/\D/g, '')) || 0;
+    return numA - numB;
+  });
+
+  // Calcular percentuais
+  const lodgingPercentages = treatments.map(t => {
+    const { lodged, notLodged } = dataByTreatment[t];
+    const total = lodged + notLodged;
+    return total > 0 ? (lodged / total) * 100 : 0;
+  });
+
+  chartInstances.lodging = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: treatments,
+      datasets: [
+        {
+          label: 'Eretas',
+          data: treatments.map(t => dataByTreatment[t].notLodged),
+          backgroundColor: '#10b981',
+          borderRadius: 4
+        },
+        {
+          label: 'Tombadas',
+          data: treatments.map(t => dataByTreatment[t].lodged),
+          backgroundColor: '#f59e0b',
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          stacked: true,
+          title: { display: true, text: 'Tratamentos' }
+        },
+        y: { 
+          stacked: true,
+          beginAtZero: true,
+          title: { display: true, text: 'Número de plantas vivas' }
+        }
+      },
+      plugins: {
+        legend: { 
+          display: true, 
+          position: 'bottom',
+          labels: {
+            boxWidth: 15,
+            padding: 10
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.dataset.label || '';
+              const value = context.parsed.y;
+              const treatment = context.label;
+              const data = dataByTreatment[treatment];
+              const total = data.lodged + data.notLodged;
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+              return `${label}: ${value} plantas (${percentage}%)`;
+            },
+            footer: function(tooltipItems) {
+              if (tooltipItems.length > 0) {
+                const treatment = tooltipItems[0].label;
+                const data = dataByTreatment[treatment];
+                const total = data.lodged + data.notLodged;
+                const lodgingRate = total > 0 ? ((data.lodged / total) * 100).toFixed(1) : 0;
+                return `\nTaxa de tombamento: ${lodgingRate}%`;
+              }
+              return '';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
 
   function generateSanityChart(latestByPlot, biometrics, statuses) {
     const ctx = document.getElementById('chartSanity');
