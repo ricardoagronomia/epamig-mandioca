@@ -2235,14 +2235,30 @@ window.editMonitoring = async function editMonitoring(monitoringId) {
       });
     }
 
-    // Rolar para o topo após renderizar
+    // ✅ CORREÇÃO: Scroll melhorado com múltiplas tentativas
     setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-  
-    // OU tente rolar o container pai
-    const container = document.querySelector('.main-content') || document.body;
-    container.scrollTo({ top: 0, behavior: 'smooth' });
-  }, 100);
+      // Tentar rolar para o card de monitoramento
+      const monitoringCard = document.getElementById('monitoringHeaderCard') || 
+                            document.getElementById('monitoringTabsCard');
+      
+      if (monitoringCard) {
+        monitoringCard.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        });
+      } else {
+        // Fallback: rolar para o topo da página
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Tentar também no container principal
+        const mainContent = document.querySelector('.main-content') || 
+                           document.querySelector('main') ||
+                           document.body;
+        if (mainContent) {
+          mainContent.scrollTop = 0;
+        }
+      }
+    }, 200);
 
   } catch (err) {
     console.error("Erro ao editar monitoramento:", err);
