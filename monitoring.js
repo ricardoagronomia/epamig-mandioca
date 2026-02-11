@@ -2134,56 +2134,49 @@ window.togglePlantLodging = function togglePlantLodging(position) {
 
     if (error) throw error;
 
-    // ✅ Ordenar tratamento manualmente para corrigir ordem alfabética
+    // Ordenar tratamento manualmente
     const sortedData = data.sort((a, b) => {
-      // 1. Data (decrescente - mais recentes primeiro)
       const dateCompare = new Date(b.monitoring_date) - new Date(a.monitoring_date);
       if (dateCompare !== 0) return dateCompare;
-
-      // 2. Bloco (crescente - 1, 2, 3)
       const blockCompare = a.block_number - b.block_number;
       if (blockCompare !== 0) return blockCompare;
-
-      // 3. Tratamento (crescente - T1, T2... T10, T11, T12)
       const plotA = parseInt(a.plot_code.replace(/\D/g, ''), 10);
       const plotB = parseInt(b.plot_code.replace(/\D/g, ''), 10);
       return plotA - plotB;
     });
 
     if (counterEl) {
-      counterEl.textContent = `\${sortedData.length} monitoramento\${sortedData.length !== 1 ? 's' : ''} registrado\${sortedData.length !== 1 ? 's' : ''}`;
+      counterEl.textContent = sortedData.length + " monitoramento" + (sortedData.length !== 1 ? 's' : '') + " registrado" + (sortedData.length !== 1 ? 's' : '');
     }
 
     if (!sortedData || sortedData.length === 0) {
-      listEl.innerHTML = `<div style="font-size:13px; color:#6b7280;">Nenhum monitoramento registrado ainda.</div>`;
+      listEl.innerHTML = '<div style="font-size:13px; color:#6b7280;">Nenhum monitoramento registrado ainda.</div>';
       return;
     }
 
-    // ✅ ATENÇÃO: Use CRASES (`) não aspas (") na template string!
-    listEl.innerHTML = sortedData.map((m) => {
-      return `
-        <div style="padding:10px; margin-bottom:8px; border-radius:8px; background:#f9fafb; border:1px solid #e5e7eb;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <div style="font-size:13px; font-weight:600; color:#065f46;">
-              \${formatDateShort(m.monitoring_date)} · Parcela \${escapeHtml(m.plot_code)} · Bloco \${m.block_number}
-            </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="editMonitoring(\${m.id})">
-                Editar
-              </button>
-              <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="deleteMonitoring(\${m.id})">
-                Excluir
-              </button>
-            </div>
-          </div>
-          \${m.notes ? `<div style="font-size:12px; color:#6b7280;">\${escapeHtml(m.notes)}</div>` : ''}
-        </div>
-      `;
-    }).join('');
+    // ✅ CORREÇÃO: Use concatenação de strings com + 
+    const items = [];
+    for (const m of sortedData) {
+      let html = '<div style="padding:10px; margin-bottom:8px; border-radius:8px; background:#f9fafb; border:1px solid #e5e7eb;">';
+      html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">';
+      html += '<div style="font-size:13px; font-weight:600; color:#065f46;">';
+      html += formatDateShort(m.monitoring_date) + ' · Parcela ' + escapeHtml(m.plot_code) + ' · Bloco ' + m.block_number;
+      html += '</div>';
+      html += '<div style="display:flex; gap:6px;">';
+      html += '<button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="editMonitoring(' + m.id + ')">Editar</button>';
+      html += '<button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="deleteMonitoring(' + m.id + ')">Excluir</button>';
+      html += '</div></div>';
+      if (m.notes) {
+        html += '<div style="font-size:12px; color:#6b7280;">' + escapeHtml(m.notes) + '</div>';
+      }
+      html += '</div>';
+      items.push(html);
+    }
+    listEl.innerHTML = items.join('');
 
   } catch (err) {
     console.error("Erro ao carregar lista de monitoramentos:", err);
-    listEl.innerHTML = `<div style="font-size:13px; color:#b91c1c;">Erro ao carregar monitoramentos.</div>`;
+    listEl.innerHTML = '<div style="font-size:13px; color:#b91c1c;">Erro ao carregar monitoramentos.</div>';
   }
 }
 
