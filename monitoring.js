@@ -564,6 +564,14 @@ async function renderMonitoringActiveState(container, experiment, selection) {
       </button>
     </div>
 
+    <!-- ✅ NOVO: Botão Cancelar -->
+    <div style="margin-top:12px;">
+      <button class="btn-secondary" style="width:100%; background:#ef4444; border-color:#ef4444; color:#fff;" 
+        onclick="cancelMonitoringEdit()" ${isVisitor ? 'disabled' : ''}>
+        ❌ Cancelar Edição
+      </button>
+    </div>
+
     <div style="margin-top:16px; padding:12px; background:#fef3c7; border-radius:8px; font-size:12px; color:#92400e;">
       <strong>💡 Dica:</strong> Você pode alternar entre as abas livremente. Seus dados estão sendo salvos automaticamente.
     </div>
