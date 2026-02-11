@@ -2179,6 +2179,167 @@ window.togglePlantLodging = function togglePlantLodging(position) {
     listEl.innerHTML = '<div style="font-size:13px; color:#b91c1c;">Erro ao carregar monitoramentos.</div>';
   }
 }
+// ==========================================
+// EDITAR MONITORAMENTO DA LISTA
+// ==========================================
+window.editMonitoring = async function editMonitoring(monitoringId) {
+  if (window.currentRole === "visitor") {
+    alert("Visitantes têm acesso somente leitura.");
+    return;
+  }
+
+  try {
+    // Buscar dados do monitoramento
+    const { data: monitoring, error } = await s
+      .from("monitoring_events")
+      .select("*")
+      .eq("id", monitoringId)
+      .single();
+
+    if (error || !monitoring) {
+      alert("Erro ao carregar monitoramento.");
+      return;
+    }
+
+    // Carregar dados de biometria e status
+    await loadBiometricsData(monitoringId);
+    await loadPlantDataForEdit(monitoringId);
+
+    // Setar como monitoramento atual
+    currentMonitoringId = monitoringId;
+
+    // Ajustar selects para o bloco e parcela corretos
+    const blockInput = document.getElementById("monitorBlock");
+    const plotInput = document.getElementById("monitorPlot");
+
+    if (blockInput) blockInput.value = monitoring.block_number;
+    if (plotInput) plotInput.value = monitoring.plot_code;
+
+    // Atualizar labels da aba
+    updateMonitoringTabLabels();
+
+    // Mudar para a aba "Iniciar monitoramento"
+    const tabsEl = document.getElementById("monitoringTabs");
+    const contentEl = document.getElementById("monitoringTabContent");
+
+    if (tabsEl) {
+      tabsEl.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      tabsEl.querySelector('[data-tab="iniciar"]')?.classList.add("active");
+    }
+
+    if (contentEl) {
+      const experiment = window.currentExperiment;
+      renderMonitoringTabIniciar(contentEl, experiment, {
+        block: monitoring.block_number,
+        plotCode: monitoring.plot_code
+      });
+    }
+
+    // Rolar para o topo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (err) {
+    console.error("Erro ao editar monitoramento:", err);
+    alert("Erro ao carregar monitoramento para edição.");
+  }
+};
+
+// ==========================================
+// EXCLUIR MONITORAMENTO DA LISTA
+// ==========================================
+window.deleteMonitoring = async function deleteMonitoring(monitoringId) {
+  if (window.currentRole === "visitor") {
+    alert("Visitantes têm acesso somente leitura.");
+    return;
+  }
+
+  if (!confirm("Tem certeza que deseja excluir este monitoramento?\n\nEsta ação não pode ser desfeita e removerá:\n- Dados do monitoramento\n- Biometrias das plantas\n- Status de mortalidade\n- Plantas tombadas")) {
+    return;
+  }
+
+  try {
+    // 1. Buscar todas as biometrias deste monitoramento
+    const { data: biometrics, error: bioError } = await s
+      .from("plant_biometrics")
+      .select("id")
+      .eq("monitoring_event_id", monitoringId);
+
+    if (bioError) throw bioError;
+
+    // 2. Deletar medições das hastes (se houver)
+    if (biometrics && biometrics.length > 0) {
+      const biometricIds = biometrics.map(b => b.id);
+
+      const { error: stemError } = await s
+        .from("plant_stem_measurements")
+        .delete()
+        .in("biometric_id", biometricIds);
+
+      if (stemError) throw stemError;
+    }
+
+    // 3. Deletar biometrias
+    const { error: delBioError } = await s
+      .from("plant_biometrics")
+      .delete()
+      .eq("monitoring_event_id", monitoringId);
+
+    if (delBioError) throw delBioError;
+
+    // 4. Deletar status das plantas
+    const { error: statusError } = await s
+      .from("plant_status")
+      .delete()
+      .eq("monitoring_event_id", monitoringId);
+
+    if (statusError) throw statusError;
+
+    // 5. Deletar plantas tombadas
+    const { error: lodgingError } = await s
+      .from("plant_lodging")
+      .delete()
+      .eq("monitoring_event_id", monitoringId);
+
+    if (lodgingError) throw lodgingError;
+
+    // 6. Deletar o monitoramento
+    const { error: delError } = await s
+      .from("monitoring_events")
+      .delete()
+      .eq("id", monitoringId);
+
+    if (delError) throw delError;
+
+    alert("Monitoramento excluído com sucesso!");
+
+    // Se estiver editando este monitoramento, resetar
+    if (currentMonitoringId === monitoringId) {
+      resetMonitoringForm();
+
+      const experiment = window.currentExperiment;
+      const contentEl = document.getElementById("monitoringTabContent");
+      const blockInput = document.getElementById("monitorBlock");
+      const plotInput = document.getElementById("monitorPlot");
+
+      if (contentEl && experiment) {
+        const block = blockInput?.value ? parseInt(blockInput.value, 10) : 1;
+        const plotCode = plotInput?.value?.trim() || "";
+        renderMonitoringTabIniciar(contentEl, experiment, { block, plotCode });
+      }
+    }
+
+    // Recarregar lista e estatísticas
+    loadMonitoringList();
+    const experiment = window.currentExperiment;
+    if (experiment) {
+      loadMonitoringSummary(experiment.id);
+    }
+
+  } catch (err) {
+    console.error("Erro ao excluir monitoramento:", err);
+    alert("Erro ao excluir monitoramento. Tente novamente.");
+  }
+};
 
   window.editMonitoring = async function editMonitoring(id) {
     if (typeof s === "undefined") return;
