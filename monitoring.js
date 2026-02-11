@@ -2163,8 +2163,8 @@ window.togglePlantLodging = function togglePlantLodging(position) {
       html += formatDateShort(m.monitoring_date) + ' · Parcela ' + escapeHtml(m.plot_code) + ' · Bloco ' + m.block_number;
       html += '</div>';
       html += '<div style="display:flex; gap:6px;">';
-      html += '<button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="editMonitoring(' + m.id + ')">Editar</button>';
-      html += '<button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="deleteMonitoring(' + m.id + ')">Excluir</button>';
+      html += '<button onclick="editMonitoring(\'' + m.id + '\')">Editar</button>';
+      html += '<button onclick="deleteMonitoring(\'' + m.id + '\')">Excluir</button>';
       html += '</div></div>';
       if (m.notes) {
         html += '<div style="font-size:12px; color:#6b7280;">' + escapeHtml(m.notes) + '</div>';
