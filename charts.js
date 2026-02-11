@@ -64,13 +64,25 @@
 
           <div class="card">
             <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
-              🌿 Taxa de sobrevivência
+              🌿 Status das plantas por tratamento
             </div>
             <p style="font-size:12px; color:#6b7280; margin-bottom:10px;">
-              Percentual de plantas vivas por tratamento.
+                Detalhamento: vivas, mortas e que não vingaram.
             </p>
             <div style="position:relative; height:240px;">
               <canvas id="chartSurvival"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:6px;">
+              ⚠️ Plantas tombadas por tratamento
+            </div>
+            <p style="font-size:12px; color:#6b7280; margin-bottom:10px;">
+              Percentual de plantas vivas que tombaram (afeta manejo e produtividade).
+            </p>
+            <div style="position:relative; height:240px;">
+              <canvas id="chartLodging"></canvas>
             </div>
           </div>
 
