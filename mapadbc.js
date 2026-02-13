@@ -290,7 +290,14 @@ function renderDbcMapPage(container) {
       CACAU: "#bfdbfe",
       SABARÁ: "#fecaca"
     };
-    const blockNumbers = [1, 2, 3];
+        const blockNumbers = [1, 2, 3];
+    
+    // ORDEM FIXA DOS TRATAMENTOS POR BLOCO (4 colunas x 3 linhas)
+    const blockLayout = {
+      1: ['T12', 'T9', 'T4', 'T1', 'T3', 'T11', 'T6', 'T8', 'T2', 'T10', 'T7', 'T5'],
+      2: ['T2', 'T7', 'T11', 'T3', 'T6', 'T1', 'T5', 'T10', 'T4', 'T12', 'T8', 'T9'],
+      3: ['T8', 'T5', 'T6', 'T10', 'T7', 'T2', 'T12', 'T9', 'T4', 'T11', 'T3', 'T1']
+    };
     
     // LEGENDA
     const legendHtml = `
@@ -340,11 +347,21 @@ function renderDbcMapPage(container) {
     
     dbcMapArea.innerHTML = refreshButtonHtml + legendHtml + blockNumbers
       .map((block) => {
-        const templatesDoBloco = templates.filter(
-          (t) => t.block_number === block
-        );
-        const cellsHtml = templatesDoBloco
-          .map((tpl) => {
+        // Criar índice de templates por plot_code
+        const templatesByCode = {};
+        templates.forEach(tpl => {
+          if (tpl.block_number === block) {
+            templatesByCode[tpl.plot_code] = tpl;
+          }
+        });
+        
+        // Montar células na ordem fixa
+        const orderedLayout = blockLayout[block];
+        const cellsHtml = orderedLayout
+          .map((plotCode) => {
+            const tpl = templatesByCode[`B${block}${plotCode}`];
+            if (!tpl) return ''; // caso não exista
+            
             const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
             
             // Buscar dados de monitoramento
@@ -387,12 +404,13 @@ function renderDbcMapPage(container) {
             `;
           })
           .join("");
+        
         return `
           <div style="margin-bottom: 32px;">
             <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #374151;">
               Bloco ${block}
             </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
               ${cellsHtml}
             </div>
           </div>
