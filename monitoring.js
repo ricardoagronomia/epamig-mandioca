@@ -21,6 +21,98 @@
     };
     return String(text).replace(/[&<>"']/g, m => map[m]);
   }
+  // INSERIR APÓS a função escapeHtml e ANTES de currentMonitoringId
+window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics, options = {}) {
+  const {
+    size = 30,
+    fontSize = 12,
+    showLabels = true,
+    compact = false
+  } = options;
+  
+  const positions = Object.keys(plantStatuses || {}).sort((a, b) => {
+    const numA = parseInt(a);
+    const numB = parseInt(b);
+    return numA - numB;
+  });
+  
+  if (positions.length === 0) return '';
+  
+  const circlesHtml = positions.map(pos => {
+    const status = plantStatuses[pos];
+    const isLodged = lodgingStatuses?.[pos] === true;
+    const bioData = biometrics?.[pos];
+    const isSample = bioData?.is_reference_plant === true;
+    
+    let bgColor, borderColor, textColor;
+    if (status === 'dead') {
+      bgColor = '#fee2e2';
+      borderColor = '#ef4444';
+      textColor = '#991b1b';
+    } else if (status === 'not_sprouted') {
+      bgColor = '#f3f4f6';
+      borderColor = '#9ca3af';
+      textColor = '#6b7280';
+    } else {
+      bgColor = '#dcfce7';
+      borderColor = '#22c55e';
+      textColor = '#166534';
+    }
+    
+    if (isLodged) {
+      bgColor = '#fed7aa';
+      borderColor = '#f97316';
+      textColor = '#9a3412';
+    }
+    
+    const borderWidth = isSample ? 3 : 2;
+    
+    return `
+      <div style="
+        position: relative;
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 50%;
+        background-color: ${bgColor};
+        border: ${borderWidth}px solid ${borderColor};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: ${fontSize}px;
+        font-weight: 600;
+        color: ${textColor};
+        ${compact ? 'margin: 1px;' : 'margin: 4px;'}
+      ">
+        ${showLabels ? pos : ''}
+        ${isSample ? `
+          <div style="
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+            border: 1px solid white;
+          "></div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+  
+  return `
+    <div style="
+      display: flex;
+      flex-wrap: wrap;
+      gap: ${compact ? '2px' : '4px'};
+      justify-content: center;
+      align-items: center;
+    ">
+      ${circlesHtml}
+    </div>
+  `;
+};
+
   let currentMonitoringId = null;
   let currentPlantStatuses = {}; // { position: 'not_sprouted' | 'alive' | 'dead' }
   let currentLodgingStatuses = {}; // { position: true/false }
