@@ -466,10 +466,19 @@ function renderDbcMapPage(container) {
             
             // Buscar dados de monitoramento
             const monitoring = monitoringData[tpl.id];
-            
+
+            // DEBUG
+            console.log(`Tratamento ${tpl.plot_code}:`, {
+              template_id: tpl.id,
+              has_monitoring: !!monitoring,
+              plant_statuses: monitoring?.plant_statuses,
+              num_plants: monitoring ? Object.keys(monitoring.plant_statuses || {}).length : 0
+            });
+
             // Gerar círculos das plantas
             let circlesHtml = '';
             if (monitoring && window.renderPlantCircles) {
+
               circlesHtml = window.renderPlantCircles(
                 monitoring.plant_statuses,
                 monitoring.lodging_statuses,
