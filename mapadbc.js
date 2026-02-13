@@ -28,6 +28,42 @@ const DEFAULT_TREATMENTS = [
   { code: "SABARÁ",     position: "HORIZONTAL" }
 ];
 
+// INSERIR APÓS DEFAULT_TREATMENTS e ANTES de function renderDbcMapPage
+async function loadLatestMonitoringData(experimentId) {
+  const { data: plots, error: plotsError } = await s
+    .from('plots')
+    .select('id, plot_template_id')
+    .eq('experiment_id', experimentId);
+  
+  if (plotsError || !plots) return {};
+  
+  const plotIds = plots.map(p => p.id);
+  
+  const { data: monitorings, error: monError } = await s
+    .from('monitorings')
+    .select('plot_id, monitoring_date, plant_statuses, lodging_statuses, biometrics')
+    .in('plot_id', plotIds)
+    .order('monitoring_date', { ascending: false });
+  
+  if (monError) return {};
+  
+  const monitoringByPlotId = {};
+  monitorings.forEach(m => {
+    if (!monitoringByPlotId[m.plot_id]) {
+      monitoringByPlotId[m.plot_id] = m;
+    }
+  });
+  
+  const monitoringByTemplateId = {};
+  plots.forEach(plot => {
+    if (monitoringByPlotId[plot.id]) {
+      monitoringByTemplateId[plot.plot_template_id] = monitoringByPlotId[plot.id];
+    }
+  });
+  
+  return monitoringByTemplateId;
+}
+
 function renderDbcMapPage(container) {
   container.innerHTML = `
     <div class="content-header">
@@ -238,59 +274,139 @@ function renderDbcMapPage(container) {
       treatments = res2.data || [];
     }
 
-    // 4) Montar blocos com grid baseado em plot_templates
+        // 4) Carregar dados de monitoramento
+    const monitoringData = await loadLatestMonitoringData(expId);
+    
+    // 5) Montar blocos com grid baseado em plot_templates
     const colorMap = {
       AMARELA: "#fde68a",
       AMARELINHA: "#bbf7d0",
       CACAU: "#bfdbfe",
       SABARÁ: "#fecaca"
     };
-
     const blockNumbers = [1, 2, 3];
-
-    dbcMapArea.innerHTML = blockNumbers
+    
+    // LEGENDA
+    const legendHtml = `
+      <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+        <div style="font-weight: 600; margin-bottom: 12px; font-size: 14px;">
+          Legenda - Status das Plantas:
+        </div>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #dcfce7; border: 2px solid #22c55e;"></div>
+            <span style="font-size: 13px;">Viva</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #fee2e2; border: 2px solid #ef4444;"></div>
+            <span style="font-size: 13px;">Morta</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #f3f4f6; border: 2px solid #9ca3af;"></div>
+            <span style="font-size: 13px;">Não brotou</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #fed7aa; border: 2px solid #f97316;"></div>
+            <span style="font-size: 13px;">Tombada</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="position: relative; width: 24px; height: 24px; border-radius: 50%; background-color: #dcfce7; border: 3px solid #22c55e;">
+              <div style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; border: 1px solid white;"></div>
+            </div>
+            <span style="font-size: 13px;">Amostra (borda grossa + ponto azul)</span>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // BOTÃO DE ATUALIZAR
+    const refreshButtonHtml = `
+      <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 20px; font-weight: 600; color: #111827;">
+          Mapa DBC - ${expName}
+        </h2>
+        <button id="btnRefreshDbcMap" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+          <span>🔄</span>
+          <span>Atualizar Dados</span>
+        </button>
+      </div>
+    `;
+    
+    dbcMapArea.innerHTML = refreshButtonHtml + legendHtml + blockNumbers
       .map((block) => {
         const templatesDoBloco = templates.filter(
           (t) => t.block_number === block
         );
-
         const cellsHtml = templatesDoBloco
           .map((tpl) => {
             const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
-
-            return `
-              <div class="dbc-plot-cell"
-                   style="background:${bgColor};border-radius:6px;padding:6px;">
-                <div style="font-weight:700;font-size:14px;">
-                  ${tpl.treatment_code} ${tpl.position}
+            
+            // Buscar dados de monitoramento
+            const monitoring = monitoringData[tpl.id];
+            
+            // Gerar círculos das plantas
+            let circlesHtml = '';
+            if (monitoring && window.renderPlantCircles) {
+              circlesHtml = window.renderPlantCircles(
+                monitoring.plant_statuses,
+                monitoring.lodging_statuses,
+                monitoring.biometrics,
+                {
+                  size: 24,
+                  fontSize: 10,
+                  showLabels: true,
+                  compact: true
+                }
+              );
+            } else {
+              circlesHtml = `
+                <div style="text-align: center; color: #9ca3af; font-size: 11px; padding: 8px;">
+                  Sem dados
                 </div>
-                <div style="font-size:13px;color:#111827;">
+              `;
+            }
+            
+            return `
+              <div style="position: relative; background-color: ${bgColor}; padding: 8px; border-radius: 8px; border: 2px solid #d1d5db; min-height: 100px; display: flex; flex-direction: column;">
+                <div style="font-weight: 600; font-size: 12px; margin-bottom: 2px; text-align: center;">
                   ${tpl.plot_code}
                 </div>
-                <div style="font-size:11px;color:#4b5563;margin-top:4px;">
-                  Experimento: ${dbcState.experimentName || "—"}
+                <div style="font-size: 10px; color: #6b7280; text-align: center; margin-bottom: 6px; line-height: 1.2;">
+                  ${tpl.treatment_code} ${tpl.position}
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                  ${circlesHtml}
                 </div>
               </div>
             `;
           })
           .join("");
-
         return `
-          <div class="card" style="margin-bottom:12px;">
-            <div style="font-weight:600;color:#064e3b;margin-bottom:6px;">
+          <div style="margin-bottom: 32px;">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #374151;">
               Bloco ${block}
-            </div>
-            <div class="dbc-block-grid">
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;">
               ${cellsHtml}
             </div>
           </div>
         `;
       })
       .join("");
-
-    // 5) Ligar eventos de change nos selects para atualizar o estado em memória
     
-  }); // fecha change do experimento
+    // Event listener do botão atualizar
+    setTimeout(() => {
+      document.getElementById('btnRefreshDbcMap')?.addEventListener('click', async () => {
+        const btn = document.getElementById('btnRefreshDbcMap');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span>⏳</span><span>Atualizando...</span>';
+        }
+        dbcExperimentSelect.dispatchEvent(new Event('change'));
+      });
+    }, 100);
+  }); // <- fecha o change do experimento
+
 } // fecha renderDbcMapPage
 
 // ===============================
