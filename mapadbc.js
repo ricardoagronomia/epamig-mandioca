@@ -160,6 +160,16 @@ async function loadLatestMonitoringData(experimentId) {
   });
   
   console.log('FINAL - Monitoring By Template ID:', monitoringByTemplateId);
+  // Debug específico de alguns tratamentos
+const sampleIds = Object.keys(monitoringByTemplateId).slice(0, 3);
+sampleIds.forEach(templateId => {
+  const data = monitoringByTemplateId[templateId];
+  console.log('=== DETALHES DO TEMPLATE:', templateId, '===');
+  console.log('plot_code:', data.plot_code);
+  console.log('plant_statuses:', data.plant_statuses);
+  console.log('Keys de plant_statuses:', Object.keys(data.plant_statuses || {}));
+  console.log('Quantidade de plantas:', Object.keys(data.plant_statuses || {}).length);
+});
   
   return monitoringByTemplateId;
 }
