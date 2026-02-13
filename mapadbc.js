@@ -30,6 +30,7 @@ const DEFAULT_TREATMENTS = [
 
 // INSERIR APÓS DEFAULT_TREATMENTS e ANTES de function renderDbcMapPage
 async function loadLatestMonitoringData(experimentId) {
+  // 1. Buscar parcelas do experimento
   const { data: plots, error: plotsError } = await s
     .from('plots')
     .select('id, plot_template_id')
@@ -37,27 +38,102 @@ async function loadLatestMonitoringData(experimentId) {
   
   if (plotsError || !plots) return {};
   
-  const plotIds = plots.map(p => p.id);
+  // 2. Buscar templates para fazer o match com plot_code
+  const { data: templates, error: tplError } = await s
+    .from('plot_templates')
+    .select('id, block_number, plot_code');
   
-  const { data: monitorings, error: monError } = await s
-    .from('monitorings')
-    .select('plot_id, monitoring_date, plant_statuses, lodging_statuses, biometrics')
-    .in('plot_id', plotIds)
+  if (tplError || !templates) return {};
+  
+  // 3. Buscar eventos de monitoramento deste experimento
+  const { data: monitoringEvents, error: eventsError } = await s
+    .from('monitoring_events')
+    .select('id, plot_code, block_number, monitoring_date')
+    .eq('experiment_id', experimentId)
     .order('monitoring_date', { ascending: false });
   
-  if (monError) return {};
+  if (eventsError || !monitoringEvents || monitoringEvents.length === 0) return {};
   
-  const monitoringByPlotId = {};
-  monitorings.forEach(m => {
-    if (!monitoringByPlotId[m.plot_id]) {
-      monitoringByPlotId[m.plot_id] = m;
+  // 4. Agrupar eventos por plot_code+block (pegar só o mais recente)
+  const latestEventByPlot = {};
+  monitoringEvents.forEach(evt => {
+    const key = `B${evt.block_number}${evt.plot_code}`;
+    if (!latestEventByPlot[key]) {
+      latestEventByPlot[key] = evt;
     }
   });
   
+  const eventIds = Object.values(latestEventByPlot).map(e => e.id);
+  if (eventIds.length === 0) return {};
+  
+  // 5. Buscar status das plantas
+  const { data: plantStatuses, error: statusError } = await s
+    .from('plant_status')
+    .select('monitoring_event_id, plant_position, status')
+    .in('monitoring_event_id', eventIds);
+  
+  // 6. Buscar tombamento
+  const { data: plantLodging, error: lodgingError } = await s
+    .from('plant_lodging')
+    .select('monitoring_event_id, plant_position, is_lodged')
+    .in('monitoring_event_id', eventIds);
+  
+  // 7. Buscar biometria
+  const { data: plantBiometrics, error: bioError } = await s
+    .from('plant_biometrics')
+    .select('monitoring_event_id, plant_position, height_cm, stem_diameter_1_cm, sanity_score, is_reference_plant')
+    .in('monitoring_event_id', eventIds);
+  
+  // 8. Organizar dados por monitoring_event_id
+  const statusByEvent = {};
+  const lodgingByEvent = {};
+  const biometricsByEvent = {};
+  
+  (plantStatuses || []).forEach(ps => {
+    if (!statusByEvent[ps.monitoring_event_id]) {
+      statusByEvent[ps.monitoring_event_id] = {};
+    }
+    statusByEvent[ps.monitoring_event_id][ps.plant_position] = ps.status;
+  });
+  
+  (plantLodging || []).forEach(pl => {
+    if (!lodgingByEvent[pl.monitoring_event_id]) {
+      lodgingByEvent[pl.monitoring_event_id] = {};
+    }
+    lodgingByEvent[pl.monitoring_event_id][pl.plant_position] = pl.is_lodged === true;
+  });
+  
+  (plantBiometrics || []).forEach(pb => {
+    if (!biometricsByEvent[pb.monitoring_event_id]) {
+      biometricsByEvent[pb.monitoring_event_id] = {};
+    }
+    biometricsByEvent[pb.monitoring_event_id][pb.plant_position] = {
+      height_cm: pb.height_cm,
+      stem_diameter_1_cm: pb.stem_diameter_1_cm,
+      sanity_score: pb.sanity_score,
+      is_reference_plant: pb.is_reference_plant === true
+    };
+  });
+  
+  // 9. Criar índice template por plot_code
+  const templateByCode = {};
+  templates.forEach(tpl => {
+    templateByCode[tpl.plot_code] = tpl;
+  });
+  
+  // 10. Montar estrutura final indexada por plot_template_id
   const monitoringByTemplateId = {};
-  plots.forEach(plot => {
-    if (monitoringByPlotId[plot.id]) {
-      monitoringByTemplateId[plot.plot_template_id] = monitoringByPlotId[plot.id];
+  
+  Object.entries(latestEventByPlot).forEach(([plotKey, event]) => {
+    const template = templateByCode[plotKey];
+    if (template) {
+      monitoringByTemplateId[template.id] = {
+        plot_code: event.plot_code,
+        monitoring_date: event.monitoring_date,
+        plant_statuses: statusByEvent[event.id] || {},
+        lodging_statuses: lodgingByEvent[event.id] || {},
+        biometrics: biometricsByEvent[event.id] || {}
+      };
     }
   });
   
