@@ -36,14 +36,24 @@ async function loadLatestMonitoringData(experimentId) {
     .select('id, plot_template_id')
     .eq('experiment_id', experimentId);
   
-  if (plotsError || !plots) return {};
+  if (plotsError || !plots) {
+    console.log('Erro ao buscar plots:', plotsError);
+    return {};
+  }
+  
+  console.log('Plots encontrados:', plots);
   
   // 2. Buscar templates para fazer o match com plot_code
   const { data: templates, error: tplError } = await s
     .from('plot_templates')
     .select('id, block_number, plot_code');
   
-  if (tplError || !templates) return {};
+  if (tplError || !templates) {
+    console.log('Erro ao buscar templates:', tplError);
+    return {};
+  }
+  
+  console.log('Templates:', templates);
   
   // 3. Buscar eventos de monitoramento deste experimento
   const { data: monitoringEvents, error: eventsError } = await s
@@ -52,7 +62,12 @@ async function loadLatestMonitoringData(experimentId) {
     .eq('experiment_id', experimentId)
     .order('monitoring_date', { ascending: false });
   
-  if (eventsError || !monitoringEvents || monitoringEvents.length === 0) return {};
+  if (eventsError || !monitoringEvents || monitoringEvents.length === 0) {
+    console.log('Erro ou sem eventos:', eventsError, monitoringEvents);
+    return {};
+  }
+  
+  console.log('Monitoring Events:', monitoringEvents);
   
   // 4. Agrupar eventos por plot_code+block (pegar só o mais recente)
   const latestEventByPlot = {};
@@ -63,6 +78,8 @@ async function loadLatestMonitoringData(experimentId) {
     }
   });
   
+  console.log('Latest Event By Plot (key format):', latestEventByPlot);
+  
   const eventIds = Object.values(latestEventByPlot).map(e => e.id);
   if (eventIds.length === 0) return {};
   
@@ -71,6 +88,8 @@ async function loadLatestMonitoringData(experimentId) {
     .from('plant_status')
     .select('monitoring_event_id, plant_position, status')
     .in('monitoring_event_id', eventIds);
+  
+  console.log('Plant Statuses:', plantStatuses);
   
   // 6. Buscar tombamento
   const { data: plantLodging, error: lodgingError } = await s
@@ -121,10 +140,13 @@ async function loadLatestMonitoringData(experimentId) {
     templateByCode[tpl.plot_code] = tpl;
   });
   
+  console.log('Template By Code:', templateByCode);
+  
   // 10. Montar estrutura final indexada por plot_template_id
   const monitoringByTemplateId = {};
   
   Object.entries(latestEventByPlot).forEach(([plotKey, event]) => {
+    console.log('Tentando mapear:', plotKey, '-> template:', templateByCode[plotKey]);
     const template = templateByCode[plotKey];
     if (template) {
       monitoringByTemplateId[template.id] = {
@@ -136,6 +158,8 @@ async function loadLatestMonitoringData(experimentId) {
       };
     }
   });
+  
+  console.log('FINAL - Monitoring By Template ID:', monitoringByTemplateId);
   
   return monitoringByTemplateId;
 }
