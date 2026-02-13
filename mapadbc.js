@@ -554,7 +554,7 @@ function renderDbcMapPage(container) {
             }
             
             return `
-              <div style="position: relative; background-color: ${bgColor}; padding: 8px; border-radius: 8px; border: 2px solid #d1d5db; min-height: 100px; display: flex; flex-direction: column;">
+              <div style="position: relative; background-color: ${bgColor}; padding: 10px; border-radius: 8px; border: 2px solid #d1d5db; min-height: 140px; display: flex; flex-direction: column;">
                 <div style="font-weight: 600; font-size: 12px; margin-bottom: 2px; text-align: center;">
                   ${tpl.plot_code}
                 </div>
@@ -574,7 +574,7 @@ function renderDbcMapPage(container) {
             <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #374151;">
               Bloco ${block}
             </h3>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 12px;">
               ${cellsHtml}
             </div>
           </div>
