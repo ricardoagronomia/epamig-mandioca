@@ -488,13 +488,40 @@ function renderDbcMapPage(container) {
             // Gerar círculos das plantas
             let circlesHtml = '';
             if (monitoring) {
-              // Se plant_statuses está vazio mas tem biometrics, criar statuses baseado na biometria
-              let statuses = monitoring.plant_statuses;
-              if (Object.keys(statuses).length === 0 && monitoring.biometrics && Object.keys(monitoring.biometrics).length > 0) {
-                // Criar statuses a partir das posições que têm biometria
-                statuses = {};
-                Object.keys(monitoring.biometrics).forEach(pos => {
-                  statuses[pos] = 'alive'; // assume viva se tem biometria
+              // Criar objeto com as 9 posições (1 a 9)
+              let statuses = {};
+              let lodging = {};
+              let bio = {};
+  
+              // Inicializar todas as 9 posições como 'not_sprouted' (sem dados)
+              for (let i = 1; i <= 9; i++) {
+                statuses[i] = 'not_sprouted';
+                lodging[i] = false;
+                bio[i] = null;
+              }
+  
+              // Sobrescrever com dados reais de plant_statuses
+              if (monitoring.plant_statuses && Object.keys(monitoring.plant_statuses).length > 0) {
+                Object.entries(monitoring.plant_statuses).forEach(([pos, status]) => {
+                  statuses[pos] = status;
+                });
+              }
+  
+              // Sobrescrever com dados de biometrics (se tiver biometria, está viva)
+              if (monitoring.biometrics && Object.keys(monitoring.biometrics).length > 0) {
+                Object.entries(monitoring.biometrics).forEach(([pos, bioData]) => {
+                  bio[pos] = bioData;
+                  // Se tem biometria mas não tem status definido, assume viva
+                  if (statuses[pos] === 'not_sprouted') {
+                    statuses[pos] = 'alive';
+                  }
+                });
+              }
+  
+              // Sobrescrever com dados de tombamento
+              if (monitoring.lodging_statuses && Object.keys(monitoring.lodging_statuses).length > 0) {
+                Object.entries(monitoring.lodging_statuses).forEach(([pos, isLodged]) => {
+                  lodging[pos] = isLodged;
                 });
               }
   
