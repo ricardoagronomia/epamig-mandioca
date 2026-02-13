@@ -100,6 +100,23 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
     `;
   }).join('');
   
+  // Se gridLayout = true, usar grid 3x3, senão flexbox normal
+if (gridLayout) {
+  return `
+    <div style="
+      display: grid !important;
+      grid-template-columns: repeat(3, ${size}px) !important;
+      grid-template-rows: repeat(3, ${size}px) !important;
+      gap: ${compact ? '3px' : '6px'};
+      justify-content: center;
+      align-items: center;
+      width: fit-content;
+      margin: 0 auto;
+    ">
+      ${circlesHtml}
+    </div>
+  `;
+} else {
   return `
     <div style="
       display: flex;
@@ -111,6 +128,7 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
       ${circlesHtml}
     </div>
   `;
+}
 };
 
   let currentMonitoringId = null;
