@@ -487,26 +487,38 @@ function renderDbcMapPage(container) {
 
             // Gerar círculos das plantas
             let circlesHtml = '';
-            if (monitoring && window.renderPlantCircles) {
-
-              circlesHtml = window.renderPlantCircles(
-                monitoring.plant_statuses,
-                monitoring.lodging_statuses,
-                monitoring.biometrics,
-                {
-                  size: 24,
-                  fontSize: 10,
-                  showLabels: true,
-                  compact: true
-                }
-              );
+            if (monitoring) {
+              // Se plant_statuses está vazio mas tem biometrics, criar statuses baseado na biometria
+              let statuses = monitoring.plant_statuses;
+              if (Object.keys(statuses).length === 0 && monitoring.biometrics && Object.keys(monitoring.biometrics).length > 0) {
+                // Criar statuses a partir das posições que têm biometria
+                statuses = {};
+                Object.keys(monitoring.biometrics).forEach(pos => {
+                  statuses[pos] = 'alive'; // assume viva se tem biometria
+                });
+              }
+  
+              if (window.renderPlantCircles && Object.keys(statuses).length > 0) {
+                circlesHtml = window.renderPlantCircles(
+                  statuses,
+                  monitoring.lodging_statuses,
+                  monitoring.biometrics,
+                  {
+                    size: 24,
+                    fontSize: 10,
+                    showLabels: true,
+                    compact: true,
+                    gridLayout: true
+                  }
+                );
+              } else {
+                circlesHtml = `
+                  <div style="text-align: center; color: #9ca3af; font-size: 11px; padding: 8px;">
+                    Sem dados
+                  </div>
+    `            ;
+              }
             } else {
-              circlesHtml = `
-                <div style="text-align: center; color: #9ca3af; font-size: 11px; padding: 8px;">
-                  Sem dados
-                </div>
-              `;
-            }
             
             return `
               <div style="position: relative; background-color: ${bgColor}; padding: 8px; border-radius: 8px; border: 2px solid #d1d5db; min-height: 100px; display: flex; flex-direction: column;">
