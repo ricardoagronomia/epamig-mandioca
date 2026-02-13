@@ -474,7 +474,7 @@ function renderDbcMapPage(container) {
             
             const bgColor = colorMap[tpl.treatment_code] || "#e5e7eb";
             
-            // Buscar dados de monitoramento
+                       // Buscar dados de monitoramento
             const monitoring = monitoringData[tpl.id];
 
             // DEBUG
@@ -516,9 +516,15 @@ function renderDbcMapPage(container) {
                   <div style="text-align: center; color: #9ca3af; font-size: 11px; padding: 8px;">
                     Sem dados
                   </div>
-    `            ;
+                `;
               }
             } else {
+              circlesHtml = `
+                <div style="text-align: center; color: #9ca3af; font-size: 11px; padding: 8px;">
+                  Sem dados
+                </div>
+              `;
+            }
             
             return `
               <div style="position: relative; background-color: ${bgColor}; padding: 8px; border-radius: 8px; border: 2px solid #d1d5db; min-height: 100px; display: flex; flex-direction: column;">
