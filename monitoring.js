@@ -27,7 +27,8 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
     size = 30,
     fontSize = 12,
     showLabels = true,
-    compact = false
+    compact = false,
+    gridLayout = false  // <-- ADICIONAR ESTA LINHA
   } = options;
   
   const positions = Object.keys(plantStatuses || {}).sort((a, b) => {
