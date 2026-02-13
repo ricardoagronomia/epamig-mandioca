@@ -276,6 +276,12 @@ function renderDbcMapPage(container) {
 
         // 4) Carregar dados de monitoramento
     const monitoringData = await loadLatestMonitoringData(expId);
+    // DEBUG - remover depois
+    console.log('=== DEBUG MONITORING DATA ===');
+    console.log('Experiment ID:', expId);
+    console.log('Monitoring Data:', monitoringData);
+    console.log('Templates:', templates);
+    console.log('window.renderPlantCircles exists?', typeof window.renderPlantCircles);
     
     // 5) Montar blocos com grid baseado em plot_templates
     const colorMap = {
