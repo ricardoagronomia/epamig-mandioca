@@ -366,7 +366,7 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
           });
         });
         if (diameterCount > 0) {
-          avgDiameter = (totalDiameter / diameterCount).toFixed(2);
+          avgDiameter = ((totalDiameter * 10) / diameterCount).toFixed(2);  // Converter para mm
         }
       }
 
@@ -424,7 +424,7 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
               ⭕
             </div>
             <div>
-              <div style="font-size:18px; font-weight:600; color:#1e3a8a;">${avgDiameter}${avgDiameter !== "–" ? " cm" : ""}</div>
+              <div stylefont-size18px font-weight600 color1e3a8a>${avgDiameter ? (avgDiameter * 10).toFixed(2) : ''}${avgDiameter != null ? ' mm' : ''}</div>
               <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Diâmetro${diameterCount > 0 ? ` (${diameterCount})` : ""}</div>
             </div>
           </div>
@@ -1352,32 +1352,25 @@ window.cancelMonitoringEdit = function cancelMonitoringEdit() {
     const bio = currentBiometrics[position] || {};
     const stemCount = bio.stem_count || 0;
 
-    const stemFieldsHtml = stemCount > 0 
-      ? Array.from({ length: stemCount }, (_, i) => {
-          const stemNum = i + 1;
-          const existingStem = (bio.stems || []).find(s => s.stem_number === stemNum) || {};
-
-          return `
-            <div style="padding:10px; margin-bottom:8px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
-              <div style="font-weight:600; color:#065f46; margin-bottom:6px;">
-                Haste ${stemNum}
-              </div>
-              <div style="display:flex; gap:8px;">
-                <div style="flex:1;">
-                  <label for="stemHeight_${stemNum}">Altura (cm)</label>
-                  <input type="number" step="0.1" id="stemHeight_${stemNum}" 
-                    value="${existingStem.height_cm || ''}" />
-                </div>
-                <div style="flex:1;">
-                  <label for="stemDiameter_${stemNum}">Diâmetro (cm)</label>
-                  <input type="number" step="0.01" id="stemDiameter_${stemNum}" 
-                    value="${existingStem.diameter_cm || ''}" />
-                </div>
-              </div>
+    const stemFieldsHtml = stemCount > 0 ? Array.from({ length: stemCount }, (_, i) => {
+      const stemNum = i + 1;
+      const existingStem = bio.stems?.find(s => s.stemnumber === stemNum);
+      return `
+        <div style="padding:10px; margin-bottom:8px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+          <div style="font-weight:600; color:#065f46; margin-bottom:6px;">Haste ${stemNum}</div>
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1;">
+              <label for="stemHeight${stemNum}">Altura cm</label>
+              <input type="number" step="0.1" id="stemHeight${stemNum}" value="${existingStem?.heightcm || ''}">
             </div>
-          `;
-        }).join('')
-      : `<div style="font-size:12px; color:#6b7280; padding:10px; background:#f8fafc; border-radius:8px;">Informe o número de hastes primeiro</div>`;
+            <div style="flex:1;">
+              <label for="stemDiameter${stemNum}">Diâmetro mm</label>
+              <input type="number" step="0.1" id="stemDiameter${stemNum}" value="${existingStem?.diametercm ? existingStem.diametercm * 10 : ''}">
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('') : `<div style="font-size:12px; color:#6b7280; padding:10px; background:#f8fafc; border-radius:8px;">Informe o número de hastes primeiro</div>`;
 
     const bodyHtml = `
       <div style="font-size:14px; font-weight:600; color:#065f46; margin-bottom:8px;">
@@ -1475,23 +1468,18 @@ window.cancelMonitoringEdit = function cancelMonitoringEdit() {
 
     container.innerHTML = Array.from({ length: stemCount }, (_, i) => {
       const stemNum = i + 1;
-      const existingStem = (bio.stems || []).find(s => s.stem_number === stemNum) || {};
-
+      const existingStem = bio.stems?.find(s => s.stemnumber === stemNum);
       return `
         <div style="padding:10px; margin-bottom:8px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
-          <div style="font-weight:600; color:#065f46; margin-bottom:6px;">
-            Haste ${stemNum}
-          </div>
+          <div style="font-weight:600; color:#065f46; margin-bottom:6px;">Haste ${stemNum}</div>
           <div style="display:flex; gap:8px;">
             <div style="flex:1;">
-              <label for="stemHeight_${stemNum}">Altura (cm)</label>
-              <input type="number" step="0.1" id="stemHeight_${stemNum}" 
-                value="${existingStem.height_cm || ''}" />
+              <label for="stemHeight${stemNum}">Altura cm</label>
+              <input type="number" step="0.1" id="stemHeight${stemNum}" value="${existingStem?.heightcm || ''}">
             </div>
             <div style="flex:1;">
-              <label for="stemDiameter_${stemNum}">Diâmetro (cm)</label>
-              <input type="number" step="0.01" id="stemDiameter_${stemNum}" 
-                value="${existingStem.diameter_cm || ''}" />
+              <label for="stemDiameter${stemNum}">Diâmetro mm</label>
+              <input type="number" step="0.1" id="stemDiameter${stemNum}" value="${existingStem?.diametercm ? existingStem.diametercm * 10 : ''}">
             </div>
           </div>
         </div>
@@ -1556,9 +1544,9 @@ window.cancelMonitoringEdit = function cancelMonitoringEdit() {
 
       if (heightInput || diameterInput) {
         stems.push({
-          stem_number: i,
-          height_cm: heightInput?.value ? Number(heightInput.value) : null,
-          diameter_cm: diameterInput?.value ? Number(diameterInput.value) : null
+          stemnumber: i,
+          heightcm: heightInput?.value ? Number(heightInput.value) : null,
+          diametercm: diameterInput?.value ? Number(diameterInput.value) / 10 : null  // Converter mm para cm
         });
       }
     }
