@@ -559,7 +559,7 @@
   try {
     // COPIADO EXATAMENTE do exportAllData
     const { data: schedule, error: schedError } = await s
-      .from('scheduledactions')  // ← igual ao exportAllData
+      .from('scheduled_actions')  // ← igual ao exportAllData
       .select('*')
       .eq('experimentid', experiment.id)  // ← igual ao exportAllData
       .order('startdate', { ascending: true });
