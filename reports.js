@@ -557,16 +557,16 @@
   }
 
   try {
-    // ✅ scheduled_actions → experiment_id (underscore)
+    // ✅ CORRETO: scheduled_actions + experiment_id + start_date (UNDERSCORE)
     const { data: schedule, error: schedError } = await s
       .from('scheduled_actions')
       .select('*')
       .eq('experiment_id', experiment.id)
-      .order('startdate', { ascending: true });
+      .order('start_date', { ascending: true });  // ← CORRIGIDO: start_date
 
     if (schedError) throw schedError;
 
-    // ✅ interventions → experimentid (camelCase, igual ao exportInterventionsData)
+    // ✅ interventions (igual ao exportInterventionsData)
     const { data: interventions, error: intError } = await s
       .from('interventions')
       .select('*')
@@ -582,20 +582,22 @@
 
     const exportData = [];
 
+    // Cronograma
     (schedule || []).forEach(a => {
       exportData.push({
         Origem: 'Cronograma',
-        Data: a.startdate || '',
-        'Data início': a.startdate || '',
-        'Data fim': a.enddate || '',
+        Data: a.start_date || '',
+        'Data início': a.start_date || '',
+        'Data fim': a.end_date || '',
         Tipo: a.phase || 'Evento',
         Título: a.name || '',
-        Status: a.completedat ? 'Concluído' : 'Pendente',
+        Status: a.completed_at ? 'Concluído' : 'Pendente',
         Responsável: a.owner || '',
         Descrição: a.description || ''
       });
     });
 
+    // Intervenções
     (interventions || []).forEach(i => {
       exportData.push({
         Origem: 'Intervenção',
@@ -611,8 +613,10 @@
       });
     });
 
+    // Ordenar por Data
     exportData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
+    // Excel
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Linha do tempo');
@@ -621,7 +625,7 @@
     const filename = `${experiment.code}_linha_do_tempo_${today}.xlsx`;
     XLSX.writeFile(workbook, filename);
 
-    alert(`${exportData.length} registros da linha do tempo exportados!`);
+    alert(`${exportData.length} registros exportados com sucesso!`);
   } catch (err) {
     console.error("Erro linha do tempo:", err);
     alert("Erro: " + err.message);
