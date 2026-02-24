@@ -556,20 +556,20 @@
   }
 
   try {
-    // Buscar CRONOGRAMA (igual ao exportAllData)
+    // Buscar CRONOGRAMA (CORRIGIDO: experiment_id)
     const { data: schedule, error: schedError } = await s
       .from('scheduled_actions')
       .select('*')
-      .eq('experimentid', experiment.id)
+      .eq('experiment_id', experiment.id)  // ← CORRIGIDO
       .order('startdate', { ascending: true });
 
     if (schedError) throw schedError;
 
-    // Buscar INTERVENÇÕES (igual às outras funções)
+    // Buscar INTERVENÇÕES (CONFIRMAR se também é experiment_id)
     const { data: interventions, error: intError } = await s
       .from('interventions')
       .select('*')
-      .eq('experimentid', experiment.id)
+      .eq('experiment_id', experiment.id)  // ← PROVAVELMENTE também precisa
       .order('interventiondate', { ascending: true });
 
     if (intError) throw intError;
@@ -579,14 +579,14 @@
       return;
     }
 
-    // Montar linha do tempo unificada
+    // ... resto da função igual (montar exportData, ordenar, gerar Excel)
     const exportData = [];
 
     // Cronograma
     (schedule || []).forEach(a => {
       exportData.push({
         Origem: 'Cronograma',
-        Data: a.startdate || a.enddate || '',
+        Data: a.startdate || '',
         'Data início': a.startdate || '',
         'Data fim': a.enddate || '',
         Tipo: a.phase || 'Evento',
@@ -611,8 +611,8 @@
         'Data fim': '',
         Tipo: i.interventiontype || '',
         Título: i.interventiontype || '',
-        Bloco: i.blocknumber || '',
         Tratamento: i.plotcode || '',
+        Bloco: i.blocknumber || '',
         Responsável: '',
         Produto: i.product || '',
         Dosagem: i.dosage || '',
@@ -629,7 +629,7 @@
       return da - db;
     });
 
-    // Gerar Excel (igual às outras funções)
+    // Gerar Excel
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Linha do tempo');
@@ -638,10 +638,10 @@
     const filename = `${experiment.code}_linha_do_tempo_${today}.xlsx`;
     XLSX.writeFile(workbook, filename);
 
-    alert(`${exportData.length} registros exportados com sucesso para a linha do tempo!`);
+    alert(`${exportData.length} registros exportados com sucesso!`);
   } catch (err) {
     console.error("Erro ao exportar linha do tempo", err);
-    alert("Erro ao exportar dados de linha do tempo: " + err.message);
+    alert("Erro: " + err.message);
   }
 };
 
