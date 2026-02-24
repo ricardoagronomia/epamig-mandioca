@@ -880,14 +880,15 @@
       XLSX.utils.book_append_sheet(workbook, ws, 'Intervenções');
       totalSheets++;
     }
+    
     // 9. ABA LINHA DO TEMPO (NOVA)
-    const { data: schedule } = await s
+    const { data: timelineSchedule } = await s
       .from('scheduled_actions')
       .select('*')
       .eq('experiment_id', experiment.id)
       .order('start_date', { ascending: true });
 
-    const { data: interventionsTimeline } = await s
+    const { data: timelineInterventions } = await s
       .from('interventions')
       .select('*')
       .eq('experiment_id', experiment.id)
@@ -896,31 +897,41 @@
     const timelineData = [];
 
     // Cronograma
-    (schedule || []).forEach(a => timelineData.push({
-      Origem: 'Cronograma',
-      Data: a.start_date,
-      Tipo: a.phase || 'Evento',
-      Título: a.name,
-      Status: a.completed_at ? 'Concluído' : 'Pendente'
-    }));
+    (timelineSchedule || []).forEach(a => {
+      timelineData.push({
+        Origem: 'Cronograma',
+        Data: a.start_date,
+        Tipo: a.phase || 'Evento',
+        Título: a.name,
+        'Data início': a.start_date,
+        'Data fim': a.end_date,
+        Status: a.completed_at ? 'Concluído' : 'Pendente',
+        Responsável: a.owner
+      });
+    });
 
     // Intervenções
-    (interventionsTimeline || []).forEach(i => timelineData.push({
-      Origem: 'Intervenção',
-      Data: i.intervention_date,
-      Tipo: i.intervention_type,
-      Bloco: i.block_number,
-      Tratamento: i.plot_code
-    }));
+    (timelineInterventions || []).forEach(i => {
+      timelineData.push({
+        Origem: 'Intervenção',
+        Data: i.intervention_date,
+        Tipo: i.intervention_type,
+        Bloco: i.block_number,
+        Tratamento: i.plot_code,
+        Produto: i.product,
+        Dosagem: i.dosage
+      });
+    });
 
+    // Ordenar
     timelineData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
     if (timelineData.length > 0) {
       const wsTimeline = XLSX.utils.json_to_sheet(timelineData);
       XLSX.utils.book_append_sheet(workbook, wsTimeline, 'Linha do tempo');
       totalSheets++;
+      console.log(`${timelineData.length} registros linha do tempo`);
     }
-
 
     // 10. GERAR ARQUIVO
     var today = new Date().toISOString().slice(0, 10);
