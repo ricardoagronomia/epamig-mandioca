@@ -556,9 +556,9 @@
   }
 
   try {
-    // 1. Buscar CRONOGRAMA (scheduledactions)
+    // 1. Buscar CRONOGRAMA (CORRIGIDO: scheduled_actions)
     const { data: schedule, error: schedError } = await s
-      .from('scheduledactions')
+      .from('scheduled_actions')  // ← AQUI era o problema
       .select('*')
       .eq('experimentid', experiment.id)
       .order('startdate', { ascending: true });
