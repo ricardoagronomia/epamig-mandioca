@@ -557,21 +557,21 @@
   }
 
   try {
-    // ✅ CORRETO: scheduled_actions + experiment_id + start_date (UNDERSCORE)
+    // ✅ scheduled_actions
     const { data: schedule, error: schedError } = await s
       .from('scheduled_actions')
       .select('*')
       .eq('experiment_id', experiment.id)
-      .order('start_date', { ascending: true });  // ← CORRIGIDO: start_date
+      .order('start_date', { ascending: true });
 
     if (schedError) throw schedError;
 
-    // ✅ interventions (igual ao exportInterventionsData)
+    // ✅ interventions - TODOS os campos com underscore
     const { data: interventions, error: intError } = await s
       .from('interventions')
       .select('*')
-      .eq('experimentid', experiment.id)
-      .order('interventiondate', { ascending: true });
+      .eq('experiment_id', experiment.id)
+      .order('intervention_date', { ascending: true });
 
     if (intError) throw intError;
 
@@ -601,11 +601,11 @@
     (interventions || []).forEach(i => {
       exportData.push({
         Origem: 'Intervenção',
-        Data: i.interventiondate || '',
-        Tipo: i.interventiontype || '',
-        Título: i.interventiontype || '',
-        Bloco: i.blocknumber || '',
-        Tratamento: i.plotcode || '',
+        Data: i.intervention_date || '',
+        Tipo: i.intervention_type || '',
+        Título: i.intervention_type || '',
+        Bloco: i.block_number || '',
+        Tratamento: i.plot_code || '',
         Produto: i.product || '',
         Dosagem: i.dosage || '',
         Método: i.method || '',
@@ -613,7 +613,7 @@
       });
     });
 
-    // Ordenar por Data
+    // Ordenar cronologicamente
     exportData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
     // Excel
@@ -625,7 +625,7 @@
     const filename = `${experiment.code}_linha_do_tempo_${today}.xlsx`;
     XLSX.writeFile(workbook, filename);
 
-    alert(`${exportData.length} registros exportados com sucesso!`);
+    alert(`${exportData.length} registros da linha do tempo exportados com sucesso!`);
   } catch (err) {
     console.error("Erro linha do tempo:", err);
     alert("Erro: " + err.message);
