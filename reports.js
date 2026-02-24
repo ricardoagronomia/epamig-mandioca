@@ -196,6 +196,21 @@
                 Exportar .xlsx
               </button>
             </div>
+            
+                <!-- Tabela Linha do tempo (Cronograma + Intervenções) -->
+                <div style="border-radius:10px; border:1px solid #e5e7eb; padding:10px; background:#eef2ff;">
+                  <div style="font-size:13px; font-weight:600; color:#3730a3; margin-bottom:6px;">
+                    Linha do tempo
+                  </div>
+                  <p style="font-size:12px; color:#4b5563; margin-bottom:8px;">
+                    Cronograma e intervenções integrados em ordem cronológica, em uma única aba Excel.
+                  </p>
+                  <button class="btn-secondary"
+                          style="width:100%; padding:8px; font-size:12px;"
+                          onclick="exportTimelineData()">
+                    Exportar .xlsx
+                  </button>
+                </div>
 
             <!-- Tabela: Resumo consolidado -->
             <div style="
@@ -533,6 +548,108 @@
       alert('Erro ao exportar dados de intervenções');
     }
   };
+  window.exportTimelineData = async function () {
+  const experiment = window.currentExperiment;
+  if (!experiment) {
+    alert("Nenhum experimento selecionado");
+    return;
+  }
+
+  try {
+    // 1. Buscar CRONOGRAMA (scheduledactions)
+    const { data: schedule, error: schedError } = await s
+      .from('scheduledactions')
+      .select('*')
+      .eq('experimentid', experiment.id)
+      .order('startdate', { ascending: true });
+
+    if (schedError) throw schedError;
+
+    // 2. Buscar INTERVENÇÕES
+    const { data: interventions, error: intError } = await s
+      .from('interventions')
+      .select('*')
+      .eq('experimentid', experiment.id)
+      .order('interventiondate', { ascending: true });
+
+    if (intError) throw intError;
+
+    if ((!schedule || schedule.length === 0) && (!interventions || interventions.length === 0)) {
+      alert("Nenhum dado de cronograma ou intervenções disponível para este experimento");
+      return;
+    }
+
+    // 3. Montar linha do tempo unificada
+    const exportData = [];
+
+    // Cronograma
+    (schedule || []).forEach(a => {
+      exportData.push({
+        Origem: 'Cronograma',
+        Data: a.startdate || a.enddate || null,
+        'Data início': a.startdate,
+        'Data fim': a.enddate,
+        Tipo: a.phase || 'Evento',
+        Título: a.name,
+        Bloco: '',           // cronograma normalmente não tem bloco
+        Tratamento: '',      // cronograma normalmente não tem tratamento
+        Responsável: a.owner,
+        Produto: '',
+        Dosagem: '',
+        Método: '',
+        Status: a.completedat ? 'Concluído' : 'Pendente',
+        Descrição: a.description
+      });
+    });
+
+    // Intervenções
+    (interventions || []).forEach(i => {
+      exportData.push({
+        Origem: 'Intervenção',
+        Data: i.interventiondate,
+        'Data início': i.interventiondate,
+        'Data fim': null,
+        Tipo: i.interventiontype,
+        Título: i.interventiontype,
+        Bloco: i.blocknumber,
+        Tratamento: i.plotcode,
+        Responsável: '',     // se existir campo de responsável em interventions, preencha aqui
+        Produto: i.product,
+        Dosagem: i.dosage,
+        Método: i.method,
+        Status: '',
+        Descrição: i.notes
+      });
+    });
+
+    // 4. Ordenar pela Data (cronológica)
+    exportData.sort((a, b) => {
+      const da = a.Data ? new Date(a.Data).getTime() : 0;
+      const db = b.Data ? new Date(b.Data).getTime() : 0;
+      return da - db;
+    });
+
+    if (exportData.length === 0) {
+      alert("Nenhum registro para exportar na linha do tempo");
+      return;
+    }
+
+    // 5. Gerar o arquivo Excel
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Linha do tempo');
+
+    const today = new Date().toISOString().slice(0, 10);
+    const filename = `${experiment.code}_linha_do_tempo_${today}.xlsx`;
+
+    XLSX.writeFile(workbook, filename);
+
+    alert(`${exportData.length} registros exportados com sucesso para a linha do tempo!`);
+  } catch (err) {
+    console.error("Erro ao exportar linha do tempo", err);
+    alert("Erro ao exportar dados de linha do tempo: " + err.message);
+  }
+};
 
   window.exportAllData = async function() {
   const experiment = window.currentExperiment;
