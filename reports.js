@@ -548,6 +548,7 @@
       alert('Erro ao exportar dados de intervenções');
     }
   };
+  
   window.exportTimelineData = async function () {
   const experiment = window.currentExperiment;
   if (!experiment) {
@@ -556,33 +557,32 @@
   }
 
   try {
-    // Buscar CRONOGRAMA (CORRIGIDO: experiment_id)
+    // COPIADO EXATAMENTE do exportAllData
     const { data: schedule, error: schedError } = await s
-      .from('scheduled_actions')
+      .from('scheduledactions')  // ← igual ao exportAllData
       .select('*')
-      .eq('experiment_id', experiment.id)  // ← CORRIGIDO
+      .eq('experimentid', experiment.id)  // ← igual ao exportAllData
       .order('startdate', { ascending: true });
 
     if (schedError) throw schedError;
 
-    // Buscar INTERVENÇÕES (CONFIRMAR se também é experiment_id)
+    // Igual ao exportInterventionsData
     const { data: interventions, error: intError } = await s
       .from('interventions')
       .select('*')
-      .eq('experiment_id', experiment.id)  // ← PROVAVELMENTE também precisa
+      .eq('experimentid', experiment.id)  // ← camelCase como nas outras
       .order('interventiondate', { ascending: true });
 
     if (intError) throw intError;
 
     if ((!schedule || schedule.length === 0) && (!interventions || interventions.length === 0)) {
-      alert("Nenhum dado de cronograma ou intervenções disponível para este experimento");
+      alert("Nenhum dado de cronograma ou intervenções disponível");
       return;
     }
 
-    // ... resto da função igual (montar exportData, ordenar, gerar Excel)
     const exportData = [];
 
-    // Cronograma
+    // Cronograma (igual ao exportAllData)
     (schedule || []).forEach(a => {
       exportData.push({
         Origem: 'Cronograma',
@@ -602,7 +602,7 @@
       });
     });
 
-    // Intervenções
+    // Intervenções (igual ao exportInterventionsData)
     (interventions || []).forEach(i => {
       exportData.push({
         Origem: 'Intervenção',
@@ -611,8 +611,8 @@
         'Data fim': '',
         Tipo: i.interventiontype || '',
         Título: i.interventiontype || '',
-        Tratamento: i.plotcode || '',
         Bloco: i.blocknumber || '',
+        Tratamento: i.plotcode || '',
         Responsável: '',
         Produto: i.product || '',
         Dosagem: i.dosage || '',
@@ -623,13 +623,9 @@
     });
 
     // Ordenar por Data
-    exportData.sort((a, b) => {
-      const da = new Date(a.Data).getTime();
-      const db = new Date(b.Data).getTime();
-      return da - db;
-    });
+    exportData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-    // Gerar Excel
+    // Gerar Excel (igual às outras funções)
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Linha do tempo');
@@ -640,7 +636,7 @@
 
     alert(`${exportData.length} registros exportados com sucesso!`);
   } catch (err) {
-    console.error("Erro ao exportar linha do tempo", err);
+    console.error("Erro ao exportar linha do tempo:", err);
     alert("Erro: " + err.message);
   }
 };
