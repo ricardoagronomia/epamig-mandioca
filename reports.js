@@ -556,16 +556,16 @@
   }
 
   try {
-    // 1. Buscar CRONOGRAMA (CORRIGIDO: scheduled_actions)
+    // Buscar CRONOGRAMA (igual ao exportAllData)
     const { data: schedule, error: schedError } = await s
-      .from('scheduled_actions')  // ← AQUI era o problema
+      .from('scheduled_actions')
       .select('*')
       .eq('experimentid', experiment.id)
       .order('startdate', { ascending: true });
 
     if (schedError) throw schedError;
 
-    // 2. Buscar INTERVENÇÕES
+    // Buscar INTERVENÇÕES (igual às outras funções)
     const { data: interventions, error: intError } = await s
       .from('interventions')
       .select('*')
@@ -579,26 +579,26 @@
       return;
     }
 
-    // 3. Montar linha do tempo unificada
+    // Montar linha do tempo unificada
     const exportData = [];
 
     // Cronograma
     (schedule || []).forEach(a => {
       exportData.push({
         Origem: 'Cronograma',
-        Data: a.startdate || a.enddate || null,
-        'Data início': a.startdate,
-        'Data fim': a.enddate,
+        Data: a.startdate || a.enddate || '',
+        'Data início': a.startdate || '',
+        'Data fim': a.enddate || '',
         Tipo: a.phase || 'Evento',
         Título: a.name,
-        Bloco: '',           // cronograma normalmente não tem bloco
-        Tratamento: '',      // cronograma normalmente não tem tratamento
-        Responsável: a.owner,
+        Bloco: '',
+        Tratamento: '',
+        Responsável: a.owner || '',
         Produto: '',
         Dosagem: '',
         Método: '',
         Status: a.completedat ? 'Concluído' : 'Pendente',
-        Descrição: a.description
+        Descrição: a.description || ''
       });
     });
 
@@ -606,42 +606,36 @@
     (interventions || []).forEach(i => {
       exportData.push({
         Origem: 'Intervenção',
-        Data: i.interventiondate,
-        'Data início': i.interventiondate,
-        'Data fim': null,
-        Tipo: i.interventiontype,
-        Título: i.interventiontype,
-        Bloco: i.blocknumber,
-        Tratamento: i.plotcode,
-        Responsável: '',     // se existir campo de responsável em interventions, preencha aqui
-        Produto: i.product,
-        Dosagem: i.dosage,
-        Método: i.method,
+        Data: i.interventiondate || '',
+        'Data início': i.interventiondate || '',
+        'Data fim': '',
+        Tipo: i.interventiontype || '',
+        Título: i.interventiontype || '',
+        Bloco: i.blocknumber || '',
+        Tratamento: i.plotcode || '',
+        Responsável: '',
+        Produto: i.product || '',
+        Dosagem: i.dosage || '',
+        Método: i.method || '',
         Status: '',
-        Descrição: i.notes
+        Descrição: i.notes || ''
       });
     });
 
-    // 4. Ordenar pela Data (cronológica)
+    // Ordenar por Data
     exportData.sort((a, b) => {
-      const da = a.Data ? new Date(a.Data).getTime() : 0;
-      const db = b.Data ? new Date(b.Data).getTime() : 0;
+      const da = new Date(a.Data).getTime();
+      const db = new Date(b.Data).getTime();
       return da - db;
     });
 
-    if (exportData.length === 0) {
-      alert("Nenhum registro para exportar na linha do tempo");
-      return;
-    }
-
-    // 5. Gerar o arquivo Excel
+    // Gerar Excel (igual às outras funções)
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Linha do tempo');
 
     const today = new Date().toISOString().slice(0, 10);
     const filename = `${experiment.code}_linha_do_tempo_${today}.xlsx`;
-
     XLSX.writeFile(workbook, filename);
 
     alert(`${exportData.length} registros exportados com sucesso para a linha do tempo!`);
