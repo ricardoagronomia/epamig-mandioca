@@ -557,7 +557,7 @@
   }
 
   try {
-    // ✅ CORRETO: scheduled_actions + experiment_id
+    // ✅ scheduled_actions → experiment_id (underscore)
     const { data: schedule, error: schedError } = await s
       .from('scheduled_actions')
       .select('*')
@@ -566,11 +566,11 @@
 
     if (schedError) throw schedError;
 
-    // ✅ CORRETO: interventions + experiment_id  
+    // ✅ interventions → experimentid (camelCase, igual ao exportInterventionsData)
     const { data: interventions, error: intError } = await s
       .from('interventions')
       .select('*')
-      .eq('experiment_id', experiment.id)
+      .eq('experimentid', experiment.id)
       .order('interventiondate', { ascending: true });
 
     if (intError) throw intError;
@@ -580,10 +580,8 @@
       return;
     }
 
-    // Montar linha do tempo
     const exportData = [];
 
-    // Cronograma
     (schedule || []).forEach(a => {
       exportData.push({
         Origem: 'Cronograma',
@@ -598,7 +596,6 @@
       });
     });
 
-    // Intervenções
     (interventions || []).forEach(i => {
       exportData.push({
         Origem: 'Intervenção',
@@ -614,10 +611,8 @@
       });
     });
 
-    // Ordenar cronologicamente
     exportData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-    // Excel
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Linha do tempo');
