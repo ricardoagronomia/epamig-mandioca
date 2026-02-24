@@ -557,20 +557,20 @@
   }
 
   try {
-    // COPIADO EXATAMENTE do exportAllData
+    // ✅ CORRETO: scheduled_actions + experiment_id
     const { data: schedule, error: schedError } = await s
-      .from('scheduled_actions')  // ← igual ao exportAllData
+      .from('scheduled_actions')
       .select('*')
-      .eq('experimentid', experiment.id)  // ← igual ao exportAllData
+      .eq('experiment_id', experiment.id)
       .order('startdate', { ascending: true });
 
     if (schedError) throw schedError;
 
-    // Igual ao exportInterventionsData
+    // ✅ CORRETO: interventions + experiment_id  
     const { data: interventions, error: intError } = await s
       .from('interventions')
       .select('*')
-      .eq('experimentid', experiment.id)  // ← camelCase como nas outras
+      .eq('experiment_id', experiment.id)
       .order('interventiondate', { ascending: true });
 
     if (intError) throw intError;
@@ -580,9 +580,10 @@
       return;
     }
 
+    // Montar linha do tempo
     const exportData = [];
 
-    // Cronograma (igual ao exportAllData)
+    // Cronograma
     (schedule || []).forEach(a => {
       exportData.push({
         Origem: 'Cronograma',
@@ -590,42 +591,33 @@
         'Data início': a.startdate || '',
         'Data fim': a.enddate || '',
         Tipo: a.phase || 'Evento',
-        Título: a.name,
-        Bloco: '',
-        Tratamento: '',
-        Responsável: a.owner || '',
-        Produto: '',
-        Dosagem: '',
-        Método: '',
+        Título: a.name || '',
         Status: a.completedat ? 'Concluído' : 'Pendente',
+        Responsável: a.owner || '',
         Descrição: a.description || ''
       });
     });
 
-    // Intervenções (igual ao exportInterventionsData)
+    // Intervenções
     (interventions || []).forEach(i => {
       exportData.push({
         Origem: 'Intervenção',
         Data: i.interventiondate || '',
-        'Data início': i.interventiondate || '',
-        'Data fim': '',
         Tipo: i.interventiontype || '',
         Título: i.interventiontype || '',
         Bloco: i.blocknumber || '',
         Tratamento: i.plotcode || '',
-        Responsável: '',
         Produto: i.product || '',
         Dosagem: i.dosage || '',
         Método: i.method || '',
-        Status: '',
         Descrição: i.notes || ''
       });
     });
 
-    // Ordenar por Data
+    // Ordenar cronologicamente
     exportData.sort((a, b) => new Date(a.Data) - new Date(b.Data));
 
-    // Gerar Excel (igual às outras funções)
+    // Excel
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Linha do tempo');
@@ -634,9 +626,9 @@
     const filename = `${experiment.code}_linha_do_tempo_${today}.xlsx`;
     XLSX.writeFile(workbook, filename);
 
-    alert(`${exportData.length} registros exportados com sucesso!`);
+    alert(`${exportData.length} registros da linha do tempo exportados!`);
   } catch (err) {
-    console.error("Erro ao exportar linha do tempo:", err);
+    console.error("Erro linha do tempo:", err);
     alert("Erro: " + err.message);
   }
 };
