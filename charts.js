@@ -338,12 +338,7 @@ if (allBioIds.length > 0) {
       const key = `${s.monitoring_event_id}_${s.plant_position}`;
       statusMap[key] = s.status;
     });
-    // Adicione temporariamente no início de generateSurvivalChart
-console.log('Total entradas em latestByPlot:', Object.keys(latestByPlot).length);
-Object.values(latestByPlot).forEach(mon => {
-  console.log(`Tratamento: ${mon.plot_code} | Bloco: ${mon.block_number} | Data: ${mon.monitoring_date} | ID: ${mon.id}`);
-});
-
+    
     const dataByTreatment = {};
 
     Object.values(latestByPlot).forEach(mon => {
@@ -352,22 +347,7 @@ Object.values(latestByPlot).forEach(mon => {
       if (!dataByTreatment[treatment]) {
         dataByTreatment[treatment] = { alive: 0, total: 0 };
       }
-      // DEBUG TEMPORÁRIO
-console.table(Object.entries(dataByTreatment).map(([t, d]) => ({
-  tratamento: t,
-  vivas: d.alive,
-  mortas: d.dead,
-  nao_nasceram: d.notSprouted,
-  total: d.alive + d.dead + d.notSprouted
-})));
-
-// Ver quais monitoramentos estão sendo usados por tratamento
-Object.values(latestByPlot).forEach(mon => {
-  if (mon.plot_code === 'T8') {
-    console.log('T8 monitoramento usado:', mon.id, 'bloco:', mon.block_number, 'data:', mon.monitoring_date);
-  }
-});
-
+      
       const plantsBio = biometrics.filter(b => b.monitoring_event_id === mon.id);
       const sproutedPlants = plantsBio.filter(b => b.has_sprouted === true);
       
@@ -685,6 +665,11 @@ Object.values(latestByPlot).forEach(mon => {
 async function generateSurvivalChart(latestByPlot, biometrics, statuses) {
   const ctx = document.getElementById('chartSurvival');
   if (!ctx) return;
+
+  //DEBUG
+  console.log('latestByPlot recebido:', latestByPlot);
+  console.log('biometrics recebidas:', biometrics?.length);
+  console.log('statuses recebidos:', statuses?.length);
 
   const statusMap = {};
   statuses.forEach(s => {
