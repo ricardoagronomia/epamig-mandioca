@@ -177,165 +177,146 @@
   }
 
   async function loadChartsData(experimentId) {
-    if (typeof s === "undefined") {
-      console.error("Supabase client não disponível");
-      return;
+  if (typeof s === "undefined") return;
+
+  try {
+    const { data: allMonitorings, error: monError } = await s
+      .from("monitoring_events")
+      .select("id, plot_code, block_number, monitoring_date")
+      .eq("experiment_id", experimentId)
+      .order("monitoring_date", { ascending: true });
+
+    if (monError) throw monError;
+    if (!allMonitorings || !allMonitorings.length) return;
+
+    const latestByPlot = {};
+    [...allMonitorings].reverse().forEach(m => {
+      const key = `${m.block_number}_${m.plot_code}`;
+      if (!latestByPlot[key]) latestByPlot[key] = m;
+    });
+
+    const allMonitoringIds = allMonitorings.map(m => m.id);
+    const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
+
+    const { data: biometrics, error: bioError } = await s
+      .from("plant_biometrics")
+      .select("*")
+      .in("monitoring_event_id", allMonitoringIds);
+    if (bioError) throw bioError;
+
+    const { data: statuses, error: statusError } = await s
+      .from("plant_status")
+      .select("*")
+      .in("monitoring_event_id", latestMonitoringIds);
+    if (statusError) throw statusError;
+
+    // ✅ CORREÇÃO: buscar hastes de todas as biometrias
+    const allBioIds = biometrics.map(b => b.id);
+    let stems = [];
+    if (allBioIds.length > 0) {
+      const { data: stemData, error: stemError } = await s
+        .from("plant_stem_measurements")
+        .select("biometric_id, height_cm, diameter_cm")
+        .in("biometric_id", allBioIds);
+      if (!stemError) stems = stemData || [];
     }
 
-    try {
-      const { data: allMonitorings, error: monError } = await s
-        .from("monitoring_events")
-        .select("id, plot_code, block_number, monitoring_date")
-        .eq("experiment_id", experimentId)
-        .order("monitoring_date", { ascending: true });
+    // ✅ Montar mapa: biometric_id → stems[]
+    const stemsMap = {};
+    stems.forEach(st => {
+      if (!stemsMap[st.biometric_id]) stemsMap[st.biometric_id] = [];
+      stemsMap[st.biometric_id].push(st);
+    });
 
-      if (monError) throw monError;
-      if (!allMonitorings || !allMonitorings.length) return;
+    cachedData = { latestByPlot, biometrics, statuses, allMonitorings, experimentId, stemsMap };
 
-      const latestByPlot = {};
-      [...allMonitorings].reverse().forEach(m => {
-        const key = `${m.block_number}_${m.plot_code}`;
-        if (!latestByPlot[key]) {
-          latestByPlot[key] = m;
-        }
+    generateHeightChart(allMonitorings, biometrics, stemsMap);
+    generateSurvivalChart(latestByPlot, biometrics, statuses);
+    generateSanityChart(latestByPlot, biometrics, statuses);
+    generateDiameterChart(latestByPlot, biometrics, statuses, stemsMap);
+    generateLodgingChart(latestByPlot, biometrics, statuses, experimentId);
+    generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId, stemsMap);
+
+  } catch (err) {
+    console.error("Erro ao carregar dados dos gráficos:", err);
+  }
+}
+
+  function generateHeightChart(monitorings, biometrics, stemsMap) {
+  const ctx = document.getElementById('chartHeight');
+  if (!ctx) return;
+
+  const dataByTreatment = {};
+
+  monitorings.forEach(mon => {
+    const treatmentKey = mon.plot_code;
+    if (!dataByTreatment[treatmentKey]) dataByTreatment[treatmentKey] = {};
+
+    // ✅ Apenas plantas de referência brotadas
+    const refBios = biometrics.filter(b =>
+      b.monitoring_event_id === mon.id &&
+      b.is_reference_plant === true &&
+      b.has_sprouted === true
+    );
+
+    const heightValues = [];
+    refBios.forEach(b => {
+      const bioStems = stemsMap[b.id] || [];
+      bioStems.forEach(st => {
+        if (st.height_cm > 0) heightValues.push(st.height_cm);
       });
+    });
 
-      const allMonitoringIds = allMonitorings.map(m => m.id);
-      const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
-
-      const { data: biometrics, error: bioError } = await s
-        .from("plant_biometrics")
-        .select("*")
-        .in("monitoring_event_id", allMonitoringIds);
-
-      if (bioError) throw bioError;
-
-      const { data: statuses, error: statusError } = await s
-        .from("plant_status")
-        .select("*")
-        .in("monitoring_event_id", latestMonitoringIds);
-
-      if (statusError) throw statusError;
-
-      cachedData = {
-        latestByPlot,
-        biometrics,
-        statuses,
-        allMonitorings,
-        experimentId
-      };
-
-      generateHeightChart(allMonitorings, biometrics);
-      generateSurvivalChart(latestByPlot, biometrics, statuses);
-      generateSanityChart(latestByPlot, biometrics, statuses);
-      generateDiameterChart(latestByPlot, biometrics, statuses);
-      generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId);
-
-    } catch (err) {
-      console.error("Erro ao carregar dados dos gráficos:", err);
+    if (heightValues.length > 0) {
+      const avg = heightValues.reduce((sum, v) => sum + v, 0) / heightValues.length;
+      if (!dataByTreatment[treatmentKey][mon.monitoring_date]) {
+        dataByTreatment[treatmentKey][mon.monitoring_date] = [];
+      }
+      dataByTreatment[treatmentKey][mon.monitoring_date].push(avg);
     }
-  }
+  });
 
-  function generateHeightChart(monitorings, biometrics) {
-    const ctx = document.getElementById('chartHeight');
-    if (!ctx) return;
+  const finalData = {};
+  Object.keys(dataByTreatment).forEach(treatment => {
+    finalData[treatment] = [];
+    Object.keys(dataByTreatment[treatment]).forEach(date => {
+      const heights = dataByTreatment[treatment][date];
+      const avg = heights.reduce((sum, h) => sum + h, 0) / heights.length;
+      finalData[treatment].push({ date, height: avg });
+    });
+    finalData[treatment].sort((a, b) => new Date(a.date) - new Date(b.date));
+  });
 
-    const dataByTreatment = {};
+  const colors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#f43f5e'];
+  const sortedTreatments = Object.keys(finalData).sort((a, b) => (parseInt(a.replace(/\D/g,''))||0) - (parseInt(b.replace(/\D/g,''))||0));
 
-    monitorings.forEach(mon => {
-      const treatmentKey = mon.plot_code;
-      
-      if (!dataByTreatment[treatmentKey]) {
-        dataByTreatment[treatmentKey] = {};
+  const datasets = sortedTreatments.map((treatment, idx) => ({
+    label: treatment,
+    data: finalData[treatment].map(d => ({ x: d.date, y: d.height })),
+    borderColor: colors[idx % colors.length],
+    backgroundColor: colors[idx % colors.length] + '20',
+    borderWidth: 2,
+    tension: 0.3,
+    fill: false
+  }));
+
+  chartInstances.height = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd/MM' } }, title: { display: true, text: 'Data do monitoramento' } },
+        y: { title: { display: true, text: 'Altura média ref. (cm)' }, beginAtZero: true }
+      },
+      plugins: {
+        legend: { display: true, position: 'bottom' },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} cm` } }
       }
-
-      const plantsBio = biometrics.filter(b => 
-        b.monitoring_event_id === mon.id && 
-        b.has_sprouted === true &&
-        b.height_cm != null &&
-        b.height_cm > 0
-      );
-
-      if (plantsBio.length > 0) {
-        const avgHeight = plantsBio.reduce((sum, b) => sum + b.height_cm, 0) / plantsBio.length;
-        
-        if (!dataByTreatment[treatmentKey][mon.monitoring_date]) {
-          dataByTreatment[treatmentKey][mon.monitoring_date] = [];
-        }
-        dataByTreatment[treatmentKey][mon.monitoring_date].push(avgHeight);
-      }
-    });
-
-    const finalData = {};
-    
-    Object.keys(dataByTreatment).forEach(treatment => {
-      finalData[treatment] = [];
-      
-      Object.keys(dataByTreatment[treatment]).forEach(date => {
-        const heights = dataByTreatment[treatment][date];
-        const avgAcrossBlocks = heights.reduce((sum, h) => sum + h, 0) / heights.length;
-        
-        finalData[treatment].push({
-          date: date,
-          height: avgAcrossBlocks
-        });
-      });
-      
-      finalData[treatment].sort((a, b) => new Date(a.date) - new Date(b.date));
-    });
-
-    const colors = [
-      '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
-      '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
-      '#84cc16', '#f43f5e'
-    ];
-
-    const sortedTreatments = Object.keys(finalData).sort((a, b) => {
-      const numA = parseInt(a.replace(/\D/g, '')) || 0;
-      const numB = parseInt(b.replace(/\D/g, '')) || 0;
-      return numA - numB;
-    });
-
-    const datasets = sortedTreatments.map((treatment, idx) => {
-      return {
-        label: treatment,
-        data: finalData[treatment].map(d => ({ x: d.date, y: d.height })),
-        borderColor: colors[idx % colors.length],
-        backgroundColor: colors[idx % colors.length] + '20',
-        borderWidth: 2,
-        tension: 0.3,
-        fill: false
-      };
-    });
-
-    chartInstances.height = new Chart(ctx, {
-      type: 'line',
-      data: { datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            type: 'time',
-            time: { unit: 'day', displayFormats: { day: 'dd/MM' } },
-            title: { display: true, text: 'Data do monitoramento' }
-          },
-          y: {
-            title: { display: true, text: 'Altura média (cm)' },
-            beginAtZero: true
-          }
-        },
-        plugins: {
-          legend: { display: true, position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)} cm`
-            }
-          }
-        }
-      }
-    });
-  }
+    }
+  });
+}
 
   function generateSurvivalChart(latestByPlot, biometrics, statuses) {
     const ctx = document.getElementById('chartSurvival');
@@ -568,169 +549,107 @@
 
 
   function generateSanityChart(latestByPlot, biometrics, statuses) {
-    const ctx = document.getElementById('chartSanity');
-    if (!ctx) return;
+  const ctx = document.getElementById('chartSanity');
+  if (!ctx) return;
 
-    const dataByTreatment = {};
+  const statusMap = {};
+  statuses.forEach(s => { statusMap[`${s.monitoring_event_id}_${s.plant_position}`] = s.status; });
 
-    Object.values(latestByPlot).forEach(mon => {
-      const treatment = mon.plot_code;
-      
-      if (!dataByTreatment[treatment]) {
-        dataByTreatment[treatment] = [];
-      }
+  const dataByTreatment = {};
 
-      const plantsBio = biometrics.filter(b => 
-        b.monitoring_event_id === mon.id &&
-        b.has_sprouted === true &&
-        b.sanity_score != null &&
-        b.sanity_score > 0
-      );
+  Object.values(latestByPlot).forEach(mon => {
+    const treatment = mon.plot_code;
+    if (!dataByTreatment[treatment]) dataByTreatment[treatment] = [];
 
-      if (plantsBio.length > 0) {
-        const avgSanity = plantsBio.reduce((sum, b) => sum + b.sanity_score, 0) / plantsBio.length;
-        dataByTreatment[treatment].push(avgSanity);
-      }
+    // ✅ Apenas plantas de referência vivas
+    const refBios = biometrics.filter(b =>
+      b.monitoring_event_id === mon.id &&
+      b.is_reference_plant === true &&
+      b.has_sprouted === true &&
+      b.sanity_score > 0 &&
+      (!statusMap[`${mon.id}_${b.plant_position}`] || statusMap[`${mon.id}_${b.plant_position}`] === 'alive')
+    );
+
+    refBios.forEach(b => dataByTreatment[treatment].push(b.sanity_score));
+  });
+
+  const sanityData = Object.keys(dataByTreatment)
+    .filter(t => dataByTreatment[t].length > 0)
+    .map(t => {
+      const values = dataByTreatment[t];
+      return { label: t, sanity: values.reduce((s, v) => s + v, 0) / values.length };
+    })
+    .sort((a, b) => (parseInt(a.label.replace(/\D/g,''))||0) - (parseInt(b.label.replace(/\D/g,''))||0));
+
+  if (sanityData.length === 0) return;
+
+  chartInstances.sanity = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sanityData.map(d => d.label),
+      datasets: [{ label: 'Sanidade média (ref.)', data: sanityData.map(d => d.sanity), backgroundColor: '#ec4899', borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 5, title: { display: true, text: 'Nota (1-5)' } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+  function generateDiameterChart(latestByPlot, biometrics, statuses, stemsMap) {
+  const ctx = document.getElementById('chartDiameter');
+  if (!ctx) return;
+
+  const statusMap = {};
+  statuses.forEach(s => { statusMap[`${s.monitoring_event_id}_${s.plant_position}`] = s.status; });
+
+  const dataByTreatment = {};
+
+  Object.values(latestByPlot).forEach(mon => {
+    const treatment = mon.plot_code;
+    if (!dataByTreatment[treatment]) dataByTreatment[treatment] = [];
+
+    // ✅ Apenas plantas de referência vivas
+    const refBios = biometrics.filter(b =>
+      b.monitoring_event_id === mon.id &&
+      b.is_reference_plant === true &&
+      b.has_sprouted === true &&
+      (!statusMap[`${mon.id}_${b.plant_position}`] || statusMap[`${mon.id}_${b.plant_position}`] === 'alive')
+    );
+
+    refBios.forEach(b => {
+      const bioStems = stemsMap[b.id] || [];
+      bioStems.forEach(st => {
+        if (st.diameter_cm > 0) dataByTreatment[treatment].push(st.diameter_cm);
+      });
     });
+  });
 
-    const sanityData = [];
-    Object.keys(dataByTreatment).forEach(treatment => {
-      const values = dataByTreatment[treatment];
-      if (values.length > 0) {
-        const avgSanity = values.reduce((sum, v) => sum + v, 0) / values.length;
-        sanityData.push({ label: treatment, sanity: avgSanity });
-      }
-    });
+  const diameterData = Object.keys(dataByTreatment)
+    .filter(t => dataByTreatment[t].length > 0)
+    .map(t => {
+      const values = dataByTreatment[t];
+      return { label: t, diameter: values.reduce((s, v) => s + v, 0) / values.length };
+    })
+    .sort((a, b) => (parseInt(a.label.replace(/\D/g,''))||0) - (parseInt(b.label.replace(/\D/g,''))||0));
 
-    sanityData.sort((a, b) => {
-      const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
-      const numB = parseInt(b.label.replace(/\D/g, '')) || 0;
-      return numA - numB;
-    });
+  if (diameterData.length === 0) return;
 
-    if (sanityData.length === 0) return;
+  chartInstances.diameter = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: diameterData.map(d => d.label),
+      datasets: [{ label: 'Diâmetro médio ref. (cm)', data: diameterData.map(d => d.diameter), backgroundColor: '#3b82f6', borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'Diâmetro (cm)' } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
 
-    chartInstances.sanity = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: sanityData.map(d => d.label),
-        datasets: [{
-          label: 'Sanidade média',
-          data: sanityData.map(d => d.sanity),
-          backgroundColor: '#ec4899',
-          borderRadius: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { 
-            beginAtZero: true,
-            max: 5,
-            title: { display: true, text: 'Nota (1-5)' }
-          }
-        },
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-  }
-
-  function generateDiameterChart(latestByPlot, biometrics, statuses) {
-    const ctx = document.getElementById('chartDiameter');
-    if (!ctx) return;
-
-    const dataByTreatment = {};
-
-    Object.values(latestByPlot).forEach(mon => {
-      const treatment = mon.plot_code;
-      
-      if (!dataByTreatment[treatment]) {
-        dataByTreatment[treatment] = [];
-      }
-
-      const plantsBio = biometrics.filter(b => 
-        b.monitoring_event_id === mon.id &&
-        b.has_sprouted === true &&
-        (
-          (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
-          (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
-          (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
-        )
-      );
-
-      if (plantsBio.length > 0) {
-        let totalDiameters = 0;
-        let diameterCount = 0;
-        
-        plantsBio.forEach(b => {
-          if (b.stem_diameter_1_cm && b.stem_diameter_1_cm > 0) { 
-            totalDiameters += b.stem_diameter_1_cm; 
-            diameterCount++; 
-          }
-          if (b.stem_diameter_2_cm && b.stem_diameter_2_cm > 0) { 
-            totalDiameters += b.stem_diameter_2_cm; 
-            diameterCount++; 
-          }
-          if (b.stem_diameter_3_cm && b.stem_diameter_3_cm > 0) { 
-            totalDiameters += b.stem_diameter_3_cm; 
-            diameterCount++; 
-          }
-        });
-
-        if (diameterCount > 0) {
-          const avgDiameter = totalDiameters / diameterCount;
-          dataByTreatment[treatment].push(avgDiameter);
-        }
-      }
-    });
-
-    const diameterData = [];
-    Object.keys(dataByTreatment).forEach(treatment => {
-      const values = dataByTreatment[treatment];
-      if (values.length > 0) {
-        const avgDiameter = values.reduce((sum, v) => sum + v, 0) / values.length;
-        diameterData.push({ label: treatment, diameter: avgDiameter });
-      }
-    });
-
-    diameterData.sort((a, b) => {
-      const numA = parseInt(a.label.replace(/\D/g, '')) || 0;
-      const numB = parseInt(b.label.replace(/\D/g, '')) || 0;  // ✅ Corrigido
-      return numA - numB;
-    });
-
-
-    if (diameterData.length === 0) return;
-
-    chartInstances.diameter = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: diameterData.map(d => d.label),
-        datasets: [{
-          label: 'Diâmetro médio (cm)',
-          data: diameterData.map(d => d.diameter),
-          backgroundColor: '#3b82f6',
-          borderRadius: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { 
-            beginAtZero: true,
-            title: { display: true, text: 'Diâmetro (cm)' }
-          }
-        },
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-  }
   // ✅ NOVA FUNÇÃO 1: Gráfico de Status (substitui o antigo de sobrevivência)
 async function generateSurvivalChart(latestByPlot, biometrics, statuses) {
   const ctx = document.getElementById('chartSurvival');
@@ -1205,80 +1124,46 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
     });
   }
 
-  function getPlantMetricValueForMonitoring(metric, monitoring, biometrics, statuses) {
-    const plantsBio = biometrics.filter(b => b.monitoring_event_id === monitoring.id);
+  function getPlantMetricValueForMonitoring(metric, monitoring, biometrics, statuses, stemsMap) {
+  const plantsBio = biometrics.filter(b => b.monitoring_event_id === monitoring.id);
 
-    if (metric === 'height') {
-      const validPlants = plantsBio.filter(b => 
-        b.has_sprouted === true &&
-        b.height_cm != null &&
-        b.height_cm > 0
-      );
-      
-      if (validPlants.length === 0) return 0;
-      return validPlants.reduce((sum, b) => sum + b.height_cm, 0) / validPlants.length;
+  if (metric === 'height') {
+    // ✅ Apenas referências, via stems
+    const refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true);
+    const heights = [];
+    refBios.forEach(b => {
+      (stemsMap[b.id] || []).forEach(st => { if (st.height_cm > 0) heights.push(st.height_cm); });
+    });
+    return heights.length > 0 ? heights.reduce((s, v) => s + v, 0) / heights.length : 0;
 
-    } else if (metric === 'survival') {
-      const statusMap = {};
-      statuses.forEach(s => {
-        const key = `${s.monitoring_event_id}_${s.plant_position}`;
-        statusMap[key] = s.status;
-      });
+  } else if (metric === 'survival') {
+    const statusMap = {};
+    statuses.forEach(s => { statusMap[`${s.monitoring_event_id}_${s.plant_position}`] = s.status; });
+    const sprouted = plantsBio.filter(b => b.has_sprouted === true);
+    const alive = sprouted.filter(b => {
+      const st = statusMap[`${b.monitoring_event_id}_${b.plant_position}`];
+      return !st || st === 'alive';
+    }).length;
+    return (alive / 9) * 100;
 
-      const sproutedPlants = plantsBio.filter(b => b.has_sprouted === true);
-      const alivePlants = sproutedPlants.filter(b => {
-        const key = `${b.monitoring_event_id}_${b.plant_position}`;
-        const status = statusMap[key];
-        return !status || status === 'alive';
-      }).length;
+  } else if (metric === 'sanity') {
+    // ✅ Apenas referências
+    const refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true && b.sanity_score > 0);
+    if (refBios.length === 0) return 0;
+    return refBios.reduce((s, b) => s + b.sanity_score, 0) / refBios.length;
 
-      return (alivePlants / 9) * 100;
-
-    } else if (metric === 'sanity') {
-      const validPlants = plantsBio.filter(b => 
-        b.has_sprouted === true &&
-        b.sanity_score != null &&
-        b.sanity_score > 0
-      );
-      
-      if (validPlants.length === 0) return 0;
-      return validPlants.reduce((sum, b) => sum + b.sanity_score, 0) / validPlants.length;
-
-    } else if (metric === 'diameter') {
-      const validPlants = plantsBio.filter(b => 
-        b.has_sprouted === true &&
-        (
-          (b.stem_diameter_1_cm != null && b.stem_diameter_1_cm > 0) ||
-          (b.stem_diameter_2_cm != null && b.stem_diameter_2_cm > 0) ||
-          (b.stem_diameter_3_cm != null && b.stem_diameter_3_cm > 0)
-        )
-      );
-
-      if (validPlants.length === 0) return 0;
-
-      let totalDiameters = 0;
-      let diameterCount = 0;
-      
-      validPlants.forEach(b => {
-        if (b.stem_diameter_1_cm && b.stem_diameter_1_cm > 0) { 
-          totalDiameters += b.stem_diameter_1_cm; 
-          diameterCount++; 
-        }
-        if (b.stem_diameter_2_cm && b.stem_diameter_2_cm > 0) { 
-          totalDiameters += b.stem_diameter_2_cm; 
-          diameterCount++; 
-        }
-        if (b.stem_diameter_3_cm && b.stem_diameter_3_cm > 0) { 
-          totalDiameters += b.stem_diameter_3_cm; 
-          diameterCount++; 
-        }
-      });
-
-      return diameterCount > 0 ? totalDiameters / diameterCount : 0;
-    }
-
-    return 0;
+  } else if (metric === 'diameter') {
+    // ✅ Apenas referências, via stems
+    const refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true);
+    const diameters = [];
+    refBios.forEach(b => {
+      (stemsMap[b.id] || []).forEach(st => { if (st.diameter_cm > 0) diameters.push(st.diameter_cm); });
+    });
+    return diameters.length > 0 ? diameters.reduce((s, v) => s + v, 0) / diameters.length : 0;
   }
+
+  return 0;
+}
 
   async function getClimateMonthlyData(climateVar, experimentId) {
     try {
