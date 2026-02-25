@@ -1251,7 +1251,8 @@
         <!-- PÁGINA 2: INFORMAÇÕES GERAIS E OBJETIVO -->
         <div class="page-break"></div>
         <div class="section">
-          <div class="header">
+          <div style="page-break-inside: avoid; break-inside: avoid;">
+            <div class="header">
             <h1>INFORMAÇÕES GERAIS</h1>
             <p>Descrição do campo e caracterização</p>
           </div>
@@ -1316,7 +1317,8 @@
         <!-- PÁGINA 3: LAYOUT EXPERIMENTAL -->
         <div class="page-break"></div>
         <div class="section">
-          <div class="header">
+          <div style="page-break-inside: avoid; break-inside: avoid;">
+            <div class="header">
             <h1>LAYOUT EXPERIMENTAL</h1>
             <p>Mapa visual dos blocos e tratamentos</p>
           </div>
@@ -1352,7 +1354,8 @@
         ${monitorings && monitorings.length > 0 ? `
         <div class="page-break"></div>
         <div class="section">
-          <div class="header">
+          <div style="page-break-inside: avoid; break-inside: avoid;">
+            <div class="header">
             <h1>DESEMPENHO - MONITORAMENTO</h1>
             <p>Biometria das plantas ao longo das avaliações</p>
           </div>
@@ -1407,7 +1410,8 @@
         ${harvest && harvest.length > 0 ? `
         <div class="page-break"></div>
         <div class="section">
-          <div class="header">
+          <div style="page-break-inside: avoid; break-inside: avoid;">
+            <div class="header">
             <h1>DESEMPENHO - COLHEITA</h1>
             <p>Produção e qualidade dos produtos colhidos</p>
           </div>
@@ -1459,7 +1463,8 @@
         ${interventions && interventions.length > 0 ? `
         <div class="page-break"></div>
         <div class="section">
-          <div class="header">
+          <div style="page-break-inside: avoid; break-inside: avoid;">
+            <div class="header">
             <h1>HISTÓRICO DE INTERVENÇÕES</h1>
             <p>Adubação, controle fitossanitário e irrigação</p>
           </div>
@@ -1497,7 +1502,8 @@
         ${climate && climate.length > 0 ? `
         <div class="page-break"></div>
         <div class="section">
-          <div class="header">
+          <div style="page-break-inside: avoid; break-inside: avoid;">
+            <div class="header">
             <h1>DADOS CLIMÁTICOS INTEGRADOS</h1>
             <p>Condições meteorológicas durante o experimento</p>
           </div>
@@ -1548,7 +1554,8 @@
         <!-- PÁGINA 8: CONCLUSÕES E RECOMENDAÇÕES -->
         <div class="page-break"></div>
         <div class="section">
-          <div class="header">
+          <div style="page-break-inside: avoid; break-inside: avoid;">
+            <div class="header">
             <h1>CONCLUSÕES E RECOMENDAÇÕES</h1>
             <p>Análise consolidada do experimento</p>
           </div>
