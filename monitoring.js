@@ -1402,124 +1402,105 @@ window.cancelMonitoringEdit = function cancelMonitoringEdit() {
   };
 
   window.savePlantBiometric = async function savePlantBiometric(position) {
-    if (!currentMonitoringId) {
-      alert("Inicie um monitoramento primeiro.");
+  if (!currentMonitoringId) { alert('Inicie um monitoramento primeiro.'); return; }
+
+  const sproutedCheckbox  = document.getElementById('bioSprouted');
+  const expandedCheckbox  = document.getElementById('bioExpanded');
+  const stemsInput        = document.getElementById('bioStems');
+  const sanity            = document.getElementById('bioSanity')?.value || null;
+  const sanityObs         = document.getElementById('bioSanityObs')?.value || null;
+  const referenceCheckbox = document.getElementById('bioReference');
+
+  const sprouted  = sproutedCheckbox ? sproutedCheckbox.checked : false;
+  const expanded  = expandedCheckbox ? expandedCheckbox.checked : false;
+  // ✅ Ler stemCount direto do input, não confiar no DOM das hastes
+  const stemCount = stemsInput ? parseInt(stemsInput.value, 10) || 0 : 0;
+  const isReference = referenceCheckbox ? referenceCheckbox.checked : false;
+
+  // Validar limite de 3 plantas de referência
+  if (isReference) {
+    const { count } = await s
+      .from('plant_biometrics')
+      .select('*', { count: 'exact', head: true })
+      .eq('monitoring_event_id', currentMonitoringId)
+      .eq('is_reference_plant', true);
+    const currentRef = currentBiometrics[position]?.is_reference_plant ? 1 : 0;
+    if (count - currentRef >= 3) {
+      alert('Você já selecionou 3 plantas de referência. Desmarque uma para adicionar outra.');
+      return;
+    }
+  }
+
+  // ✅ Coletar hastes verificando se os inputs existem no DOM
+  const stems = [];
+  for (let i = 1; i <= stemCount; i++) {
+    const heightInput   = document.getElementById(`stemHeight${i}`);
+    const diameterInput = document.getElementById(`stemDiameter${i}`);
+
+    // ✅ Se os campos não existem no DOM, abortar e avisar
+    if (!heightInput || !diameterInput) {
+      alert(`Campos da haste ${i} não encontrados. Certifique-se de que o número de hastes foi confirmado antes de salvar.`);
       return;
     }
 
-    const sproutedCheckbox = document.getElementById("bioSprouted");
-    const expandedCheckbox = document.getElementById("bioExpanded");
-    const stemsInput = document.getElementById("bioStems");
-    const sanity = document.getElementById("bioSanity")?.value || null;
-    const sanityObs = document.getElementById("bioSanityObs")?.value || null;
-    const referenceCheckbox = document.getElementById("bioReference");
+    stems.push({
+      stem_number: i,
+      height_cm:   heightInput.value   ? Number(heightInput.value)          : null,
+      diameter_cm: diameterInput.value ? Number(diameterInput.value) / 10   : null  // mm → cm
+    });
+  }
 
-    const sprouted = sproutedCheckbox ? sproutedCheckbox.checked : false;
-    const expanded = expandedCheckbox ? expandedCheckbox.checked : false;
-    const stemCount = stemsInput ? parseInt(stemsInput.value, 10) : 0;
-    const isReference = referenceCheckbox ? referenceCheckbox.checked : false;
-
-    // Validar limite de 3 plantas de referência
-    if (isReference) {
-      const { count } = await s
-        .from("plant_biometrics")
-        .select("*", { count: "exact", head: true })
-        .eq("monitoring_event_id", currentMonitoringId)
-        .eq("is_reference_plant", true);
-
-      const currentRef = currentBiometrics[position]?.is_reference_plant ? 1 : 0;
-
-      if (count - currentRef >= 3) {
-        alert("Você já selecionou 3 plantas de referência. Desmarque uma para adicionar outra.");
-        return;
-      }
-    }
-
-    // Coletar dados das hastes
-    const stems = [];
-    for (let i = 1; i <= stemCount; i++) {
-      const heightInput = document.getElementById(`stemHeight_${i}`);
-      const diameterInput = document.getElementById(`stemDiameter_${i}`);
-
-      if (heightInput || diameterInput) {
-        stems.push({
-          stemnumber: i,
-          heightcm: heightInput?.value ? Number(heightInput.value) : null,
-          diametercm: diameterInput?.value ? Number(diameterInput.value) / 10 : null  // Converter mm para cm
-        });
-      }
-    }
-
-    const payload = {
-      monitoring_event_id: currentMonitoringId,
-      plant_position: position,
-      stem_count: stemCount,
-      sanity_score: sanity ? Number(sanity) : null,
-      sanity_observations: sanityObs,
-      has_sprouted: sprouted,
-      has_expanded_leaves: expanded,
-      is_reference_plant: isReference
-    };
-
-    try {
-      const { data: existing } = await s
-        .from("plant_biometrics")
-        .select("id")
-        .eq("monitoring_event_id", currentMonitoringId)
-        .eq("plant_position", position)
-        .maybeSingle();
-
-      let biometricId;
-
-      if (existing) {
-        const { error } = await s
-          .from("plant_biometrics")
-          .update(payload)
-          .eq("id", existing.id);
-        if (error) throw error;
-        biometricId = existing.id;
-
-        await s
-          .from("plant_stem_measurements")
-          .delete()
-          .eq("biometric_id", biometricId);
-      } else {
-        const { data, error } = await s
-          .from("plant_biometrics")
-          .insert(payload)
-          .select('*');
-        if (error) throw error;
-        biometricId = data[0].id;
-      }
-
-      if (stems.length > 0) {
-        const stemRecords = stems.map(stem => ({
-          biometric_id: biometricId,
-          ...stem
-        }));
-
-        const { error: stemError } = await s
-          .from("plant_stem_measurements")
-          .insert(stemRecords);
-
-        if (stemError) throw stemError;
-      }
-
-      currentBiometrics[position] = {
-        ...payload,
-        stems: stems
-      };
-
-      await loadBiometricsData(currentMonitoringId);
-
-      if (typeof closeModal === "function") closeModal();
-      setTimeout(() => openBiometricCollectionDialog(), 100);
-
-    } catch (err) {
-      console.error("Erro ao salvar biometria da planta:", err);
-      alert("Erro ao salvar dados da planta.");
-    }
+  const payload = {
+    monitoring_event_id:  currentMonitoringId,
+    plant_position:       position,
+    stem_count:           stemCount,
+    sanity_score:         sanity ? Number(sanity) : null,
+    sanity_observations:  sanityObs,
+    has_sprouted:         sprouted,
+    has_expanded_leaves:  expanded,
+    is_reference_plant:   isReference
   };
+
+  try {
+    const { data: existing } = await s
+      .from('plant_biometrics')
+      .select('id')
+      .eq('monitoring_event_id', currentMonitoringId)
+      .eq('plant_position', position)
+      .maybeSingle();
+
+    let biometricId;
+
+    if (existing) {
+      const { error } = await s.from('plant_biometrics').update(payload).eq('id', existing.id);
+      if (error) throw error;
+      biometricId = existing.id;
+      // Deletar hastes antigas antes de reinserir
+      await s.from('plant_stem_measurements').delete().eq('biometric_id', biometricId);
+    } else {
+      const { data, error } = await s.from('plant_biometrics').insert(payload).select();
+      if (error) throw error;
+      biometricId = data[0].id;
+    }
+
+    // ✅ Inserir hastes apenas se houver stems E biometricId válido
+    if (stems.length > 0 && biometricId) {
+      const stemRecords = stems.map(stem => ({ biometric_id: biometricId, ...stem }));
+      const { error: stemError } = await s.from('plant_stem_measurements').insert(stemRecords);
+      if (stemError) throw stemError;  // ✅ Erro agora é propagado corretamente
+    }
+
+    currentBiometrics[position] = { ...payload, stems };
+    await loadBiometricsData(currentMonitoringId);
+
+    if (typeof closeModal === 'function') closeModal();
+    setTimeout(openBiometricCollectionDialog, 100);
+
+  } catch (err) {
+    console.error('Erro ao salvar biometria da planta:', err);
+    alert(`Erro ao salvar dados da planta: ${err.message || err}`);
+  }
+};
 
   window.openPlantStatusDialog = function openPlantStatusDialog() {
     if (window.currentRole === "visitor") return;
