@@ -346,6 +346,21 @@ if (allBioIds.length > 0) {
       if (!dataByTreatment[treatment]) {
         dataByTreatment[treatment] = { alive: 0, total: 0 };
       }
+      // DEBUG TEMPORÁRIO
+console.table(Object.entries(dataByTreatment).map(([t, d]) => ({
+  tratamento: t,
+  vivas: d.alive,
+  mortas: d.dead,
+  nao_nasceram: d.notSprouted,
+  total: d.alive + d.dead + d.notSprouted
+})));
+
+// Ver quais monitoramentos estão sendo usados por tratamento
+Object.values(latestByPlot).forEach(mon => {
+  if (mon.plot_code === 'T8') {
+    console.log('T8 monitoramento usado:', mon.id, 'bloco:', mon.block_number, 'data:', mon.monitoring_date);
+  }
+});
 
       const plantsBio = biometrics.filter(b => b.monitoring_event_id === mon.id);
       const sproutedPlants = plantsBio.filter(b => b.has_sprouted === true);
