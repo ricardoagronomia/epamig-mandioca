@@ -1000,6 +1000,12 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
         const value = getPlantMetricValueForMonitoring(plantMetric, mon, biometrics, statuses, stemsMap);
         treatmentValues[treatment].push(value);
       });
+
+      //DEBUG
+      if (metric === 'height') {
+  const refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true);
+  console.log(`[HEIGHT] monitoring ${monitoring.id} | refBios: ${refBios.length} | stems disponíveis: ${refBios.map(b => (stemsMap[b.id] || []).length)}`);
+
       
       // Calcular média de cada tratamento neste mês
       Object.keys(treatmentValues).forEach(treatment => {
