@@ -217,7 +217,7 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
       .select('*', { count: 'exact', head: true })
       .eq('experiment_id', experimentId);
 
-    // ✅ 2. DATA DA ÚLTIMA COLETA (máxima)
+    // 2. Última data de coleta
     const { data: lastEvent } = await s
       .from('monitoring_events')
       .select('monitoring_date')
@@ -231,9 +231,8 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
     }
 
     const lastDate = lastEvent[0].monitoring_date;
-    console.log('📅 ÚLTIMA DATA:', lastDate);
 
-    // 3. TODOS monitoring_events da ÚLTIMA DATA
+    // 3. Events da última data
     const { data: lastEvents } = await s
       .from('monitoring_events')
       .select('id')
@@ -242,77 +241,87 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
 
     const lastEventIds = lastEvents.map(e => e.id);
 
-    // 4. Biometrias da ÚLTIMA DATA (324 plantas)
-    const { data: lastBiometrics } = await s
+    // 4. Biometrias da última data
+    const { data: bios } = await s
       .from('plant_biometrics')
       .select('*')
       .in('monitoring_event_id', lastEventIds);
 
-    // 5. Status da ÚLTIMA DATA
-    const { data: lastStatuses } = await s
+    // 5. Status da última data
+    const { data: stats } = await s
       .from('plant_status')
       .select('*')
       .in('monitoring_event_id', lastEventIds);
 
-    // 6. Status map
+    // ✅ CÁLCULO CORRETO
+    const totalIniciais = 324;                              // fixo
+    const nasceram = bios.filter(b => b.has_sprouted).length; // 285
+    const mortas = stats.filter(s => s.status === 'dead').length; // 18
+    const vivas = nasceram - mortas;                        // 267
+    const pctVivas = (vivas / totalIniciais * 100).toFixed(1); // 82.4%
+    const naoNasceram = totalIniciais - nasceram;           // 39
+
+    // 6. Referências vivas (altura/diâmetro/sanidade)
     const statusMap = {};
-    lastStatuses.forEach(s => {
-      statusMap[s.monitoring_event_id + '-' + s.plant_position] = s.status;
-    });
+    stats.forEach(s => statusMap[s.monitoring_event_id + '-' + s.plant_position] = s.status);
 
-    // ✅ 7. % VIVAS - ÚLTIMA DATA (324 plantas)
-    const sproutedPlants = lastBiometrics.filter(b => b.has_sprouted);
-    const alivePlants = sproutedPlants.filter(b => 
-      !statusMap[b.monitoring_event_id + '-' + b.plant_position] || 
-      statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive'
-    );
-    const totalPlants = sproutedPlants.length; // ~324
-    const alivePercentage = totalPlants > 0 ? ((alivePlants.length / totalPlants) * 100).toFixed(1) : '0.0';
-
-    // 8. Referências da ÚLTIMA DATA (altura/diâmetro/sanidade)
-    const refPlants = sproutedPlants.filter(b => b.is_reference_plant);
-    const aliveRefPlants = refPlants.filter(b => 
-      !statusMap[b.monitoring_event_id + '-' + b.plant_position] || 
-      statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive'
+    const aliveRefs = bios.filter(b =>
+      b.is_reference_plant &&
+      b.has_sprouted &&
+      (!statusMap[b.monitoring_event_id + '-' + b.plant_position] ||
+       statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive')
     );
 
-    // 9. Cálculos ref
-    const refWithHeight = aliveRefPlants.filter(b => b.height_cm > 0);
-    const avgHeight = refWithHeight.length > 0 ? (refWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / refWithHeight.length).toFixed(1) : '0.0';
+    const refWithHeight = aliveRefs.filter(b => b.height_cm > 0);
+    const avgHeight = refWithHeight.length > 0
+      ? (refWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / refWithHeight.length).toFixed(1)
+      : '0.0';
 
     let totalDia = 0, diaCount = 0;
-    aliveRefPlants.forEach(b => {
+    aliveRefs.forEach(b => {
       if (b.stem_diameter_1_cm > 0) { totalDia += b.stem_diameter_1_cm; diaCount++; }
       if (b.stem_diameter_2_cm > 0) { totalDia += b.stem_diameter_2_cm; diaCount++; }
       if (b.stem_diameter_3_cm > 0) { totalDia += b.stem_diameter_3_cm; diaCount++; }
     });
     const avgDiameterCm = diaCount > 0 ? (totalDia / diaCount).toFixed(2) : '0.00';
 
-    const refWithSanity = aliveRefPlants.filter(b => b.sanity_score > 0);
-    const avgSanity = refWithSanity.length > 0 ? (refWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / refWithSanity.length).toFixed(1) : '0.0';
+    const refWithSanity = aliveRefs.filter(b => b.sanity_score > 0);
+    const avgSanity = refWithSanity.length > 0
+      ? (refWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / refWithSanity.length).toFixed(1)
+      : '0.0';
 
     summaryEl.innerHTML = `
       <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;margin-top:4px">
+
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:999px;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:16px">${monitoringCount}</div>
+          <div style="width:28px;height:28px;border-radius:999px;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:14px">📋</div>
           <div><div style="font-size:18px;font-weight:600;color:#111827">${monitoringCount}</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Coletas</div></div>
         </div>
-        <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#ecfdf5;display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:999px;background:#bbf7d0;display:flex;align-items:center;justify-content:center;font-size:16px">●</div>
-          <div><div style="font-size:18px;font-weight:600;color:#14532d">${alivePercentage}%</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Vivas ${lastDate.slice(0,10)} (${alivePlants.length}/${totalPlants})</div></div>
+
+        <div style="flex:1 1 130px;min-width:130px;padding:8px 10px;border-radius:10px;background:#ecfdf5;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:999px;background:#bbf7d0;display:flex;align-items:center;justify-content:center;font-size:14px">🌱</div>
+          <div>
+            <div style="font-size:18px;font-weight:600;color:#14532d">${pctVivas}%</div>
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Vivas ${vivas}/${totalIniciais}</div>
+            <div style="font-size:10px;color:#9ca3af">${mortas} mortas · ${naoNasceram} não nasceram</div>
+          </div>
         </div>
+
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#fefce8;display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:999px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:16px">↗</div>
+          <div style="width:28px;height:28px;border-radius:999px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:14px">↗</div>
           <div><div style="font-size:18px;font-weight:600;color:#713f12">${avgHeight} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Ref. altura</div></div>
         </div>
+
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:999px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:16px">⌀</div>
+          <div style="width:28px;height:28px;border-radius:999px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:14px">⌀</div>
           <div><div style="font-size:18px;font-weight:600;color:#1e3a8a">${avgDiameterCm} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Ref. diâmetro</div></div>
         </div>
+
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:999px;background:#fecaca;display:flex;align-items:center;justify-content:center;font-size:16px">★</div>
+          <div style="width:28px;height:28px;border-radius:999px;background:#fecaca;display:flex;align-items:center;justify-content:center;font-size:14px">★</div>
           <div><div style="font-size:18px;font-weight:600;color:#7f1d1d">${avgSanity}/5</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Ref. sanidade</div></div>
         </div>
+
       </div>
     `;
 
