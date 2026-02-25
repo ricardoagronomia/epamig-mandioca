@@ -668,8 +668,14 @@ async function generateSurvivalChart(latestByPlot, biometrics, statuses) {
 
   //DEBUG
   console.log('latestByPlot recebido:', latestByPlot);
+  // Logo após o console.log de latestByPlot
+const t8entries = Object.entries(latestByPlot).filter(([k]) => k.includes('T8'));
+console.log('Entradas T8 em latestByPlot:', t8entries.length, t8entries.map(([k,v]) => ({key: k, bloco: v.block_number, data: v.monitoring_date, id: v.id})));
+const t8Bios = biometrics.filter(b => t8entries.some(([,m]) => m.id === b.monitoring_event_id));
+console.log('Biometrias T8:', t8Bios.length, t8Bios.map(b => ({pos: b.plant_position, brotou: b.has_sprouted, bloco: t8entries.find(([,m]) => m.id === b.monitoring_event_id)?.[1]?.block_number})));
   console.log('biometrics recebidas:', biometrics?.length);
   console.log('statuses recebidos:', statuses?.length);
+  
 
   const statusMap = {};
   statuses.forEach(s => {
