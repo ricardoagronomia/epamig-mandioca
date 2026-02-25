@@ -237,6 +237,14 @@
     generateLodgingChart(latestByPlot, biometrics, statuses, experimentId);
     generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId, stemsMap);
 
+    // DEBUG TEMPORÁRIO - remover depois
+console.log('Total biometrias:', biometrics.length);
+console.log('Total stems:', stems.length);
+console.log('stemsMap keys:', Object.keys(stemsMap).length);
+console.log('Exemplo biometria[0]:', biometrics[0]);
+console.log('Exemplo stem[0]:', stems[0]);
+console.log('Plantas de referência:', biometrics.filter(b => b.is_reference_plant === true).length);
+
   } catch (err) {
     console.error("Erro ao carregar dados dos gráficos:", err);
   }
