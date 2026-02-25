@@ -1005,12 +1005,12 @@
 
       // Criar PDF
       const opt = {
-        margin: 10,
+        margin: [12, 10, 12, 10],       // top, right, bottom, left
         filename: `${experiment.code}_relatorio_${new Date().toISOString().slice(0,10)}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false },
         jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-      };
+      }
 
       html2pdf().set(opt).from(html).save();
 
@@ -1062,10 +1062,10 @@
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; line-height: 1.5; color: #333; }
           
-          @page {
-            size: A4;
-            margin: 20mm 15mm;
-            padding: 0;
+          .page-break { 
+            display: block; 
+            height: 1px; 
+            page-break-after: always; 
           }
           
           .page-break { page-break-after: always; margin-bottom: 0; padding-bottom: 0; }
@@ -1073,7 +1073,7 @@
           .capa {
             padding: 40px 30px;
             text-align: center;
-            min-height: 280mm;
+            min-height: 240mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
