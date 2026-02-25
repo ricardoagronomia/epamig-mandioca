@@ -972,15 +972,17 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
     // Agrupar monitoramentos por mês
     const monitoringsByMonth = {};
     
-    allMonitorings.forEach(mon => {
-      const date = new Date(mon.monitoring_date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
-      if (!monitoringsByMonth[monthKey]) {
-        monitoringsByMonth[monthKey] = [];
-      }
-      monitoringsByMonth[monthKey].push(mon);
-    });
+    // ✅ Para altura e diâmetro, usar apenas o último monitoramento por parcela
+          const monitoringsToUse = (plantMetric === 'height' || plantMetric === 'diameter')
+            ? Object.values(latestByPlot)
+            : allMonitorings;
+
+          monitoringsToUse.forEach(mon => {
+            const date = new Date(mon.monitoring_date);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (!monitoringsByMonth[monthKey]) monitoringsByMonth[monthKey] = [];
+            monitoringsByMonth[monthKey].push(mon);
+          });
 
     // Calcular média de cada tratamento por mês
     const treatmentsByMonth = {};
