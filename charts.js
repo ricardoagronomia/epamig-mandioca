@@ -338,6 +338,11 @@ if (allBioIds.length > 0) {
       const key = `${s.monitoring_event_id}_${s.plant_position}`;
       statusMap[key] = s.status;
     });
+    // Adicione temporariamente no início de generateSurvivalChart
+console.log('Total entradas em latestByPlot:', Object.keys(latestByPlot).length);
+Object.values(latestByPlot).forEach(mon => {
+  console.log(`Tratamento: ${mon.plot_code} | Bloco: ${mon.block_number} | Data: ${mon.monitoring_date} | ID: ${mon.id}`);
+});
 
     const dataByTreatment = {};
 
