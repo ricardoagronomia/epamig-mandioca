@@ -1008,13 +1008,7 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
         if (!treatmentsByMonth[treatment]) {
           treatmentsByMonth[treatment] = {};
         }
-        //DEBUG
-        console.log('[COMBO] treatmentsByMonth:', JSON.stringify(treatmentsByMonth));
-console.log('[COMBO] monthLabels:', monthLabels);
-console.log('[COMBO] monthKeys:', monthKeys);
-console.log('[COMBO] climateData:', climateData);
-
-        
+                
         // ✅ ignorar valores 0 (monitoramentos sem stems registrados)
           const values = treatmentValues[treatment].filter(v => v > 0);
           if (values.length > 0) {
@@ -1035,6 +1029,12 @@ console.log('[COMBO] climateData:', climateData);
     // Criar labels dos meses
     const monthLabels = climateData.map(d => d.label);
     const monthKeys = climateData.map(d => d.monthKey);
+
+      //DEBUG
+        console.log('[COMBO] treatmentsByMonth:', JSON.stringify(treatmentsByMonth));
+console.log('[COMBO] monthLabels:', monthLabels);
+console.log('[COMBO] monthKeys:', monthKeys);
+console.log('[COMBO] climateData:', climateData);
 
     // Configuração
     const config = getMetricConfig(plantMetric, climateVar);
