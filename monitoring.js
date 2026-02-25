@@ -217,7 +217,7 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
       .select('*, count(*)', { head: true })
       .eq('experiment_id', experimentId);
 
-    // 2. Último por parcela
+    // 2. Último monitoramento por parcela
     const { data: latestMonitorings } = await s
       .from('monitoring_events')
       .select('id, plot_code, block_number')
@@ -242,28 +242,33 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
     const statusMap = {};
     statuses.forEach(s => statusMap[s.monitoring_event_id + '-' + s.plant_position] = s.status);
 
-    // ✅ 5. SÓ PLANTAS DE REFERÊNCIA VIVAS/BROTADAS
-    const referencePlants = biometrics.filter(b => 
-      b.has_sprouted && 
-      b.is_reference_plant &&  // ← SÓ REFERÊNCIAS
-      (!statusMap[b.monitoring_event_id + '-' + b.plant_position] || statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive')
+    // ✅ CARD 1: Plantas vivas (TODAS plantas)
+    const sproutedPlants = biometrics.filter(b => b.has_sprouted);
+    const alivePlants = sproutedPlants.filter(b => 
+      !statusMap[b.monitoring_event_id + '-' + b.plant_position] || 
+      statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive'
+    );
+    const totalPlants = sproutedPlants.length;
+    const alivePercentage = totalPlants > 0 ? ((alivePlants.length / totalPlants) * 100).toFixed(1) : '0.0';
+
+    // ✅ CARD 2: Referências (só referência)
+    const referencePlants = sproutedPlants.filter(b => b.is_reference_plant);
+    const aliveRefPlants = referencePlants.filter(b => 
+      !statusMap[b.monitoring_event_id + '-' + b.plant_position] || 
+      statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive'
     );
 
-    const totalRefPlants = referencePlants.length;
-    const refAlivePercentage = totalRefPlants > 0 ? '100.0' : '0.0';
-
-    // 6. Hastes por bio_id
+    // 5. Hastes só referência
     const stemsByBio = {};
     stems.forEach(stem => {
       if (!stemsByBio[stem.biometric_id]) stemsByBio[stem.biometric_id] = [];
       stemsByBio[stem.biometric_id].push(stem);
     });
 
-    // 7. CÁLCULOS **SÓ REFERÊNCIAS**
     let totalHeight = 0, heightCount = 0;
     let totalDiameter = 0, diameterCount = 0;
 
-    referencePlants.forEach(b => {
+    aliveRefPlants.forEach(b => {
       const bStems = stemsByBio[b.id] || [];
       bStems.forEach(s => {
         if (s.height_cm && s.height_cm > 0) {
@@ -280,8 +285,8 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
     const avgHeight = heightCount > 0 ? (totalHeight / heightCount).toFixed(1) : '0.0';
     const avgDiameterCm = diameterCount > 0 ? (totalDiameter / diameterCount / 10).toFixed(2) : '0.00';
 
-    // 8. Sanidade (referências com valor)
-    const refWithSanity = referencePlants.filter(b => b.sanity_score && b.sanity_score > 0);
+    // 6. Sanidade (referências)
+    const refWithSanity = aliveRefPlants.filter(b => b.sanity_score && b.sanity_score > 0);
     const avgSanity = refWithSanity.length > 0 
       ? (refWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / refWithSanity.length).toFixed(1)
       : '0.0';
@@ -294,35 +299,35 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
           <div><div style="font-size:18px;font-weight:600;color:#111827">${monitoringCount || 0}</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Coletas</div></div>
         </div>
         
-        <!-- Referências vivas -->
+        <!-- Plantas vivas (TODAS) -->
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#ecfdf5;display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:999px;background:#bbf7d0;display:flex;align-items:center;justify-content:center;font-size:16px">⭐</div>
-          <div><div style="font-size:18px;font-weight:600;color:#14532d">${totalRefPlants}</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Referências</div></div>
+          <div style="width:28px;height:28px;border-radius:999px;background:#bbf7d0;display:flex;align-items:center;justify-content:center;font-size:16px">●</div>
+          <div><div style="font-size:18px;font-weight:600;color:#14532d">${alivePercentage}%</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Vivas (${alivePlants.length}/${totalPlants})</div></div>
         </div>
         
-        <!-- Altura média (referências) -->
+        <!-- Altura ref -->
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#fefce8;display:flex;align-items:center;gap:8px">
           <div style="width:28px;height:28px;border-radius:999px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:16px">↗</div>
-          <div><div style="font-size:18px;font-weight:600;color:#713f12">${avgHeight} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Altura (${heightCount} hastes)</div></div>
+          <div><div style="font-size:18px;font-weight:600;color:#713f12">${avgHeight} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Ref. altura</div></div>
         </div>
         
-        <!-- Diâmetro médio (referências) -->
+        <!-- Diâmetro ref -->
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;gap:8px">
           <div style="width:28px;height:28px;border-radius:999px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:16px">⌀</div>
-          <div><div style="font-size:18px;font-weight:600;color:#1e3a8a">${avgDiameterCm} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Diâmetro (${diameterCount})</div></div>
+          <div><div style="font-size:18px;font-weight:600;color:#1e3a8a">${avgDiameterCm} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Ref. diâmetro</div></div>
         </div>
         
-        <!-- Sanidade média (referências) -->
+        <!-- Sanidade ref -->
         <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;gap:8px">
           <div style="width:28px;height:28px;border-radius:999px;background:#fecaca;display:flex;align-items:center;justify-content:center;font-size:16px">★</div>
-          <div><div style="font-size:18px;font-weight:600;color:#7f1d1d">${avgSanity}/5</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Sanidade (${refWithSanity.length})</div></div>
+          <div><div style="font-size:18px;font-weight:600;color:#7f1d1d">${avgSanity}/5</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Ref. sanidade</div></div>
         </div>
       </div>
     `;
 
   } catch (err) {
-    console.error('Erro estatísticas:', err);
-    summaryEl.textContent = 'Erro ao carregar estatísticas.';
+    console.error('Erro:', err);
+    summaryEl.textContent = 'Erro ao carregar.';
   }
 }
 
