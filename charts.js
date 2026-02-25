@@ -952,6 +952,14 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
     async function generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId, stemsMap) {
     const ctx = document.getElementById('chartCombo');
     if (!ctx) return;
+      
+      //DEBUG
+      console.log('generateComboChart chamado');
+console.log('latestByPlot:', Object.keys(latestByPlot).length);
+console.log('biometrics:', biometrics?.length);
+console.log('statuses:', statuses?.length);
+console.log('stemsMap keys:', Object.keys(stemsMap || {}).length);
+
 
     if (chartInstances.combo) {
       chartInstances.combo.destroy();
