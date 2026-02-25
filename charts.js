@@ -229,11 +229,11 @@ while (keepFetching) {
     if (statusError) throw statusError;
 
    
+// ✅ Substituir o trecho de busca de stems
 const allBioIds = biometrics.map(b => b.id);
 let stems = [];
 
 if (allBioIds.length > 0) {
-  // Dividir em lotes de 100 para evitar erro 400 do Supabase
   const chunkSize = 100;
   for (let i = 0; i < allBioIds.length; i += chunkSize) {
     const chunk = allBioIds.slice(i, i + chunkSize);
@@ -241,12 +241,14 @@ if (allBioIds.length > 0) {
       .from('plant_stem_measurements')
       .select('biometric_id, height_cm, diameter_cm')
       .in('biometric_id', chunk);
-    
+
     if (!stemError && stemChunk) {
       stems = stems.concat(stemChunk);
     }
   }
 }
+
+console.log('Total stems carregados:', stems.length); // deve refletir todos os registros
 
     // ✅ Montar mapa: biometric_id → stems[]
     const stemsMap = {};
@@ -953,14 +955,6 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
     const ctx = document.getElementById('chartCombo');
     if (!ctx) return;
       
-      //DEBUG
-      console.log('generateComboChart chamado');
-console.log('latestByPlot:', Object.keys(latestByPlot).length);
-console.log('biometrics:', biometrics?.length);
-console.log('statuses:', statuses?.length);
-console.log('stemsMap keys:', Object.keys(stemsMap || {}).length);
-
-
     if (chartInstances.combo) {
       chartInstances.combo.destroy();
     }
