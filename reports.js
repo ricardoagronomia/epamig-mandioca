@@ -1135,14 +1135,18 @@
             grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             margin-bottom: 15px;
+            page-break-inside: avoid;  /* ← NOVO */
+            break-inside: avoid;        /* ← NOVO (browsers modernos) */
           }
-          
+
           .stat-card {
             border-top: 2px solid #065f46;
             border-bottom: 1px solid #e5e7eb;
             padding: 12px;
             border-radius: 0;
             background: #ffffff;
+            page-break-inside: avoid;  /* ← NOVO */
+            break-inside: avoid;        /* ← NOVO */
           }
           
           .stat-card .value {
