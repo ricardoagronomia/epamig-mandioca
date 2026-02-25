@@ -1007,9 +1007,13 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
           treatmentsByMonth[treatment] = {};
         }
         
-        const values = treatmentValues[treatment];
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        treatmentsByMonth[treatment][monthKey] = avg;
+        // ✅ ignorar valores 0 (monitoramentos sem stems registrados)
+          const values = treatmentValues[treatment].filter(v => v > 0);
+          if (values.length > 0) {
+            const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+            treatmentsByMonth[treatment][monthKey] = avg;
+          }
+          // Se não houver valores válidos, não registra o mês para este tratamento
       });
     });
 
