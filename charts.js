@@ -1158,46 +1158,22 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
   const plantsBio = biometrics.filter(b => b.monitoring_event_id === monitoring.id);
 
   if (metric === 'height') {
-//DEBUG
-    } else if (metric === 'height') {
-  let refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true);
-  if (refBios.length === 0) {
-    refBios = plantsBio.filter(b => b.has_sprouted === true);
-  }
-
-  const heights = [];
-  refBios.forEach(b => {
-    (stemsMap[b.id] || []).forEach(st => { if (st.height_cm > 0) heights.push(st.height_cm); });
-  });
-
-  // DEBUG
-  console.log(`[HEIGHT] monit: ${monitoring.id} | plantsBio: ${plantsBio.length} | refBios: ${refBios.length} | heights encontrados: ${heights.length}`);
-
-  return heights.length > 0 ? heights.reduce((s, v) => s + v, 0) / heights.length : 0;
-
-    // Tentar primeiro só referências
     let refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true);
-    
-    // ✅ Fallback: se não houver referências com stems, usar todas as plantas brotadas
     if (refBios.length === 0) {
       refBios = plantsBio.filter(b => b.has_sprouted === true);
     }
-
     const heights = [];
     refBios.forEach(b => {
       (stemsMap[b.id] || []).forEach(st => { if (st.height_cm > 0) heights.push(st.height_cm); });
     });
+    console.log(`[HEIGHT] monit: ${monitoring.id} | plantsBio: ${plantsBio.length} | refBios: ${refBios.length} | heights: ${heights.length}`);
     return heights.length > 0 ? heights.reduce((s, v) => s + v, 0) / heights.length : 0;
 
   } else if (metric === 'diameter') {
-    // Tentar primeiro só referências
     let refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true);
-    
-    // ✅ Fallback: se não houver referências com stems, usar todas as plantas brotadas
     if (refBios.length === 0) {
       refBios = plantsBio.filter(b => b.has_sprouted === true);
     }
-
     const diameters = [];
     refBios.forEach(b => {
       (stemsMap[b.id] || []).forEach(st => { if (st.diameter_cm > 0) diameters.push(st.diameter_cm); });
@@ -1205,14 +1181,10 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
     return diameters.length > 0 ? diameters.reduce((s, v) => s + v, 0) / diameters.length : 0;
 
   } else if (metric === 'sanity') {
-    // Tentar primeiro só referências
     let refBios = plantsBio.filter(b => b.is_reference_plant === true && b.has_sprouted === true && b.sanity_score > 0);
-    
-    // ✅ Fallback: se não houver referências com sanidade, usar todas as plantas brotadas
     if (refBios.length === 0) {
       refBios = plantsBio.filter(b => b.has_sprouted === true && b.sanity_score > 0);
     }
-
     if (refBios.length === 0) return 0;
     return refBios.reduce((s, b) => s + b.sanity_score, 0) / refBios.length;
 
