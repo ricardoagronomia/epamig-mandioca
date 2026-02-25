@@ -294,9 +294,10 @@ async function loadMonitoringSummary(experimentId) {
 
         // Média de diâmetro (ignorar nulos e zeros)
         const diameterValues = stems.filter(st => st.diameter_cm > 0).map(st => st.diameter_cm);
-        if (diameterValues.length > 0) {
-          avgDiameterCm = (diameterValues.reduce((sum, v) => sum + v, 0) / diameterValues.length).toFixed(2);
-        }
+          if (diameterValues.length > 0) {
+            const avgCm = diameterValues.reduce((sum, v) => sum + v, 0) / diameterValues.length;
+            avgDiameterCm = (avgCm / 10).toFixed(2); // ✅ corrige escala: 13.47 → 1.35 cm
+          }
       }
     }
 
