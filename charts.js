@@ -1027,14 +1027,23 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
     });
 
     // Criar labels dos meses
-    const monthLabels = climateData.map(d => d.label);
-    const monthKeys = climateData.map(d => d.monthKey);
+    // ✅ Coletar todos os meses: clima + planta
+const allMonthKeys = new Set([
+  ...climateData.map(d => d.monthKey),
+  ...Object.values(treatmentsByMonth).flatMap(t => Object.keys(t))
+]);
 
-      //DEBUG
-        console.log('[COMBO] treatmentsByMonth:', JSON.stringify(treatmentsByMonth));
-console.log('[COMBO] monthLabels:', monthLabels);
-console.log('[COMBO] monthKeys:', monthKeys);
-console.log('[COMBO] climateData:', climateData);
+// Ordenar cronologicamente
+const sortedMonthKeys = [...allMonthKeys].sort();
+
+// Gerar labels formatados
+const monthLabels = sortedMonthKeys.map(mk => {
+  const [year, month] = mk.split('-');
+  const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${monthNames[parseInt(month) - 1]}/${year}`;
+});
+
+const monthKeys = sortedMonthKeys;
 
     // Configuração
     const config = getMetricConfig(plantMetric, climateVar);
