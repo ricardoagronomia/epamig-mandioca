@@ -168,8 +168,8 @@
               cachedData.biometrics,
               cachedData.statuses,
               cachedData.allMonitorings,
-              cachedData.experimentId
-              cachedData.stemsMap
+              cachedData.experimentId,
+              cachedData.stemsMap,
             );
           }
         });
