@@ -210,16 +210,25 @@
       .in("monitoring_event_id", latestMonitoringIds);
     if (statusError) throw statusError;
 
-    // ✅ CORREÇÃO: buscar hastes de todas as biometrias
-    const allBioIds = biometrics.map(b => b.id);
-    let stems = [];
-    if (allBioIds.length > 0) {
-      const { data: stemData, error: stemError } = await s
-        .from("plant_stem_measurements")
-        .select("biometric_id, height_cm, diameter_cm")
-        .in("biometric_id", allBioIds);
-      if (!stemError) stems = stemData || [];
+   
+const allBioIds = biometrics.map(b => b.id);
+let stems = [];
+
+if (allBioIds.length > 0) {
+  // Dividir em lotes de 100 para evitar erro 400 do Supabase
+  const chunkSize = 100;
+  for (let i = 0; i < allBioIds.length; i += chunkSize) {
+    const chunk = allBioIds.slice(i, i + chunkSize);
+    const { data: stemChunk, error: stemError } = await s
+      .from('plant_stem_measurements')
+      .select('biometric_id, height_cm, diameter_cm')
+      .in('biometric_id', chunk);
+    
+    if (!stemError && stemChunk) {
+      stems = stems.concat(stemChunk);
     }
+  }
+}
 
     // ✅ Montar mapa: biometric_id → stems[]
     const stemsMap = {};
@@ -237,14 +246,7 @@
     generateLodgingChart(latestByPlot, biometrics, statuses, experimentId);
     generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId, stemsMap);
 
-    // DEBUG TEMPORÁRIO - remover depois
-console.log('Total biometrias:', biometrics.length);
-console.log('Total stems:', stems.length);
-console.log('stemsMap keys:', Object.keys(stemsMap).length);
-console.log('Exemplo biometria[0]:', biometrics[0]);
-console.log('Exemplo stem[0]:', stems[0]);
-console.log('Plantas de referência:', biometrics.filter(b => b.is_reference_plant === true).length);
-
+    
   } catch (err) {
     console.error("Erro ao carregar dados dos gráficos:", err);
   }
@@ -975,7 +977,7 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
           treatmentValues[treatment] = [];
         }
         
-        const value = getPlantMetricValueForMonitoring(plantMetric, mon, biometrics, statuses);
+        const value = getPlantMetricValueForMonitoring(plantMetric, mon, biometrics, statuses, stemsMap);
         treatmentValues[treatment].push(value);
       });
       
