@@ -169,6 +169,7 @@
               cachedData.statuses,
               cachedData.allMonitorings,
               cachedData.experimentId
+              cachedData.stemsMap
             );
           }
         });
@@ -946,7 +947,7 @@ async function generateLodgingChart(latestByPlot, biometrics, statuses) {
   });
 }
 
-    async function generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId) {
+    async function generateComboChart(latestByPlot, biometrics, statuses, allMonitorings, experimentId, stemsMap) {
     const ctx = document.getElementById('chartCombo');
     if (!ctx) return;
 
