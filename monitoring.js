@@ -205,249 +205,126 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
   }
 
   // --- Resumo estatístico do monitoramento manual ---
-  async function loadMonitoringSummary(experiment_id) {
-    if (typeof s === "undefined") return;
+  async function loadMonitoringSummary(experimentId) {
+  const summaryEl = document.getElementById('monitoringSummary');
+  if (!summaryEl) return;
+  summaryEl.textContent = 'Carregando estatísticas...';
 
-    const summaryEl = document.getElementById("monitoringSummary");
-    if (!summaryEl) return;
+  try {
+    // 1. Total coletas
+    const { count: monitoringCount } = await s
+      .from('monitoring_events')
+      .select('*, count(*)', { head: true })
+      .eq('experiment_id', experimentId);
 
-    summaryEl.textContent = "Carregando estatísticas...";
+    // 2. Último por parcela
+    const { data: latestMonitorings } = await s
+      .from('monitoring_events')
+      .select('id, plot_code, block_number')
+      .eq('experiment_id', experimentId)
+      .order('monitoring_date', { ascending: false })
+      .limit(36);
 
-    try {
-      // 1) Contar total de monitoramentos
-      const { count: monitoringCount, error: countError } = await s
-        .from("monitoring_events")
-        .select("*", { count: "exact", head: true })
-        .eq("experiment_id", experiment_id);
+    const latestByPlot = {};
+    latestMonitorings.forEach(m => {
+      const key = `${m.block_number}-${m.plot_code}`;
+      if (!latestByPlot[key]) latestByPlot[key] = m.id;
+    });
+    const latestIds = Object.values(latestByPlot);
 
-      if (countError) {
-        console.error("Erro ao contar monitoramentos:", countError);
-      }
+    // 3. Dados
+    const { data: biometrics } = await s.from('plant_biometrics').select('*').in('monitoring_event_id', latestIds);
+    const { data: statuses } = await s.from('plant_status').select('*').in('monitoring_event_id', latestIds);
+    const bioIds = biometrics.map(b => b.id);
+    const { data: stems } = await s.from('plant_stem_measurements').select('*').in('biometric_id', bioIds);
 
-      // 2) Buscar TODOS os monitoramentos com suas datas
-      const { data: allMonitorings, error: monError } = await s
-        .from("monitoring_events")
-        .select("id, plot_code, block_number, monitoring_date")
-        .eq("experiment_id", experiment_id)
-        .order("monitoring_date", { ascending: false });
+    // 4. Status map
+    const statusMap = {};
+    statuses.forEach(s => statusMap[s.monitoring_event_id + '-' + s.plant_position] = s.status);
 
-      if (monError) {
-        console.error("Erro ao buscar monitoramentos:", monError);
-      }
+    // ✅ 5. SÓ PLANTAS DE REFERÊNCIA VIVAS/BROTADAS
+    const referencePlants = biometrics.filter(b => 
+      b.has_sprouted && 
+      b.is_reference_plant &&  // ← SÓ REFERÊNCIAS
+      (!statusMap[b.monitoring_event_id + '-' + b.plant_position] || statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive')
+    );
 
-      if (!allMonitorings || !allMonitorings.length) {
-        summaryEl.innerHTML = `
-          Nenhum monitoramento registrado ainda.<br>
-          <span style="font-size:12px;">Use as abas acima para iniciar o primeiro monitoramento.</span>
-        `;
-        return;
-      }
+    const totalRefPlants = referencePlants.length;
+    const refAlivePercentage = totalRefPlants > 0 ? '100.0' : '0.0';
 
-      // Pegar apenas o último monitoramento de cada parcela/bloco
-      const latestByPlot = {};
-      allMonitorings.forEach(m => {
-        const key = `${m.block_number}_${m.plot_code}`;
-        if (!latestByPlot[key]) {
-          latestByPlot[key] = m;
+    // 6. Hastes por bio_id
+    const stemsByBio = {};
+    stems.forEach(stem => {
+      if (!stemsByBio[stem.biometric_id]) stemsByBio[stem.biometric_id] = [];
+      stemsByBio[stem.biometric_id].push(stem);
+    });
+
+    // 7. CÁLCULOS **SÓ REFERÊNCIAS**
+    let totalHeight = 0, heightCount = 0;
+    let totalDiameter = 0, diameterCount = 0;
+
+    referencePlants.forEach(b => {
+      const bStems = stemsByBio[b.id] || [];
+      bStems.forEach(s => {
+        if (s.height_cm && s.height_cm > 0) {
+          totalHeight += s.height_cm;
+          heightCount++;
+        }
+        if (s.diameter_cm && s.diameter_cm > 0) {
+          totalDiameter += s.diameter_cm;
+          diameterCount++;
         }
       });
+    });
 
-      const latestMonitoringIds = Object.values(latestByPlot).map(m => m.id);
+    const avgHeight = heightCount > 0 ? (totalHeight / heightCount).toFixed(1) : '0.0';
+    const avgDiameterCm = diameterCount > 0 ? (totalDiameter / diameterCount / 10).toFixed(2) : '0.00';
 
-      // 3) Buscar biometrias APENAS dos últimos monitoramentos
-      const { data: biometrics, error: bioError } = await s
-        .from("plant_biometrics")
-        .select("*")
-        .in("monitoring_event_id", latestMonitoringIds);
+    // 8. Sanidade (referências com valor)
+    const refWithSanity = referencePlants.filter(b => b.sanity_score && b.sanity_score > 0);
+    const avgSanity = refWithSanity.length > 0 
+      ? (refWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / refWithSanity.length).toFixed(1)
+      : '0.0';
 
-      if (bioError) {
-        console.error("Erro ao buscar biometrias:", bioError);
-      }
-
-      // 4) Buscar status APENAS dos últimos monitoramentos
-      const { data: statuses, error: statusError } = await s
-        .from("plant_status")
-        .select("*")
-        .in("monitoring_event_id", latestMonitoringIds);
-
-      if (statusError) {
-        console.error("Erro ao buscar status:", statusError);
-      }
-
-      // 5) Buscar medições das hastes para cálculo de médias
-      const biometricIds = (biometrics || []).map(b => b.id);
-      const { data: stemMeasurements, error: stemError } = await s
-        .from("plant_stem_measurements")
-        .select("*")
-        .in("biometric_id", biometricIds);
-
-      if (stemError) {
-        console.error("Erro ao buscar medições de hastes:", stemError);
-      }
-
-      const totalMonitorings = typeof monitoringCount === "number" ? monitoringCount : 0;
-      const bioData = biometrics || [];
-      const statusData = statuses || [];
-      const stemData = stemMeasurements || [];
-
-      // Calcular total de plantas
-      const totalPlots = Object.keys(latestByPlot).length;
-      const totalPlants = totalPlots * 9;
-
-      // Criar mapa de status
-      const statusMap = {};
-      statusData.forEach(s => {
-        const key = `${s.monitoring_event_id}_${s.plant_position}`;
-        statusMap[key] = s.status;
-      });
-
-      // Calcular plantas brotadas
-      const sproutedPlants = bioData.filter(b => b.has_sprouted === true);
-      const totalSprouted = sproutedPlants.length;
-
-      // Contar plantas vivas = brotadas E NÃO marcadas como mortas
-      const alivePlants = sproutedPlants.filter(b => {
-        const key = `${b.monitoring_event_id}_${b.plant_position}`;
-        const status = statusMap[key];
-        return !status || status === 'alive';
-      }).length;
-
-      const alivePercentage = totalPlants > 0 
-        ? ((alivePlants / totalPlants) * 100).toFixed(1)
-        : "0.0";
-
-      // Criar mapa de hastes por biometric_id
-      const stemsByBiometric = {};
-      stemData.forEach(stem => {
-        if (!stemsByBiometric[stem.biometric_id]) {
-          stemsByBiometric[stem.biometric_id] = [];
-        }
-        stemsByBiometric[stem.biometric_id].push(stem);
-      });
-
-      // Altura média (média das hastes de plantas VIVAS)
-      const alivePlantsWithStems = sproutedPlants.filter(b => {
-        const key = `${b.monitoring_event_id}_${b.plant_position}`;
-        const status = statusMap[key];
-        const isAlive = !status || status === 'alive';
-        return isAlive && stemsByBiometric[b.id] && stemsByBiometric[b.id].length > 0;
-      });
-
-      let avgHeight = "–";
-      let heightCount = 0;
-      if (alivePlantsWithStems.length > 0) {
-        let totalHeight = 0;
-        alivePlantsWithStems.forEach(b => {
-          const stems = stemsByBiometric[b.id] || [];
-          stems.forEach(stem => {
-            if (stem.height_cm && stem.height_cm > 0) {
-              totalHeight += stem.height_cm;
-              heightCount++;
-            }
-          });
-        });
-        if (heightCount > 0) {
-          avgHeight = (totalHeight / heightCount).toFixed(1);
-        }
-      }
-
-      // Diâmetro médio (média das hastes de plantas VIVAS)
-      let avgDiameter = "–";
-      let diameterCount = 0;
-      if (alivePlantsWithStems.length > 0) {
-        let totalDiameter = 0;
-        alivePlantsWithStems.forEach(b => {
-          const stems = stemsByBiometric[b.id] || [];
-          stems.forEach(stem => {
-            if (stem.diameter_cm && stem.diameter_cm > 0) {
-              totalDiameter += stem.diameter_cm;
-              diameterCount++;
-            }
-          });
-        });
-        if (diameterCount > 0) {
-          avgDiameter = ((totalDiameter * 10) / diameterCount).toFixed(2);  // Converter para mm
-        }
-      }
-
-      // Sanidade média (apenas plantas VIVAS)
-      const plantsWithSanity = sproutedPlants.filter(b => {
-        const key = `${b.monitoring_event_id}_${b.plant_position}`;
-        const status = statusMap[key];
-        const isAlive = !status || status === 'alive';
-        return isAlive && b.sanity_score != null && b.sanity_score > 0;
-      });
-
-      const avgSanity = plantsWithSanity.length > 0
-        ? (plantsWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / plantsWithSanity.length).toFixed(1)
-        : "–";
-
-      summaryEl.innerHTML = `
-        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:stretch; margin-top:4px;">
-
-          <!-- Bloco: Total de monitoramentos -->
-          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#f0fdf4; display:flex; align-items:center; gap:8px;">
-            <div style="width:28px; height:28px; border-radius:999px; background:#dcfce7; display:flex; align-items:center; justify-content:center; font-size:16px;">
-              📋
-            </div>
-            <div>
-              <div style="font-size:18px; font-weight:600; color:#111827;">${totalMonitorings}</div>
-              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Coletas</div>
-            </div>
-          </div>
-
-          <!-- Bloco: Plantas vivas -->
-          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#ecfdf3; display:flex; align-items:center; gap:8px;">
-            <div style="width:28px; height:28px; border-radius:999px; background:#bbf7d0; display:flex; align-items:center; justify-content:center; font-size:16px;">
-              🌿
-            </div>
-            <div>
-              <div style="font-size:18px; font-weight:600; color:#14532d;">${alivePercentage}%</div>
-              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Vivas (${alivePlants}/${totalPlants})</div>
-            </div>
-          </div>
-
-          <!-- Bloco: Altura média -->
-          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fefce8; display:flex; align-items:center; gap:8px;">
-            <div style="width:28px; height:28px; border-radius:999px; background:#fef3c7; display:flex; align-items:center; justify-content:center; font-size:16px;">
-              📏
-            </div>
-            <div>
-              <div style="font-size:18px; font-weight:600; color:#713f12;">${avgHeight}${avgHeight !== "–" ? " cm" : ""}</div>
-              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Altura${heightCount > 0 ? ` (${heightCount})` : ""}</div>
-            </div>
-          </div>
-
-          <!-- Bloco: Diâmetro médio -->
-          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#eff6ff; display:flex; align-items:center; gap:8px;">
-            <div style="width:28px; height:28px; border-radius:999px; background:#dbeafe; display:flex; align-items:center; justify-content:center; font-size:16px;">
-              ⭕
-            </div>
-            <div>
-              <div stylefont-size18px font-weight600 color1e3a8a>${avgDiameter ? (avgDiameter * 10).toFixed(2) : ''}${avgDiameter != null ? ' mm' : ''}</div>
-              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Diâmetro${diameterCount > 0 ? ` (${diameterCount})` : ""}</div>
-            </div>
-          </div>
-
-          <!-- Bloco: Sanidade média -->
-          <div style="flex:1 1 110px; min-width:110px; padding:8px 10px; border-radius:10px; background:#fef2f2; display:flex; align-items:center; gap:8px;">
-            <div style="width:28px; height:28px; border-radius:999px; background:#fecaca; display:flex; align-items:center; justify-content:center; font-size:16px;">
-              ❤️
-            </div>
-            <div>
-              <div style="font-size:18px; font-weight:600; color:#7f1d1d;">${avgSanity}${avgSanity !== "–" ? "/5" : ""}</div>
-              <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:#6b7280;">Sanidade${plantsWithSanity.length > 0 ? ` (${plantsWithSanity.length})` : ""}</div>
-            </div>
-          </div>
-
+    summaryEl.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;margin-top:4px">
+        <!-- Total coletas -->
+        <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:999px;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:16px">${monitoringCount || 0}</div>
+          <div><div style="font-size:18px;font-weight:600;color:#111827">${monitoringCount || 0}</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Coletas</div></div>
         </div>
-      `;
+        
+        <!-- Referências vivas -->
+        <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#ecfdf5;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:999px;background:#bbf7d0;display:flex;align-items:center;justify-content:center;font-size:16px">⭐</div>
+          <div><div style="font-size:18px;font-weight:600;color:#14532d">${totalRefPlants}</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Referências</div></div>
+        </div>
+        
+        <!-- Altura média (referências) -->
+        <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#fefce8;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:999px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:16px">↗</div>
+          <div><div style="font-size:18px;font-weight:600;color:#713f12">${avgHeight} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Altura (${heightCount} hastes)</div></div>
+        </div>
+        
+        <!-- Diâmetro médio (referências) -->
+        <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:999px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:16px">⌀</div>
+          <div><div style="font-size:18px;font-weight:600;color:#1e3a8a">${avgDiameterCm} cm</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Diâmetro (${diameterCount})</div></div>
+        </div>
+        
+        <!-- Sanidade média (referências) -->
+        <div style="flex:1 1 110px;min-width:110px;padding:8px 10px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:999px;background:#fecaca;display:flex;align-items:center;justify-content:center;font-size:16px">★</div>
+          <div><div style="font-size:18px;font-weight:600;color:#7f1d1d">${avgSanity}/5</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280">Sanidade (${refWithSanity.length})</div></div>
+        </div>
+      </div>
+    `;
 
-    } catch (err) {
-      console.error("Erro inesperado ao carregar estatísticas:", err);
-      summaryEl.textContent = "Erro ao carregar estatísticas.";
-    }
+  } catch (err) {
+    console.error('Erro estatísticas:', err);
+    summaryEl.textContent = 'Erro ao carregar estatísticas.';
   }
+}
 
   function setupMonitoringTabs(container, experiment) {
     const isVisitor = window.currentRole === "visitor";
