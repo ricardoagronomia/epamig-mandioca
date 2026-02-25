@@ -205,7 +205,8 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
   }
 
   // --- Resumo estatístico do monitoramento manual ---
-  async function loadMonitoringSummary(experimentId) {
+  // --- Resumo estatístico do monitoramento manual ---
+async function loadMonitoringSummary(experimentId) {
   const summaryEl = document.getElementById('monitoringSummary');
   if (!summaryEl) return;
   summaryEl.textContent = 'Carregando estatísticas...';
@@ -254,14 +255,14 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
       .in('monitoring_event_id', lastEventIds);
 
     // ✅ CÁLCULO CORRETO
-    const totalIniciais = 324;                              // fixo
-    const nasceram = bios.filter(b => b.has_sprouted).length; // 285
-    const mortas = stats.filter(s => s.status === 'dead').length; // 18
-    const vivas = nasceram - mortas;                        // 267
-    const pctVivas = (vivas / totalIniciais * 100).toFixed(1); // 82.4%
-    const naoNasceram = totalIniciais - nasceram;           // 39
+    const totalIniciais = 324;
+    const nasceram = bios.filter(b => b.has_sprouted).length;
+    const mortas = stats.filter(s => s.status === 'dead').length;
+    const vivas = nasceram - mortas;
+    const pctVivas = (vivas / totalIniciais * 100).toFixed(1);
+    const naoNasceram = totalIniciais - nasceram;
 
-    // 6. Referências vivas (altura/diâmetro/sanidade)
+    // 6. Referências vivas
     const statusMap = {};
     stats.forEach(s => statusMap[s.monitoring_event_id + '-' + s.plant_position] = s.status);
 
@@ -272,19 +273,34 @@ window.renderPlantCircles = function(plantStatuses, lodgingStatuses, biometrics,
        statusMap[b.monitoring_event_id + '-' + b.plant_position] === 'alive')
     );
 
-    const refWithHeight = aliveRefs.filter(b => b.height_cm > 0);
-    const avgHeight = refWithHeight.length > 0
-      ? (refWithHeight.reduce((sum, b) => sum + b.height_cm, 0) / refWithHeight.length).toFixed(1)
-      : '0.0';
+    // ✅ CORREÇÃO: buscar hastes das plantas de referência vivas
+    let avgHeight = '0.0';
+    let avgDiameterCm = '0.00';
 
-    let totalDia = 0, diaCount = 0;
-    aliveRefs.forEach(b => {
-      if (b.stem_diameter_1_cm > 0) { totalDia += b.stem_diameter_1_cm; diaCount++; }
-      if (b.stem_diameter_2_cm > 0) { totalDia += b.stem_diameter_2_cm; diaCount++; }
-      if (b.stem_diameter_3_cm > 0) { totalDia += b.stem_diameter_3_cm; diaCount++; }
-    });
-    const avgDiameterCm = diaCount > 0 ? (totalDia / diaCount).toFixed(2) : '0.00';
+    if (aliveRefs.length > 0) {
+      const refBioIds = aliveRefs.map(b => b.id);
 
+      const { data: stems } = await s
+        .from('plant_stem_measurements')
+        .select('height_cm, diameter_cm')
+        .in('biometric_id', refBioIds);
+
+      if (stems && stems.length > 0) {
+        // Média de altura (ignorar nulos e zeros)
+        const heightValues = stems.filter(st => st.height_cm > 0).map(st => st.height_cm);
+        if (heightValues.length > 0) {
+          avgHeight = (heightValues.reduce((sum, v) => sum + v, 0) / heightValues.length).toFixed(1);
+        }
+
+        // Média de diâmetro (ignorar nulos e zeros)
+        const diameterValues = stems.filter(st => st.diameter_cm > 0).map(st => st.diameter_cm);
+        if (diameterValues.length > 0) {
+          avgDiameterCm = (diameterValues.reduce((sum, v) => sum + v, 0) / diameterValues.length).toFixed(2);
+        }
+      }
+    }
+
+    // 7. Sanidade (continua vindo de plant_biometrics, campo sanity_score)
     const refWithSanity = aliveRefs.filter(b => b.sanity_score > 0);
     const avgSanity = refWithSanity.length > 0
       ? (refWithSanity.reduce((sum, b) => sum + b.sanity_score, 0) / refWithSanity.length).toFixed(1)
