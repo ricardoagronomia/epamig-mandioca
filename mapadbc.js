@@ -28,7 +28,7 @@ const DEFAULT_TREATMENTS = [
   { code: "SABARÁ",     position: "HORIZONTAL" }
 ];
 
-// INSERIR APÓS DEFAULT_TREATMENTS e ANTES de function renderDbcPage
+// INSERIR APÓS DEFAULT_TREATMENTS e ANTES de function renderDbcMapPage
 async function loadLatestMonitoringData(experimentId) {
   // 1. Buscar parcelas do experimento
   const { data: plots, error: plotsError } = await s
@@ -174,14 +174,39 @@ sampleIds.forEach(templateId => {
   return monitoringByTemplateId;
 }
 
-window.renderDbcPage = function (container) {
+function renderDbcMapPage(container) {
   container.innerHTML = `
+    <div class="content-header">
+      <div class="content-title">Mapa DBC</div>
+      <div class="content-subtitle">
+        Configure o croqui e gere as etiquetas das parcelas.
+      </div>
+    </div>
+
     <div class="card">
-      <h2>Mapa DBC</h2>
-      <p>Em breve: carregamento dos dados via banco MariaDB.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="dbcTabMapBtn" class="btn-secondary">Croqui</button>
+        <button id="dbcTabQrBtn" class="btn-secondary">QR Codes</button>
+      </div>
+
+      <div id="dbcTabMapArea">
+        <div style="margin-bottom:12px;">
+          <label for="dbcExperimentSelect">Experimento</label>
+          <select id="dbcExperimentSelect">
+            <option value="">Carregando experimentos...</option>
+          </select>
+        </div>
+
+        <div id="dbcMapArea">
+          <p style="color:#6b7280;font-size:14px;">
+            Selecione um experimento para carregar o mapa DBC.
+          </p>
+        </div>       
+      </div>
+
+      <div id="dbcTabQrArea" style="display:none;"></div>
     </div>
   `;
-};
 
   const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
   const dbcMapArea = document.getElementById("dbcMapArea");
@@ -570,7 +595,7 @@ window.renderDbcPage = function (container) {
     }, 100);
   }); // <- fecha o change do experimento
 
-} // fecha renderDbcPage
+} // fecha renderDbcMapPage
 
 // ===============================
 // Área de QR Codes dentro do Mapa
