@@ -174,15 +174,9 @@ sampleIds.forEach(templateId => {
   return monitoringByTemplateId;
 }
 
+// função original que monta o layout do Mapa DBC
 function renderDbcMapPage(container) {
   container.innerHTML = `
-    <div class="content-header">
-      <div class="content-title">Mapa DBC</div>
-      <div class="content-subtitle">
-        Configure o croqui e gere as etiquetas das parcelas.
-      </div>
-    </div>
-
     <div class="card">
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button id="dbcTabMapBtn" class="btn-secondary">Croqui</button>
@@ -193,20 +187,25 @@ function renderDbcMapPage(container) {
         <div style="margin-bottom:12px;">
           <label for="dbcExperimentSelect">Experimento</label>
           <select id="dbcExperimentSelect">
-            <option value="">Carregando experimentos...</option>
+            <option value="">Funcionalidade de banco ainda não conectada.</option>
           </select>
         </div>
 
         <div id="dbcMapArea">
           <p style="color:#6b7280;font-size:14px;">
-            Selecione um experimento para carregar o mapa DBC.
+            O mapa DBC vai usar o banco MariaDB assim que a API estiver pronta.
           </p>
         </div>       
       </div>
-
-      <div id="dbcTabQrArea" style="display:none;"></div>
     </div>
   `;
+
+  // ❌ POR ENQUANTO: não chamamos nenhuma função que use `s`
+  // TODO: quando a API com MariaDB estiver pronta, reativar a lógica abaixo
+  /*
+  initDbcLogic(); // ou qualquer função que hoje use s.from(...)
+  */
+}
 
   const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
   const dbcMapArea = document.getElementById("dbcMapArea");
