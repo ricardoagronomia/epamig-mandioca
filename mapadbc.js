@@ -28,7 +28,7 @@ const DEFAULT_TREATMENTS = [
   { code: "SABARÁ",     position: "HORIZONTAL" }
 ];
 
-// INSERIR APÓS DEFAULT_TREATMENTS e ANTES de function renderDbcMapPage
+// INSERIR APÓS DEFAULT_TREATMENTS e ANTES de function renderDbcPage
 async function loadLatestMonitoringData(experimentId) {
   // 1. Buscar parcelas do experimento
   const { data: plots, error: plotsError } = await s
@@ -595,7 +595,7 @@ window.renderDbcPage = function (container) {
     }, 100);
   }); // <- fecha o change do experimento
 
-} // fecha renderDbcMapPage
+} // fecha renderDbcPage
 
 // ===============================
 // Área de QR Codes dentro do Mapa
