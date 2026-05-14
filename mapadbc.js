@@ -878,4 +878,20 @@ async function initDbcQrArea() {
   // primeira renderização
   renderQrLabels();
 } // fecha initDbcQrArea
+// Gancho simples para o roteador do app (sem mudar o resto do arquivo)
+window.renderDbcPage = function (container) {
+  // Se existir uma função original chamada renderDbcMapPage, usa ela
+  if (typeof window.renderDbcMapPage === 'function') {
+    window.renderDbcMapPage(container);
+    return;
+  }
+
+  // Caso contrário, mostra um placeholder simples
+  container.innerHTML = `
+    <div class="card">
+      <h2>Mapa DBC</h2>
+      <p>Em breve: carregamento do mapa DBC com dados do banco MariaDB.</p>
+    </div>
+  `;
+};
 
