@@ -178,37 +178,12 @@ sampleIds.forEach(templateId => {
 
 function renderDbcMapPage(container) {
   container.innerHTML = `
-    <div class="content-header">
-      <div class="content-title">Mapa DBC</div>
-      <div class="content-subtitle">
-        Configure o croqui e gere as etiquetas das parcelas.
-      </div>
-    </div>
-
     <div class="card">
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button id="dbcTabMapBtn" class="btn-secondary">Croqui</button>
-        <button id="dbcTabQrBtn" class="btn-secondary">QR Codes</button>
-      </div>
-
-      <div id="dbcTabMapArea">
-        <div style="margin-bottom:12px;">
-          <label for="dbcExperimentSelect">Experimento</label>
-          <select id="dbcExperimentSelect">
-            <option value="">Carregando experimentos...</option>
-          </select>
-        </div>
-
-        <div id="dbcMapArea">
-          <p style="color:#6b7280;font-size:14px;">
-            Selecione um experimento para carregar o mapa DBC.
-          </p>
-        </div>       
-      </div>
-
-      <div id="dbcTabQrArea" style="display:none;"></div>
+      <h2>Mapa DBC</h2>
+      <p>Em breve: integração com o banco MariaDB para carregar o croqui e os QR Codes.</p>
     </div>
   `;
+}
 
   const dbcExperimentSelect = document.getElementById("dbcExperimentSelect");
   const dbcMapArea = document.getElementById("dbcMapArea");
