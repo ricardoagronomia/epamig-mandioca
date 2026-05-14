@@ -176,12 +176,12 @@ sampleIds.forEach(templateId => {
 
 window.renderDbcPage = function (container) {
   container.innerHTML = `
-    <div class="content-header">
-      <div class="content-title">Mapa DBC</div>
-      <div class="content-subtitle">
-        Configure o croqui e gere as etiquetas das parcelas.
-      </div>
+    <div class="card">
+      <h2>Mapa DBC</h2>
+      <p>Em breve: carregamento dos dados via banco MariaDB.</p>
     </div>
+  `;
+};
 
     <div class="card">
       <div style="display:flex;gap:8px;margin-bottom:12px;">
