@@ -28,6 +28,7 @@ const DEFAULT_TREATMENTS = [
   { code: "SABARÁ",     position: "HORIZONTAL" }
 ];
 
+/*
 // INSERIR APÓS DEFAULT_TREATMENTS e ANTES de function renderDbcMapPage
 async function loadLatestMonitoringData(experimentId) {
   // 1. Buscar parcelas do experimento
@@ -173,6 +174,7 @@ sampleIds.forEach(templateId => {
   
   return monitoringByTemplateId;
 }
+*/
 
 function renderDbcMapPage(container) {
   container.innerHTML = `
@@ -384,7 +386,8 @@ function renderDbcMapPage(container) {
       treatments = res2.data || [];
     }
 
-        // 4) Carregar dados de monitoramento
+       /*
+       // 4) Carregar dados de monitoramento
     const monitoringData = await loadLatestMonitoringData(expId);
     // DEBUG - remover depois
     console.log('=== DEBUG MONITORING DATA ===');
@@ -392,6 +395,7 @@ function renderDbcMapPage(container) {
     console.log('Monitoring Data:', monitoringData);
     console.log('Templates:', templates);
     console.log('window.renderPlantCircles exists?', typeof window.renderPlantCircles);
+    */
     
     // 5) Montar blocos com grid baseado em plot_templates
     const colorMap = {
