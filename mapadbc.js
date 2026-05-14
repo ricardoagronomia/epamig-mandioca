@@ -174,7 +174,7 @@ sampleIds.forEach(templateId => {
   return monitoringByTemplateId;
 }
 
-function renderDbcMapPage(container) {
+window.renderDbcPage = function (container) {
   container.innerHTML = `
     <div class="content-header">
       <div class="content-title">Mapa DBC</div>
