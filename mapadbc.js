@@ -878,4 +878,17 @@ async function initDbcQrArea() {
   // primeira renderização
   renderQrLabels();
 } // fecha initDbcQrArea
-
+// Gancho simples para o roteador do app
+window.renderDbcPage = function (container) {
+  // se já existe uma função original que monta a página, chame ela aqui
+  if (typeof window.renderDbcMapPage === 'function') {
+    window.renderDbcMapPage(container);
+  } else {
+    container.innerHTML = `
+      <div class="card">
+        <h2>Mapa DBC</h2>
+        <p>Não foi possível carregar o mapa DBC (função original ausente).</p>
+      </div>
+    `;
+  }
+};
