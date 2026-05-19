@@ -193,7 +193,7 @@ async function renderExperimentsPage(container) {
               <button
                 class="btn-secondary"
                 style="font-size:13px;"
-                disabled
+                onclick="openExperimentFormModalById(${exp.id})"
               >
                 Editar
               </button>
@@ -201,7 +201,7 @@ async function renderExperimentsPage(container) {
               <button
                 class="btn-secondary"
                 style="font-size:13px;"
-                disabled
+                onclick="alert('Tela de cronograma ainda não ligada ao banco nesta versão.');"
               >
                 Cronograma
               </button>
@@ -300,4 +300,12 @@ function selectExperiment(id) {
   if (area) {
     renderExperimentsPage(area);
   }
+}
+function openExperimentFormModalById(id) {
+  const exp = (window.experiments || []).find(e => e.id === id);
+  if (!exp) {
+    alert("Experimento não encontrado na lista atual.");
+    return;
+  }
+  openExperimentFormModal(exp);
 }
