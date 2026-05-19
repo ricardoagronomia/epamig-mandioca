@@ -187,9 +187,7 @@ async function renderExperimentsPage(container) {
               >
             ${isSelected ? "Selecionado" : "Selecionar"}
               </button>
-                ${isSelected ? "Selecionado" : "Selecionar"}
-              </button>
-
+            
               <button
                 class="btn-secondary"
                 style="font-size:13px;"
