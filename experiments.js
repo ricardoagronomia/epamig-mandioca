@@ -183,8 +183,10 @@ async function renderExperimentsPage(container) {
               <button
                 class="${isSelected ? "btn-primary" : "btn-secondary"}"
                 style="font-size:13px;"
-                disabled
+                onclick="selectExperiment(${exp.id})"
               >
+            ${isSelected ? "Selecionado" : "Selecionar"}
+              </button>
                 ${isSelected ? "Selecionado" : "Selecionar"}
               </button>
 
@@ -283,4 +285,19 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+function selectExperiment(id) {
+  const exp = (window.experiments || []).find(e => e.id === id);
+  if (!exp) return;
+
+  currentExperiment = exp;
+  window.currentExperiment = exp;
+
+  // só para o usuário ter feedback imediato
+  alert(`Experimento ${exp.code || exp.id} selecionado.`);
+
+  const area = document.getElementById("contentArea");
+  if (area) {
+    renderExperimentsPage(area);
+  }
 }
