@@ -218,15 +218,16 @@ async function renderExperimentsPage(container) {
 // Modal de novo / editar experimento (somente front, sem salvar em banco)
 function openExperimentFormModal(exp) {
   const isEdit = !!exp;
-  const title = isEdit ? "Editar experimento (modo offline)" : "Novo experimento (modo offline)";
-
-    const plantingDate = exp?.planting_date ? exp.planting_date.split("T")[0] : "";
+  const title = isEdit ? "Editar experimento" : "Novo experimento";
+  const plantingDate = exp?.planting_date ? exp.planting_date.split("T")[0] : "";
   const status = exp?.status || "active";
   const farm = exp?.farm || "";
   const municipality = exp?.municipality || "";
+  const expId = exp?.id || "";
 
   const bodyHtml = `
     <form id="experimentForm">
+      <input type="hidden" id="expId" value="${expId}" />
       <div style="margin-bottom:12px;">
         <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
           Informações básicas
