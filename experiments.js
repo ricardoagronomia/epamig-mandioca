@@ -220,7 +220,10 @@ function openExperimentFormModal(exp) {
   const isEdit = !!exp;
   const title = isEdit ? "Editar experimento (modo offline)" : "Novo experimento (modo offline)";
 
-  const plantingDate = exp?.planting_date ? exp.planting_date.split("T")[0] : "";
+    const plantingDate = exp?.planting_date ? exp.planting_date.split("T")[0] : "";
+  const status = exp?.status || "active";
+  const farm = exp?.farm || "";
+  const municipality = exp?.municipality || "";
 
   const bodyHtml = `
     <form id="experimentForm">
@@ -247,6 +250,28 @@ function openExperimentFormModal(exp) {
         <label for="expPlantingDate">Data de plantio</label>
         <input id="expPlantingDate" type="date"
           value="${plantingDate}" />
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <h3 style="font-size:15px; font-weight:700; color:var(--green-dark); margin-bottom:6px;">
+          Local e status
+        </h3>
+
+        <label for="expFarm">Fazenda / local</label>
+        <input id="expFarm" type="text"
+          value="${escapeHtml(farm)}"
+          placeholder="Ex.: Fazenda experimental" />
+
+        <label for="expMunicipality">Município / UF</label>
+        <input id="expMunicipality" type="text"
+          value="${escapeHtml(municipality)}"
+          placeholder="Ex.: Pitangui - MG" />
+
+        <label for="expStatus">Status</label>
+        <select id="expStatus">
+          <option value="active" ${status === "active" ? "selected" : ""}>Ativo</option>
+          <option value="finished" ${status === "finished" ? "selected" : ""}>Concluído</option>
+        </select>
       </div>
 
       <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
