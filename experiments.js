@@ -294,7 +294,7 @@ function openExperimentFormModal(exp) {
 }
 
 async function submitExperimentFormOffline() {
-  // 1) Ler os campos do formulário
+  const id           = document.getElementById("expId")?.value || null;
   const code         = document.getElementById("expCode")?.value.trim();
   const name         = document.getElementById("expName")?.value.trim();
   const objective    = document.getElementById("expObjective")?.value.trim();
@@ -310,7 +310,8 @@ async function submitExperimentFormOffline() {
   }
 
   // 3) Montar o objeto que será enviado para o PHP
-  const payload = {
+    const payload = {
+    id: id || null,
     code,
     name,
     objective,
@@ -319,6 +320,7 @@ async function submitExperimentFormOffline() {
     municipality,
     status,
   };
+    console.log("Payload enviado para salvar experimento:", payload);
 
   // 4) Enviar para a API PHP usando fetch
   try {
