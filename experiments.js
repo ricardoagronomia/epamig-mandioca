@@ -211,6 +211,7 @@ async function renderExperimentsPage(container) {
     .join("");
 
   listEl.innerHTML = cardsHtml;
+}
 
 // Modal de novo / editar experimento (somente front, sem salvar em banco)
 function openExperimentFormModal(exp) {
