@@ -292,12 +292,64 @@ function openExperimentFormModal(exp) {
   }
 }
 
-// Apenas fecha o modal e mostra um alerta (sem banco)
-function submitExperimentFormOffline() {
-  alert("Formulário de experimento preenchido (modo offline, sem salvar no banco).");
+async function submitExperimentFormOffline() {
+  // 1) Ler os campos do formulário
+  const code         = document.getElementById("expCode")?.value.trim();
+  const name         = document.getElementById("expName")?.value.trim();
+  const objective    = document.getElementById("expObjective")?.value.trim();
+  const planting     = document.getElementById("expPlantingDate")?.value;
+  const farm         = document.getElementById("expFarm")?.value.trim();
+  const municipality = document.getElementById("expMunicipality")?.value.trim();
+  const status       = document.getElementById("expStatus")?.value || "active";
 
-  if (typeof closeModal === "function") {
-    closeModal();
+  // 2) Validação simples
+  if (!code || !planting || !objective) {
+    alert("Preencha pelo menos código, data de plantio e objetivo.");
+    return;
+  }
+
+  // 3) Montar o objeto que será enviado para o PHP
+  const payload = {
+    code,
+    name,
+    objective,
+    planting_date: planting,
+    farm,
+    municipality,
+    status,
+  };
+
+  // 4) Enviar para a API PHP usando fetch
+  try {
+    const resp = await fetch("/api/experiments_save.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await resp.json();
+
+    if (!json.success) {
+      console.error("Erro ao salvar experimento:", json.error);
+      alert("Erro ao salvar experimento: " + (json.error || "desconhecido"));
+      return;
+    }
+
+    alert("Experimento salvo com sucesso no banco.");
+
+    // 5) Fechar modal
+    if (typeof closeModal === "function") {
+      closeModal();
+    }
+
+    // 6) Recarregar a lista de experimentos
+    const area = document.getElementById("contentArea");
+    if (area) {
+      await renderExperimentsPage(area);
+    }
+  } catch (e) {
+    console.error("Falha ao chamar /api/experiments_save.php:", e);
+    alert("Falha de comunicação com o servidor ao salvar o experimento.");
   }
 }
 
